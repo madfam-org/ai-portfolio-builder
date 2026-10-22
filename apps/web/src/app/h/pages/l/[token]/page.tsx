@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { ArtifactView } from '@/components/render/ArtifactView';
 import { PagesFooter } from '@/components/render/PagesFooter';
+import styles from '../../pages.module.css';
 import { loadLink, pageLocale, pageTitle } from '../../load';
 
 type Props = { params: Promise<{ token: string }> };
@@ -19,8 +20,8 @@ export default async function LinkPage({ params }: Props) {
   const locale = pageLocale(data);
   return (
     <>
-      <main className="shell doc-shell" id="main">
-        <ArtifactView data={data} locale={locale} />
+      <main className={`shell ${styles.main}`} id="main">
+        <ArtifactView data={data} />
       </main>
       <PagesFooter locale={locale} page={{ share: 'link' }} />
     </>
