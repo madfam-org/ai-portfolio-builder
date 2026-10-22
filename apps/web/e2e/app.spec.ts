@@ -4,8 +4,9 @@ import { cspViolations, signIn } from './support/fixtures.ts';
 import { OWNER_A, OWNER_B, url } from './support/env.ts';
 
 const ID = '0b6f3c1e-8a4d-4f7e-9c2a-1d5e6f7a8b9c';
-// The /empleos pages are built (W3-3, e2e/jobs.spec.ts); they no longer show the placeholder.
-const ROUTES = ['/perfil', '/documentos', `/documentos/${ID}`, `/documentos/${ID}/vista-previa`, `/documentos/${ID}/imprimir`, '/ajustes'];
+// The /empleos pages are built (W3-3, e2e/jobs.spec.ts) and the /documentos pages are real since W3-4
+// (e2e/documents.spec.ts: an unknown id there is a 404, not a placeholder); neither shows the placeholder.
+const ROUTES = ['/perfil', '/ajustes'];
 
 test('signed out: every route offers sign-in and returns to the same page afterwards; no nav', async ({ page }) => {
   for (const path of ['/perfil', `/empleos/${ID}/adaptar`]) {
