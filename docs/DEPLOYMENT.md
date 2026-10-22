@@ -22,7 +22,7 @@ Two replicas, surge rollout (`maxUnavailable: 0`), a PodDisruptionBudget
 | Probe | Path | Answers |
 |---|---|---|
 | liveness | `/health` | 200 `{"status":"ok","service":"cv","revision":<sha or null>}` on any Host; no dependency checks |
-| readiness | `/ready` | on any Host: 503 on an invalid configuration; 503 when a database IS configured (`APP_DATABASE_URL`) and `select 1` fails within 2 s; otherwise 200. Unconfigured dependencies are reported (`checks.signIn`, `checks.database`) and never block. Janua is not pinged (its outage must not take the landing down; the API answers 503 per request instead) |
+| readiness | `/ready` | on any Host: 503 on an invalid configuration; 503 when a database IS configured (`APP_DATABASE_URL`) and `select 1` fails within 2 s (the body says `"database":"unavailable"`; the driver's reason goes to the log only); otherwise 200. Unconfigured dependencies are reported (`checks.signIn`, `checks.database`) and never block. Janua is not pinged (its outage must not take the landing down; the API answers 503 per request instead) |
 
 ## Hosts (one Service, routed by Host)
 
@@ -82,8 +82,11 @@ Nothing reads these at import or build time; nothing throws at boot. The boot lo
 ### Sign-in shape
 
 - Callback, exact: `https://cv-app.madfam.io/api/auth/callback/janua`. Post-logout redirect: `https://cv-app.madfam.io/`.
-- Cookies (Auth.js defaults on https): `__Secure-authjs.session-token` and friends, `HttpOnly`, `Secure`,
-  `SameSite=Lax`, **host-only** (no `Domain`): they exist on `cv-app.madfam.io` alone.
+- Cookies on https: `__Host-authjs.session-token`, `__Host-authjs.callback-url`, `__Host-authjs.pkce.code_verifier`,
+  `__Host-authjs.state`, `__Host-authjs.nonce` (cv's own names, `lib/auth-env.ts` `authCookies`) and Auth.js's
+  `__Host-authjs.csrf-token`; all `HttpOnly`, `Secure`, `SameSite=Lax`, `Path=/`, **host-only** (no `Domain`): they
+  exist on `cv-app.madfam.io` alone, and the `__Host-` prefix stops any sibling `*.madfam.io` host (the pages host
+  included) from planting one (cookie tossing). Loopback development keeps Auth.js's plain names.
 - «Iniciar sesión», «Cambiar de cuenta» (`prompt=select_account`), «Entrar como otra persona» (`prompt=login`)
   are plain form POSTs to `/auth/entrar`; «Cerrar sesión» is `POST /auth/salir` (RP-initiated logout). Both are
   same-origin only (403) and POST only (405 on GET). The app's CSP allows `form-action 'self'` plus the issuer

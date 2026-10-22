@@ -7,14 +7,14 @@
  * AGPL repository must install from public npm without credentials.
  *
  * - The session cookie is encrypted with AUTH_SECRET (this app's own secret, never the Janua client secret, R42),
- *   host-only on cv-app (Auth.js never gets a cookie `domain`), Secure on https.
+ *   host-only on cv-app (Auth.js never gets a cookie `domain`), `__Host-` prefixed and Secure on https.
  * - It keeps Janua's access, refresh and id tokens server-side; page scripts see only `publicSession()`.
  * - DORMANT: without every AUTH_* value there is no provider, and every entry point answers 503 before it gets here
  *   (app/api/auth/[...nextauth]/route.ts, app/auth/*).
  */
 import NextAuth, { type NextAuthConfig } from 'next-auth';
 import type { OIDCConfig } from 'next-auth/providers';
-import { JANUA_PROVIDER_ID, authSecret, januaClientConfig, secureAuthCookies, verifierConfig, type JanuaClientConfig } from '@/lib/auth-env';
+import { JANUA_PROVIDER_ID, authCookies, authSecret, januaClientConfig, secureAuthCookies, verifierConfig, type JanuaClientConfig } from '@/lib/auth-env';
 import { resolvePublicOrigin } from '@/lib/public-origin';
 import { verifyAccessToken } from '@/server/janua';
 import { refreshJanuaTokens } from '@/server/janua-oidc';
@@ -58,6 +58,8 @@ export function buildAuthConfig(env: Record<string, string | undefined> = proces
     // allow-listed public origin (withPublicOrigin below); trustHost alone never decides the origin.
     trustHost: true,
     useSecureCookies: secureAuthCookies(env),
+    // `__Host-` session and sign-in flow cookies on https (lib/auth-env.ts authCookies): no sibling host can plant them.
+    cookies: authCookies(env),
     providers: client ? [januaProvider(client)] : [],
     session: { strategy: 'jwt' },
     pages: { signIn: '/', error: '/' },

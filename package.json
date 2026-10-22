@@ -21,5 +21,10 @@
     "db:migrate": "pnpm --filter @cv/web run db:migrate",
     "db:generate": "pnpm --filter @cv/web run db:generate",
     "test:e2e": "pnpm --filter @cv/web run test:e2e"
+  },
+  "pnpm": {
+    "overrides": {
+      "@esbuild-kit/core-utils>esbuild": "0.25.12"
+    }
   }
 }

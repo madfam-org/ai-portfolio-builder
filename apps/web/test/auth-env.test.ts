@@ -51,11 +51,11 @@ test('runtime uses APP_DATABASE_URL; DATABASE_URL (the owner) only in developmen
   assert.throws(() => databasePoolMax({ DATABASE_POOL_MAX: '0' }));
 });
 
-test('sign-in answers on the app host only; host-only __Secure- cookie in production', () => {
+test('sign-in answers on the app host only; host-only __Host- cookie in production', () => {
   assert.deepEqual(authPublicHosts({}), ['cv-app.madfam.io']);
   assert.deepEqual(authPublicHosts({ CV_HOST_APP: 'cv-app.localhost' }), ['cv-app.localhost']);
   assert.equal(secureAuthCookies({}), true);
-  assert.equal(sessionCookieName({}), '__Secure-authjs.session-token');
+  assert.equal(sessionCookieName({}), '__Host-authjs.session-token');
   assert.equal(sessionCookieName({ AUTH_PUBLIC_HOSTS: 'cv-app.localhost' }), 'authjs.session-token');
 });
 

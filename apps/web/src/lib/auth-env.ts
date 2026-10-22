@@ -103,14 +103,45 @@ function isLoopbackName(host: string): boolean {
   return name === 'localhost' || name === '127.0.0.1' || name.endsWith('.localhost');
 }
 
-/** `__Secure-` cookies whenever any sign-in host is a real (https) host; plain names only for local development. */
+/** Secure (`__Host-`) cookies whenever any sign-in host is a real (https) host; plain names only for local development. */
 export function secureAuthCookies(env: Env): boolean {
   return !authPublicHosts(env).every(isLoopbackName);
 }
 
-/** Auth.js session cookie name (chunks append `.0`, `.1`, ...). Host-only: no Domain attribute, ever. */
+/**
+ * The Auth.js cookies cv names itself (W4-S). Auth.js's defaults use `__Secure-` (Secure only) for all of them but the
+ * CSRF token; cv uses `__Host-` for the session and the sign-in flow cookies too. A `__Host-` cookie must be Secure,
+ * Path=/ and carry NO Domain, and browsers refuse to let any other host set one: a sibling `*.madfam.io` host (the
+ * pages host, or any other estate app) can therefore never plant a session or a sign-in state cookie on cv-app
+ * (cookie tossing: login CSRF, session fixation).
+ */
+const AUTH_COOKIE_BASES = {
+  sessionToken: { base: 'authjs.session-token', maxAge: undefined },
+  callbackUrl: { base: 'authjs.callback-url', maxAge: undefined },
+  pkceCodeVerifier: { base: 'authjs.pkce.code_verifier', maxAge: 60 * 15 },
+  state: { base: 'authjs.state', maxAge: 60 * 15 },
+  nonce: { base: 'authjs.nonce', maxAge: undefined },
+} as const;
+
+export type AuthCookieKey = keyof typeof AUTH_COOKIE_BASES;
+export interface AuthCookie {
+  name: string;
+  options: { httpOnly: true; sameSite: 'lax'; path: '/'; secure: true; maxAge?: number };
+}
+
+/** Auth.js `cookies` for https hosts (`__Host-` names, host-only); undefined on loopback (Auth.js's plain defaults). */
+export function authCookies(env: Env): Record<AuthCookieKey, AuthCookie> | undefined {
+  if (!secureAuthCookies(env)) return undefined;
+  const out = {} as Record<AuthCookieKey, AuthCookie>;
+  for (const [key, { base, maxAge }] of Object.entries(AUTH_COOKIE_BASES) as [AuthCookieKey, { base: string; maxAge: number | undefined }][]) {
+    out[key] = { name: `__Host-${base}`, options: { httpOnly: true, sameSite: 'lax', path: '/', secure: true, ...(maxAge ? { maxAge } : {}) } };
+  }
+  return out;
+}
+
+/** Auth.js session cookie name (chunks append `.0`, `.1`, ...). Host-only: no Domain attribute, ever (`__Host-`). */
 export function sessionCookieName(env: Env): string {
-  return secureAuthCookies(env) ? '__Secure-authjs.session-token' : 'authjs.session-token';
+  return authCookies(env)?.sessionToken.name ?? AUTH_COOKIE_BASES.sessionToken.base;
 }
 
 /**
