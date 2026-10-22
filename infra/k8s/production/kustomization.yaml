@@ -5,7 +5,7 @@ kind: Kustomization
 # (cv.madfam.io, cv-app.madfam.io, cv-api.madfam.io -> Service cv:80), and the tunnel peer is admitted to the
 # app port (3000) only (network-policy.yaml). W2 data reads the onboarding Secret cv-secrets (database URLs,
 # written by `enclii onboard ensure --generate-db-password --app-role cv_app`); the migrate PreSync Job applies the
-# schema. Sign-in's ExternalSecret cv-web-auth lands separately, once Vault secret/cv holds its values.
+# schema. Sign-in reads the ExternalSecret cv-web-auth (Vault secret/cv: the Janua client id and secret, AUTH_SECRET).
 namespace: cv
 
 resources:
@@ -15,6 +15,9 @@ resources:
 - network-policy.yaml
 - network-policy-migrate.yaml
 - migrate-job.yaml
+# Sign-in (2026-10-22): Vault secret/cv holds auth_janua_client_id, auth_janua_client_secret and auth_secret
+# (intakes int_1792692829253561061 and int_1792692328556323018, both ready). ESO is all-or-nothing.
+- externalsecret-web-auth.yaml
 
 # Image digest: pinned by the Build & Deploy workflow (Enclii's reusable build-publish runs
 # `kustomize edit set image <image>=<image>@sha256:...`, commits the pin to main, and the GitOps sync rolls it).
