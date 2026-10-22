@@ -15,10 +15,10 @@ export function CoverLetterView({ model }: { model: DocModel }) {
     <article className={`${s.doc} ${s.letter}`} lang={model.locale === 'en' ? 'en' : 'es-MX'} data-kind="cover_letter">
       <header className={s.header}>
         <h1 className={s.name}>{model.name ?? model.title}</h1>
-        {model.headline ? <p className={s.headline}>{model.headline}</p> : null}
+        {model.headline ? <p className={s.headline} data-part="headline">{model.headline}</p> : null}
         {model.contact ? <ContactLine contact={model.contact} /> : null}
       </header>
-      <div className={s.letterBody}>
+      <div className={s.letterBody} data-part="letter-body">
         {model.greeting ? <p className={s.greeting}>{model.greeting}</p> : null}
         <Paragraphs text={model.summary} />
         {model.blocks.map((b, i) => (
@@ -36,7 +36,7 @@ export function CoverLetterView({ model }: { model: DocModel }) {
           </section>
         ) : null}
         {model.closing ? <Paragraphs text={model.closing} className={s.closing} /> : null}
-        {model.name ? <p className={s.signature}>{model.name}</p> : null}
+        {model.name ? <p data-part="signature" className={s.signature}>{model.name}</p> : null}
       </div>
     </article>
   );

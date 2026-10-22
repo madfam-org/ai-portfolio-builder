@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { TemplatePicker } from '@/components/render/TemplatePicker';
 import { Button } from '@/components/ui/Button';
 import { CheckboxField, SelectField, TextAreaField, TextField } from '@/components/ui/Field';
 import { PageHeader } from '@/components/ui/Layout';
@@ -10,6 +11,7 @@ import { api, apiErrorMessage } from '@/lib/client/api';
 import type { ArtifactDto, ArtifactKind, ContentLocale } from '@/lib/client/types';
 import { APP_COPY } from '@/lib/copy/app';
 import { fmt, JOBS_COPY } from '@/lib/copy/jobs';
+import { TEMPLATE_PICKER_COPY } from '@/lib/copy/render';
 import type { Locale } from '@/lib/routing';
 import { JobDocuments } from './JobDocuments';
 import { SelectionEditor, type ItemProblems } from './SelectionEditor';
@@ -31,7 +33,9 @@ export function TailorWorkspace({ locale, jobId }: { locale: Locale; jobId: stri
   const { bundle, reload } = useJobBundle(jobId);
   const [selectionDraft, setSelection] = useState<SelectionEntry[] | null>(null);
   const [kinds, setKinds] = useState<ArtifactKind[]>([...DEFAULT_KINDS]);
-  const [template, setTemplate] = useState<string>(TEMPLATES[0]);
+  const template: string = TEMPLATES[0];
+  // W4-T: one template per kind (registry ids), `base` until the person picks another.
+  const [kindTemplates, setKindTemplates] = useState<Partial<Record<ArtifactKind, string>>>({});
   const [contentLocale, setContentLocale] = useState<ContentLocale | null>(null);
   const [summary, setSummary] = useState('');
   const [showContact, setShowContact] = useState(false);
@@ -100,6 +104,7 @@ export function TailorWorkspace({ locale, jobId }: { locale: Locale; jobId: stri
       company: job.company,
       kinds: chosenKinds,
       template,
+      templates: kindTemplates,
       locale: docLocale,
       selection,
       summary,
@@ -170,13 +175,17 @@ export function TailorWorkspace({ locale, jobId }: { locale: Locale; jobId: stri
             </p>
           ) : null}
         </fieldset>
-        <SelectField
-          id="tailor-template"
-          label={t.tailor.template}
-          value={template}
-          onChange={(e) => setTemplate(e.target.value)}
-          options={TEMPLATES.map((v) => ({ value: v, label: t.tailor.templates[v] ?? v }))}
-        />
+        {chosenKinds.map((k) => (
+          <TemplatePicker
+            key={k}
+            id={`tailor-template-${k}`}
+            kind={k}
+            locale={locale}
+            legend={TEMPLATE_PICKER_COPY[locale].legendFor(a.kinds[k])}
+            value={kindTemplates[k] ?? template}
+            onChange={(v) => setKindTemplates((all) => ({ ...all, [k]: v }))}
+          />
+        ))}
         <SelectField
           id="tailor-language"
           label={t.tailor.language}

@@ -17,7 +17,7 @@ import type { ArtifactSetInput, ContentLocale } from '../../lib/client/types.ts'
 export const TAILOR_KINDS: readonly ArtifactKind[] = ['cv', 'portfolio', 'presentation', 'cover_letter'];
 /** Checked by default: the three documents of the core journey; the cover letter is opt-in. */
 export const DEFAULT_KINDS: readonly ArtifactKind[] = ['cv', 'portfolio', 'presentation'];
-/** W3 ships one honest template per kind (lane X §2.3); W3-4's renderer registry adds more later. */
+/** The set-wide default template. Per kind, the choices come from the registry (`lib/templates.ts`, W4-T). */
 export const TEMPLATES = ['base'] as const;
 
 export const LIMITS = {
@@ -102,6 +102,8 @@ export interface TailorInput {
   company: string;
   kinds: readonly ArtifactKind[];
   template: string;
+  /** W4-T: a template per kind (registry ids); a kind without one gets `template`. */
+  templates?: Readonly<Partial<Record<ArtifactKind, string>>>;
   locale: ContentLocale;
   selection: readonly SelectionEntry[];
   /** «Resumen para este empleo» (optional). */
@@ -162,7 +164,8 @@ export function buildArtifactSet(input: TailorInput): { ok: true; body: Artifact
       const closing = input.closing.trim();
       content = { ...base, ...(greeting ? { greeting } : {}), ...(closing ? { closing } : {}) };
     }
-    return { kind, title: artifactTitle(input.kindLabels[kind], input.jobTitle, input.company), content };
+    const template = input.templates?.[kind];
+    return { kind, title: artifactTitle(input.kindLabels[kind], input.jobTitle, input.company), content, ...(template ? { template } : {}) };
   });
   return { ok: true, body: { jobId: input.jobId, locale: input.locale, template: input.template, artifacts } };
 }

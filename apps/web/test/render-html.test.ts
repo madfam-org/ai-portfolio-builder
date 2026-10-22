@@ -125,8 +125,8 @@ test('user text is inert in every kind and every field; an empty document prints
   }
 });
 
-test('the registry: one base template per kind; an unknown template falls back to its own kind and is logged', () => {
-  assert.deepEqual(['cv', 'portfolio', 'presentation', 'cover_letter'].map((k) => templatesFor(k as 'cv')), [['base'], ['base'], ['base'], ['base']]);
+test('the registry: base first per kind (W4-T adds more); an unknown template falls back to its own kind and is logged', () => {
+  assert.deepEqual(['cv', 'portfolio', 'presentation', 'cover_letter'].map((k) => templatesFor(k as 'cv')[0]), ['base', 'base', 'base', 'base']);
   const warn = console.warn;
   const logged: string[] = [];
   console.warn = (m: string) => logged.push(m);

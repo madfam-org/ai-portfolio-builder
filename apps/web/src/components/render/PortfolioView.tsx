@@ -14,7 +14,7 @@ export function PortfolioView({ model }: { model: DocModel }) {
     <article className={`${s.doc} ${s.portfolio}`} lang={model.locale === 'en' ? 'en' : 'es-MX'} data-kind="portfolio">
       <header className={`${s.header} ${s.hero}`}>
         <h1 className={s.name}>{model.name ?? model.title}</h1>
-        {model.headline ? <p className={s.headline}>{model.headline}</p> : null}
+        {model.headline ? <p className={s.headline} data-part="headline">{model.headline}</p> : null}
         <Paragraphs text={model.intro} className={s.lead} />
       </header>
       {model.sections.map((section) => (
@@ -23,9 +23,9 @@ export function PortfolioView({ model }: { model: DocModel }) {
           {section.compact ? (
             <CompactList entries={section.entries} />
           ) : (
-            <ul className={s.cards}>
+            <ul className={s.cards} data-part="cards">
               {section.entries.map((e) => (
-                <li key={e.id} className={s.card}>
+                <li key={e.id} className={s.card} data-part="card">
                   <EntryView entry={e} />
                 </li>
               ))}

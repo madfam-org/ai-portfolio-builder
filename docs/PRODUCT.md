@@ -70,6 +70,31 @@ names it. The host is read from configuration, never hard-coded.
   to `indexable`, off by default). At most 20 different documents published per 24 hours (429 `publish_limit`, stated in
   the UI). A suspended document says so and cannot be shared. Publishing is off while the pages host is not configured.
 
+### Templates (W4-T)
+
+- **One registry** (`apps/web/src/lib/templates.ts`): kind → templates, with es/en labels, a one-line trade-off and,
+  for CVs and letters, the ATS note. It is the API's allowlist, the renderer table's key list (a unit test keeps them
+  equal) and the pickers' source. Ids are append-only: once stored, never removed or renamed.
+
+  | Kind | Templates |
+  |---|---|
+  | `cv` | `base` (one column, system fonts; «Pensado para sistemas ATS»), `compacto` (denser single column), `clasico` (serif typographic hierarchy, single column) |
+  | `portfolio` | `base` (cards), `lista` (one column, no cards) |
+  | `presentation` | `base` (light), `contraste` (dark slides on screen, black on white when printed) |
+  | `cover_letter` | `base`, `formal` (traditional letter, serif; adds no date or recipient) |
+
+- A template **restyles the same semantic markup** (`components/render/templates.module.css`), never restructures it:
+  every CV template is one column of real text under h1–h3, no layout tables, no images, no ligatures (so «fi» reaches
+  the PDF text layer as letters). There is deliberately no two-column or graphic CV.
+- **Allowlist:** a template outside its kind's list is a 400 `invalid_body` on `template` (create, PATCH against the
+  stored kind) or on `artifacts.N.template` (batch, where each document may name its own `template`; absent → the set's).
+  Rows stored before the allowlist keep rendering (fallback to `base`, logged) and stay editable without sending
+  `template`.
+- **Pickers:** one per chosen kind in `/empleos/:id/adaptar`; a radio group with each trade-off on `/documentos/:id`
+  (saving updates the artifact; a published one changes its public page at once, as the picker says).
+- **Print:** every template prints on Carta and A4 (e2e: every page's size, the name and every entry in the PDF text
+  layer of a multi-page CV) and the presentation on 13.333 × 7.5 in pages.
+
 ### Tailoring before AI: `GET /api/v1/jobs/:id/match`
 
 A deterministic, AI-free score of each profile item against a job posting (`keyword-overlap-v1`, in
@@ -102,7 +127,7 @@ covers. It calls no network and no model. Assisted writing through Selva arrives
 | `GET`, `POST /api/v1/jobs`; `GET`, `PATCH`, `DELETE /api/v1/jobs/:id` | jobs (deleting a job that still has artifacts is a 409) |
 | `GET /api/v1/jobs/:id/match` | the deterministic match |
 | `GET /api/v1/artifacts?job_id=&kind=`, `POST /api/v1/artifacts`; `GET`, `PATCH`, `DELETE /api/v1/artifacts/:id` | artifacts |
-| `POST /api/v1/artifacts/batch` `{jobId?, locale?, template?, artifacts: [{kind, title, content}] (1-4)}` | several artifacts for one job in ONE transaction: all or none |
+| `POST /api/v1/artifacts/batch` `{jobId?, locale?, template?, artifacts: [{kind, title, content, template?}] (1-4)}` (templates: the registry allowlist per kind) | several artifacts for one job in ONE transaction: all or none |
 | `POST /api/v1/artifacts/:id/publish` `{visibility:'link'}` or `{visibility:'public', slug, indexable?}`; `POST /api/v1/artifacts/:id/unpublish` | sharing (publishing: at most 20 per owner per 24 h, then 429 `publish_limit`) |
 | `GET /api/v1/public/a/:slug`, `GET /api/v1/public/s/:token` | public reads (no token) |
 | `POST /api/v1/profile/items/batch` `{items: [{kind, content, tags?}] (≤300), profile?: {displayName?, headline?, summary?, contact?}}` | W4-I import: every item validated per kind, appended after the existing ones, chosen header fields applied (contact links added by URL), ONE transaction: all or none |

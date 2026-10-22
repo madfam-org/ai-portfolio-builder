@@ -2,7 +2,6 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { AppFrame } from '@/components/app/AppFrame';
 import { appMetadata, pageLocaleAndId, type IdParams } from '@/components/app/page-helpers';
-import { templatesFor } from '@/components/render/ArtifactView';
 import { readContent } from '@/components/render/model';
 import { ButtonLink } from '@/components/ui/Button';
 import { PageHeader } from '@/components/ui/Layout';
@@ -67,7 +66,7 @@ export default async function Page({ params }: IdParams) {
                     </>
                   }
                 />
-                <DocumentSettings locale={locale} artifact={artifact} templates={templatesFor(artifact.kind)} />
+                <DocumentSettings locale={locale} artifact={artifact} />
                 <section className={css.panel} aria-labelledby="doc-content">
                   <h2 id="doc-content">{d.contentTitle}</h2>
                   <p>{d.contentSummary(content.items.length, content.blocks.length)}</p>

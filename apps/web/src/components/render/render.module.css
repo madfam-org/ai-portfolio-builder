@@ -12,6 +12,8 @@
   font-size: 1rem;
   line-height: 1.5;
   color: var(--ink);
+  /* W4-T: no ligatures, so «fi»/«fl» reach the PDF text layer as letters (ATS keyword match; serif fonts drop them). */
+  font-variant-ligatures: no-common-ligatures;
 }
 
 .doc h1,

@@ -97,6 +97,7 @@ Kubernetes Service publishes 80; every `enclii.yaml` domain pins `port: 80`. Fla
 | `apps/web/src/components/app/` | `AppFrame` (dormant / signed-out / signed-in states, nav, account switching), `UnderConstruction`, page param helpers |
 | `apps/web/src/components/render/`, `src/app/h/pages/` | the artifact renderers, one per kind (`model.ts` resolves the content against the owner's profile; `ArtifactView` is the (kind, template) registry), shared by the app's preview/print and the pages-host routes; `src/server/pages-gate.ts` lets the proxy 404 or set per-page headers before rendering |
 | `apps/web/src/components/import/`, `src/app/h/app/[locale]/ajustes/` | W4-I data portability: the in-browser LinkedIn-export ZIP / JSON Resume import (no dependency: `DecompressionStream`), and download / delete of everything the person holds (`server/db/data-rights.ts`, `server/api/portability.ts`) |
+| `apps/web/src/lib/templates.ts` | the template registry (kind → templates, es/en labels, trade-off, ATS note): the API allowlist, the renderer table's keys and the pickers' source; ids append-only |
 | `apps/web/e2e/`, `playwright.config.ts` | Playwright over the built standalone server: `e2e/support/serve.ts` (throwaway DB, local JWKS, test-only token/cookie mint), one spec per surface |
 | `apps/web/src/app/h/...` | internal routes (never public: no Host allowlist names them) |
 | `apps/web/test/` | unit tests (`node:test`, Node type stripping) |

@@ -233,7 +233,7 @@ export function createRepository(db: Db) {
      */
     async createArtifactSet(
       ownerSub: string,
-      input: { jobId: string | null; locale: string; template: string; artifacts: { kind: string; title: string; content: ArtifactContent }[] },
+      input: { jobId: string | null; locale: string; template: string; artifacts: { kind: string; title: string; content: ArtifactContent; template?: string }[] },
     ): Promise<Artifact[] | null> {
       if (input.artifacts.length < 1 || input.artifacts.length > ARTIFACT_SET_MAX) throw new Error('artifact set size out of range');
       return db.transaction(async (tx) => {
@@ -246,7 +246,7 @@ export function createRepository(db: Db) {
           await assertOwnItems(tx, ownerSub, a.content);
           const [row] = await tx
             .insert(artifacts)
-            .values({ ownerSub, jobId: input.jobId, kind: a.kind, title: a.title, locale: input.locale, template: input.template, content: a.content })
+            .values({ ownerSub, jobId: input.jobId, kind: a.kind, title: a.title, locale: input.locale, template: a.template ?? input.template, content: a.content })
             .returning();
           if (!row) throw new Error('artifact insert returned nothing');
           created.push(row);

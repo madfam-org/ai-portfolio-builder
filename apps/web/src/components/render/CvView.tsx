@@ -14,7 +14,7 @@ export function CvView({ model }: { model: DocModel }) {
     <article className={`${s.doc} ${s.cv}`} lang={model.locale === 'en' ? 'en' : 'es-MX'} data-kind="cv">
       <header className={s.header}>
         <h1 className={s.name}>{model.name ?? model.title}</h1>
-        {model.headline ? <p className={s.headline}>{model.headline}</p> : null}
+        {model.headline ? <p className={s.headline} data-part="headline">{model.headline}</p> : null}
         {model.contact ? <ContactLine contact={model.contact} /> : null}
       </header>
       {model.summary ? (

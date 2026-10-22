@@ -3,20 +3,23 @@
 import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/Button';
+import { TemplatePicker } from '@/components/render/TemplatePicker';
 import { SelectField, TextField } from '@/components/ui/Field';
 import { useToast } from '@/components/ui/Toast';
 import { api, apiErrorMessage } from '@/lib/client/api';
 import type { ArtifactDto, ArtifactPatchInput, ContentLocale } from '@/lib/client/types';
 import { APP_COPY } from '@/lib/copy/app';
 import { DOCUMENTS_COPY } from '@/lib/copy/render';
+import { appPath } from '@/lib/app-routes';
+import { TEMPLATE_PICKER_COPY } from '@/lib/copy/render';
 import type { Locale } from '@/lib/routing';
 
 /**
- * Title, language, template and status of one document. Only changed fields are sent: the API withdraws a published
+ * Title, language, template (W4-T: the registry's picker, with each template's trade-off) and status of one document. Only changed fields are sent: the API withdraws a published
  * artifact whenever a status is sent (server/db/repository.ts updateArtifact), so the status of a published document is
  * read-only here and changes through «Despublicar».
  */
-export function DocumentSettings({ locale, artifact, templates }: { locale: Locale; artifact: ArtifactDto; templates: string[] }) {
+export function DocumentSettings({ locale, artifact }: { locale: Locale; artifact: ArtifactDto }) {
   const a = APP_COPY[locale];
   const d = DOCUMENTS_COPY[locale];
   const toast = useToast();
@@ -28,7 +31,6 @@ export function DocumentSettings({ locale, artifact, templates }: { locale: Loca
   const [busy, setBusy] = useState(false);
   const [titleError, setTitleError] = useState<string | null>(null);
   const published = artifact.status === 'published';
-  const templateOptions = [...new Set([...templates, artifact.template])].map((t) => ({ value: t, label: d.templates[t] ?? t }));
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -70,7 +72,19 @@ export function DocumentSettings({ locale, artifact, templates }: { locale: Loca
         onChange={(e) => setDocLocale(e.target.value as ContentLocale)}
         options={(['es-MX', 'en'] as const).map((l) => ({ value: l, label: d.locales[l] }))}
       />
-      <SelectField id="doc-template" label={d.templateLabel} hint={d.templateHint} value={template} onChange={(e) => setTemplate(e.target.value)} options={templateOptions} />
+      <TemplatePicker
+        id="doc-template"
+        kind={artifact.kind}
+        locale={locale}
+        legend={d.templateLabel}
+        hint={published ? `${d.templateHint} ${TEMPLATE_PICKER_COPY[locale].publishedNote}` : d.templateHint}
+        value={template}
+        current={artifact.template}
+        onChange={setTemplate}
+      />
+      <p className="small">
+        <a href={appPath.artifactPreview(locale, artifact.id)}>{TEMPLATE_PICKER_COPY[locale].seePreview}</a>
+      </p>
       <SelectField
         id="doc-status"
         label={d.statusLabel}
