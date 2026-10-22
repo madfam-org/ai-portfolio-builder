@@ -111,7 +111,7 @@ spec:
               value: "false"
             # W2 data: the runtime role cv_app only (DML). The owner URL (DATABASE_URL) in the same onboarding
             # Secret is deliberately NOT given to the app; only the migrate Job reads it. Sign-in (AUTH_*) is
-            # wired separately once Vault secret/cv holds its values (docs/DEPLOYMENT.md).
+            # wired below; its secrets come from Vault secret/cv (docs/DEPLOYMENT.md).
             - name: APP_DATABASE_URL
               valueFrom:
                 secretKeyRef: { name: cv-secrets, key: APP_DATABASE_URL }
@@ -120,6 +120,19 @@ spec:
             # The internal metrics listener (the default, stated so the port above and this value move together).
             - name: CV_METRICS_PORT
               value: "9090"
+            # W2 identity (plain values; docs/DEPLOYMENT.md "Env contract"). Sign-in answers on cv-app only.
+            - name: AUTH_JANUA_ISSUER
+              value: https://auth.madfam.io
+            - name: AUTH_PUBLIC_HOSTS
+              value: cv-app.madfam.io
+            - name: CV_JANUA_AUDIENCE
+              value: cv-api
+            - name: CV_JANUA_JWKS_URL
+              value: https://auth.madfam.io/.well-known/jwks.json
+          # AUTH_SECRET, AUTH_JANUA_CLIENT_ID, AUTH_JANUA_CLIENT_SECRET (ExternalSecret cv-web-auth, Vault secret/cv).
+          envFrom:
+            - secretRef:
+                name: cv-web-auth
           volumeMounts:
             - name: tmp
               mountPath: /tmp
