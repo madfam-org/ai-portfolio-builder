@@ -29,6 +29,7 @@ export interface BenchmarkCopy {
   stateFromField: string;
   stateFromLocation: string;
   noState: string;
+  abroad: string;
   median: string;
   middle: string;
   wide: string;
@@ -81,6 +82,7 @@ export const BENCHMARK_COPY: Record<Locale, BenchmarkCopy> = {
     stateFromField: 'Estado de la vacante: {state}.',
     stateFromLocation: 'Estado leído de la ubicación «{location}»: {state}.',
     noState: 'La vacante no indica un estado: se muestra el dato nacional.',
+    abroad: 'La vacante es fuera de México ({country}); los datos son de México y sólo sirven de referencia.',
     median: 'Mediana (P50)',
     middle: 'La mitad central (P25 a P75)',
     wide: 'Del P10 al P90',
@@ -142,6 +144,7 @@ export const BENCHMARK_COPY: Record<Locale, BenchmarkCopy> = {
     stateFromField: 'Job state: {state}.',
     stateFromLocation: 'State read from the location «{location}»: {state}.',
     noState: 'The job names no state: national figures are shown.',
+    abroad: 'The job is outside Mexico ({country}); the figures are Mexican and only a reference.',
     median: 'Median (P50)',
     middle: 'Middle half (P25 to P75)',
     wide: 'P10 to P90',

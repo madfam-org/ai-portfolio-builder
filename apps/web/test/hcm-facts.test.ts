@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { SALARY_FIELDS, STATE_FIELDS, jobFacts, normalizeStateCode, sanitizeTitle, stateFromLocation } from '../src/server/hcm/facts.ts';
+import { COUNTRY_FIELD, SALARY_FIELDS, STATE_FIELDS, jobFacts, normalizeStateCode, sanitizeTitle, stateFromLocation } from '../src/server/hcm/facts.ts';
 
 test('state codes: ISO, three-letter and INEGI keys normalise to ISO 3166-2:MX', () => {
   assert.equal(normalizeStateCode('MX-CMX'), 'MX-CMX');
@@ -43,8 +43,16 @@ test('salary: monthly MXN is comparable (midpoint of a range); anything else is 
   assert.equal(jobFacts({ title: 'x', salaryMin: -5, salaryPeriod: 'month' }).salary, null);
 });
 
-test('the field names read from a job row are pinned (align with W5-J when its migration lands)', () => {
-  assert.deepEqual([...STATE_FIELDS], ['stateCode', 'mxStateCode', 'state']);
+test('a job outside Mexico sends no state (national Mexican figure) and says which country', () => {
+  const abroad = jobFacts({ title: 'Dev', location: 'Jalisco', countryCode: 'US', stateCode: 'US-TX' });
+  assert.deepEqual([abroad.country, abroad.state, abroad.stateSource], ['US', null, null]);
+  const mx = jobFacts({ title: 'Dev', countryCode: 'MX', stateCode: 'MX-JAL' });
+  assert.deepEqual([mx.country, mx.state, mx.stateSource], ['MX', 'MX-JAL', 'job_field']);
+});
+
+test('the field names read from a job row are W5-J\'s (migration 0002), pinned', () => {
+  assert.equal(COUNTRY_FIELD, 'countryCode');
+  assert.deepEqual([...STATE_FIELDS], ['stateCode']);
   assert.deepEqual(SALARY_FIELDS, { min: 'salaryMin', max: 'salaryMax', currency: 'salaryCurrency', period: 'salaryPeriod' });
 });
 

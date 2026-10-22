@@ -2,11 +2,12 @@
  * What the benchmark needs from a saved job, and nothing else: the title, the Mexican state (ISO 3166-2:MX) and the
  * posting's stated salary. Pure and deterministic.
  *
- * STRUCTURED FIELDS FIRST. Lane W5-J adds structured job fields (state code, salary when stated). Until they exist,
- * the state comes from the free-text location when it names a state unambiguously (`Ciudad de México`, `CDMX`,
- * `Monterrey, Nuevo León`), and the salary is absent. `stateSource` says which one was used, so the page can say so.
- * Field names read from the row are the ones listed in STATE_FIELDS / SALARY_FIELDS; align them with W5-J's
- * migration when it lands (test/hcm-facts.test.ts pins them).
+ * STRUCTURED FIELDS FIRST. Lane W5-J (migration 0002) types the job: `countryCode` (ISO 3166-1), `stateCode`
+ * (ISO 3166-2, only when unambiguous) and a STATED salary (`salaryMin`/`salaryMax` in `salaryCurrency` per
+ * `salaryPeriod`: hour, day, week, month or year). Rows from before W5-J have none of them: the state then comes from
+ * the free-text location when it names one state unambiguously (`Ciudad de México`, `Monterrey, Nuevo León`).
+ * `stateSource` says which one was used, so the page can say so. A job outside Mexico gets the national Mexican
+ * figure and the page says so. test/hcm-facts.test.ts pins the field names.
  */
 
 /** ISO 3166-2:MX code -> INEGI entidad key, as Symbiosis HCM checks it against INEGI's own catalog. */
@@ -45,7 +46,8 @@ export const MX_STATES: Readonly<Record<string, { inegi: string; names: readonly
   'MX-ZAC': { inegi: '32', names: ['zacatecas'] },
 };
 
-export const STATE_FIELDS = ['stateCode', 'mxStateCode', 'state'] as const;
+export const STATE_FIELDS = ['stateCode'] as const;
+export const COUNTRY_FIELD = 'countryCode';
 export const SALARY_FIELDS = { min: 'salaryMin', max: 'salaryMax', currency: 'salaryCurrency', period: 'salaryPeriod' } as const;
 const MONTHLY = new Set(['month', 'monthly', 'mensual', 'mes']);
 const TITLE_MAX = 120;
@@ -59,6 +61,8 @@ export interface StatedSalary {
 
 export interface JobFacts {
   title: string;
+  /** ISO 3166-1 country the job states (W5-J), or null when it states none. */
+  country: string | null;
   state: string | null;
   stateSource: 'job_field' | 'location_text' | null;
   salary: StatedSalary | null;
@@ -143,7 +147,10 @@ export function sanitizeTitle(title: string): string {
 export function jobFacts(row: { title: string; location?: string | null } & Record<string, unknown>): JobFacts {
   let state: string | null = null;
   let stateSource: JobFacts['stateSource'] = null;
-  for (const field of STATE_FIELDS) {
+  const rawCountry = row[COUNTRY_FIELD];
+  const country = typeof rawCountry === 'string' && /^[A-Za-z]{2}$/.test(rawCountry) ? rawCountry.toUpperCase() : null;
+  const abroad = country !== null && country !== 'MX';
+  for (const field of abroad ? [] : STATE_FIELDS) {
     const iso = normalizeStateCode(row[field]);
     if (iso) {
       state = iso;
@@ -151,7 +158,7 @@ export function jobFacts(row: { title: string; location?: string | null } & Reco
       break;
     }
   }
-  if (!state && typeof row.location === 'string') {
+  if (!state && !abroad && typeof row.location === 'string') {
     state = stateFromLocation(row.location);
     stateSource = state ? 'location_text' : null;
   }
@@ -161,5 +168,5 @@ export function jobFacts(row: { title: string; location?: string | null } & Reco
     const values = [salary.min, salary.max].filter((v): v is number => v !== null);
     comparableMonthlyMxn = Math.round(values.reduce((a, b) => a + b, 0) / values.length);
   }
-  return { title: sanitizeTitle(row.title), state, stateSource, salary, comparableMonthlyMxn };
+  return { title: sanitizeTitle(row.title), country, state, stateSource, salary, comparableMonthlyMxn };
 }

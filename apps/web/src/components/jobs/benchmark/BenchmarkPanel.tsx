@@ -106,7 +106,8 @@ function Result({ locale, data, location }: { locale: Locale; data: BenchmarkDto
       <p className="small" data-testid="benchmark-geography">
         {data.query.stateSource === 'job_field' ? fmt(t.stateFromField, { state: requested }) : null}
         {data.query.stateSource === 'location_text' ? fmt(t.stateFromLocation, { state: requested, location }) : null}
-        {data.query.stateSource === null ? t.noState : null}{' '}
+        {data.query.stateSource === null && data.query.country && data.query.country !== 'MX' ? fmt(t.abroad, { country: data.query.country }) : null}
+        {data.query.stateSource === null && !(data.query.country && data.query.country !== 'MX') ? t.noState : null}{' '}
         {geo.fallback_reason === 'state_cell_below_minimum_n'
           ? fmt(t.fallback, { state: requested, n: geo.requested_state_n ?? 0, min: data.methodology.minimum_n })
           : null}

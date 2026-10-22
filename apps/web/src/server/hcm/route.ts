@@ -20,7 +20,7 @@ export type SalaryPosition = 'below_p10' | 'p10_p25' | 'p25_p50' | 'p50_p75' | '
 export interface BenchmarkView {
   jobId: string;
   status: HcmBenchmark['status'];
-  query: { title: string; state: string | null; stateSource: 'job_field' | 'location_text' | null };
+  query: { title: string; country: string | null; state: string | null; stateSource: 'job_field' | 'location_text' | null };
   occupation: HcmBenchmark['occupation'];
   candidates: NonNullable<HcmBenchmark['candidates']>;
   geography: HcmBenchmark['geography'];
@@ -61,7 +61,7 @@ export async function jobBenchmark(repo: Repository, sub: string, jobId: string,
   const view: BenchmarkView = {
     jobId: job.id,
     status: b.status,
-    query: { title: facts.title, state: facts.state, stateSource: facts.stateSource },
+    query: { title: facts.title, country: facts.country, state: facts.state, stateSource: facts.stateSource },
     occupation: b.occupation,
     candidates: b.candidates ?? [],
     geography: b.geography,

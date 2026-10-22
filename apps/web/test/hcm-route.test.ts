@@ -43,7 +43,7 @@ test('state from the location, HCM figures passed through, no salary to compare'
   const { status, body } = await read(await jobBenchmark(repo(job()), 'janua|a', ID, {}, port));
   assert.equal(status, 200);
   assert.equal(body.status, 'ok');
-  assert.deepEqual(body.query, { title: 'Desarrolladora backend', state: 'MX-CMX', stateSource: 'location_text' });
+  assert.deepEqual(body.query, { title: 'Desarrolladora backend', country: null, state: 'MX-CMX', stateSource: 'location_text' });
   assert.equal(body.income.percentiles.p50, 14_950);
   assert.equal(body.geography.scope, 'state');
   assert.deepEqual(body.posting, { salary: null, comparableMonthlyMxn: null, position: null });
