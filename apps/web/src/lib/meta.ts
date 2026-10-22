@@ -55,7 +55,10 @@ export async function readiness(load: () => Config, deps: ReadinessDeps = { env:
       database = 'ok';
     } catch (err) {
       ok = false;
-      database = `unavailable: ${err instanceof Error ? err.message.slice(0, 200) : 'error'}`;
+      // /ready answers on ANY Host, publicly: the driver's message (internal host names, role names) goes to the log
+      // only (W4-S); the body says which dependency failed, never why.
+      database = 'unavailable';
+      console.error(`cv ready: database ping failed: ${err instanceof Error ? err.message.slice(0, 200) : 'error'}`);
     }
   }
   const dependencies = deps.pingDatabase ? ['postgres'] : [];

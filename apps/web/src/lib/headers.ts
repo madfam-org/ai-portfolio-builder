@@ -56,6 +56,9 @@ export const BASELINE_HEADERS: Readonly<Record<string, string>> = {
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()',
   'Cross-Origin-Opener-Policy': 'same-origin',
+  // No other origin may load a cv response as a subresource (img/script/style no-cors loads; e.g. a page pulling
+  // cv-api JSON or another host's build assets). Each host loads only its own /_next assets; navigations are unaffected.
+  'Cross-Origin-Resource-Policy': 'same-origin',
   // Every *.madfam.io host is HTTPS at the edge (R73); browsers ignore this header over plain HTTP.
   'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
 };

@@ -18,11 +18,14 @@ import {
   createRepository,
   getLinkArtifactByToken,
   getPublicArtifactBySlug,
+  ownerRowCount,
+  type OwnedTable,
   type Repository,
 } from '../db/repository.ts';
 import { ARTIFACT_KINDS } from '../db/schema.ts';
 import { authFailureResponse, authenticate } from '../janua.ts';
 import { UUID, matchRoute } from '../../lib/api-routes.ts';
+import { MAX_BODY_BYTES, OWNER_QUOTAS, type OwnerQuotas } from './limits.ts';
 import { matchItems } from './match.ts';
 import {
   ARTIFACT_CONTENT,
@@ -45,9 +48,12 @@ type Env = Readonly<Record<string, string | undefined>>;
 export interface ApiDeps {
   env: Env;
   getDb: () => DbHandle | null;
+  /** Per-owner row ceilings (limits.ts OWNER_QUOTAS); tests lower them. */
+  quotas?: Partial<OwnerQuotas>;
 }
 
-const MAX_BODY_BYTES = 256 * 1024;
+/** Throws 429 `quota_exceeded` when creating `adding` more rows would take the owner past the table's ceiling. */
+type QuotaCheck = (table: OwnedTable, adding: number) => Promise<void>;
 
 export function json(status: number, body: unknown, extra: Record<string, string> = {}): Response {
   return new Response(status === 204 ? null : JSON.stringify(body), {
@@ -137,7 +143,12 @@ export async function handleApi(request: Request, segments: readonly string[], d
 
   try {
     const nameHint = typeof auth.claims.name === 'string' ? auth.claims.name.slice(0, 200) : undefined;
-    return await dispatch(createRepository(handle!.db), auth.sub, nameHint, route.name, route.ids, method, request);
+    const quotas = { ...OWNER_QUOTAS, ...deps.quotas };
+    const quota: QuotaCheck = async (table, adding) => {
+      const limit = quotas[table];
+      if ((await ownerRowCount(handle!.db, auth.sub, table)) + adding > limit) throw new HttpError(429, { error: 'quota_exceeded', resource: table, limit });
+    };
+    return await dispatch(createRepository(handle!.db), quota, auth.sub, nameHint, route.name, route.ids, method, request);
   } catch (err) {
     if (err instanceof HttpError) return json(err.status, err.body);
     if (err instanceof ForeignItemsError) return json(422, { error: 'unknown_item_ids', itemIds: err.ids });
@@ -154,7 +165,7 @@ function artifactContent(kind: string, value: unknown): ArtifactContent {
   return parse(schema, value);
 }
 
-async function dispatch(repo: Repository, sub: string, nameHint: string | undefined, name: string, ids: string[], method: string, request: Request): Promise<Response> {
+async function dispatch(repo: Repository, quota: QuotaCheck, sub: string, nameHint: string | undefined, name: string, ids: string[], method: string, request: Request): Promise<Response> {
   const [id = ''] = ids;
   const url = new URL(request.url);
   switch (name) {
@@ -170,6 +181,7 @@ async function dispatch(repo: Repository, sub: string, nameHint: string | undefi
       if (method === 'GET') return json(200, { items: (await repo.listItems(sub)).map(view) });
       const body = parse(itemCreateBody, await readJson(request));
       const content = parse(ITEM_CONTENT[body.kind], body.content);
+      await quota('items', 1);
       return json(201, { item: view(await repo.createItem(sub, { ...body, content }, nameHint)) });
     }
     case 'items-reorder': {
@@ -189,6 +201,7 @@ async function dispatch(repo: Repository, sub: string, nameHint: string | undefi
     case 'jobs': {
       if (method === 'GET') return json(200, { jobs: (await repo.listJobs(sub)).map(view) });
       const body = parse(jobCreateBody, await readJson(request));
+      await quota('jobs', 1);
       return json(201, { job: view(await repo.createJob(sub, body)) });
     }
     case 'job': {
@@ -214,13 +227,16 @@ async function dispatch(repo: Repository, sub: string, nameHint: string | undefi
         return json(200, { artifacts: (await repo.listArtifacts(sub, { jobId, kind })).map(view) });
       }
       const body = parse(artifactCreateBody, await readJson(request));
-      const row = await repo.createArtifact(sub, { ...body, content: artifactContent(body.kind, body.content) });
+      const content = artifactContent(body.kind, body.content);
+      await quota('artifacts', 1);
+      const row = await repo.createArtifact(sub, { ...body, content });
       // A job id that is absent or another person's: the same 404 as any other foreign id.
       return row ? json(201, { artifact: view(row) }) : notFound();
     }
     case 'artifacts-batch': {
       const body = parse(artifactSetBody, await readJson(request));
       const items = body.artifacts.map((a) => ({ kind: a.kind, title: a.title, content: artifactContent(a.kind, a.content) }));
+      await quota('artifacts', items.length);
       const rows = await repo.createArtifactSet(sub, { jobId: body.jobId, locale: body.locale, template: body.template, artifacts: items });
       return rows ? json(201, { artifacts: rows.map(view) }) : notFound();
     }

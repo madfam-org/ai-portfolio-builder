@@ -93,6 +93,11 @@ covers. It calls no network and no model. Assisted writing through Selva arrives
 | `POST /api/v1/artifacts/:id/publish` `{visibility:'link'}` or `{visibility:'public', slug, indexable?}`; `POST /api/v1/artifacts/:id/unpublish` | sharing (publishing: at most 20 per owner per 24 h, then 429 `publish_limit`) |
 | `GET /api/v1/public/a/:slug`, `GET /api/v1/public/s/:token` | public reads (no token) |
 
+Abuse ceilings (`apps/web/src/server/api/limits.ts`; not product tiers, the owner may tune them): a request body is at
+most 256 KiB (413 `body_too_large`; the server never buffers more than 512 KiB of any body, `next.config.ts`), and one
+person holds at most 500 profile items, 500 jobs and 1 000 artifacts (creating past a ceiling is 429
+`quota_exceeded` with `resource` and `limit`; nothing is stored).
+
 Bodies are validated with zod and strict: an unknown field is a 400, so `owner_sub`, ids, status, tokens and
 timestamps can never be set from a body. The app (`cv-app.madfam.io`) reaches the same handlers through its
 same-origin proxy `/api/v1/*`, which adds the signed-in person's access token on the server.
