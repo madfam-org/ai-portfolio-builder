@@ -49,6 +49,7 @@ COOP.
 | `CV_INDEXABLE` | `false` | the one indexing flag; only `true` lifts noindex on the landing (never on user pages) |
 | `CV_REVISION` | set by the image build arg | the commit reported by `/health` and `/api/v1/meta` |
 | `HOSTNAME` | `0.0.0.0` | bind address; also keeps the proxy's rewrites internal (a loopback name would not) |
+| `CV_METRICS_PORT` | `9090` | the internal metrics listener (`GET /metrics` only, on `HOSTNAME`); `off` disables it (tests only); a value that is not a port, or equals `PORT`, stops the server at boot |
 
 ## Identity and data (W2): dormant until configured
 
@@ -135,6 +136,31 @@ Ingress: the app port from the Cloudflare tunnel only. Egress: DNS; TCP 443 to p
 `allow-https-egress` shape; Janua discovery, JWKS, token and logout); PgBouncer `app: pgbouncer` in namespace
 `data` on 6432 (the rule Enclii's generator renders for `egress: [pgbouncer]`). Keep `enclii.yaml` `network` and
 `network-policy.yaml` in step: `enclii onboard ensure` renders policies from `enclii.yaml`.
+
+The metrics port (9090) is admitted from the `monitoring` namespace only (`allow-monitoring-ingress`, repo-managed:
+Enclii's generator has no monitoring ingress type, and `ensure` never prunes a policy it did not render). It is on no
+Service and no tunnel route, so no public host can reach it.
+
+## Observability (W4)
+
+One process, two listeners: the app on 3000 (every public host, through Service `cv`:80) and `/metrics` on 9090
+(pod IP only; scraped through the pod's `prometheus.io/*` annotations). On the app port `/metrics` is the router's
+404 on every host (`apps/web/test-server/metrics.test.ts`, `apps/web/e2e/metrics.spec.ts` and the Image smoke prove it).
+
+| Series | Labels | Meaning |
+|---|---|---|
+| `cv_http_requests_total` | `host_role` (landing, app, api, pages, none), `route`, `method`, `status` | every response the server wrote |
+| `cv_http_request_duration_seconds` | `host_role`, `route`, `method` | histogram, 5 ms to 10 s |
+| `cv_ready` | none | 1 when this pod's last `/ready` answered 200 (0 until the first probe) |
+| `cv_db_readiness_checks_total` | `outcome` (ok, error, not_configured) | the readiness `select 1` |
+| `cv_metrics_dropped_samples_total` | `family` | samples refused at the 2000-series cap; non-zero means a label escaped its template |
+| `process_*`, `nodejs_*` | — | CPU, memory, file descriptors, heap, event-loop delay |
+
+`route` is a template from the route tables (`/empleos/:id/adaptar`, `/api/v1/public/s/:token`, `/:slug`,
+`unmatched`), never a raw path, id, slug, share token or query (`apps/web/src/server/metrics-route.ts`). Request
+logs are one JSON line per response on stdout with `ts`, `level`, `event`, `host_role`, `route`, `method`, `status`
+and `duration_ms` only: no path, query, header, cookie, token, client address or owner `sub`. Successful probes and
+build assets are counted, not logged. Alert rules and the dashboard live in MADFAM's private ops repository.
 
 ## First deploy (owner / coordinator steps)
 

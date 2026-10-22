@@ -1,7 +1,9 @@
 # Default-deny for every pod in the cv namespace, then explicit allows (mirrors enclii.yaml `network`, which
 # `enclii onboard ensure` renders; keep the two in step or ensure rewrites these policies).
 #
-# Ingress: the app (3000) from the Cloudflare tunnel ONLY.
+# Ingress: the app (3000) from the Cloudflare tunnel ONLY; the metrics listener (9090) from the `monitoring` namespace
+# ONLY (the platform's scrapers read pod IPs from there). The tunnel never reaches 9090: the tunnel policy names 3000
+# alone, and Service `cv` publishes the app port alone.
 # Egress (W2, declared BEFORE any `enclii onboard ensure`, the 2026-10-21 MAP outage lesson):
 #   - DNS;
 #   - TCP 443 to public addresses only (Janua: discovery, JWKS, token and logout endpoints), fulcra's
@@ -107,3 +109,26 @@ spec:
       ports:
         - protocol: TCP
           port: 6432
+---
+# The scrapers, to the metrics port ONLY (W4-O). One bare namespaceSelector per peer, the shape the platform's other
+# app namespaces use for their metrics ports (a peer combining a namespaceSelector and a podSelector has rendered as
+# deny-all on this cluster). Enclii's netpol generator has no monitoring ingress type, so this policy is repo-managed
+# only; `enclii onboard ensure` adds its own policies and never prunes this one (NetworkPolicies are additive).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-monitoring-ingress
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: cv
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - protocol: TCP
+          port: 9090

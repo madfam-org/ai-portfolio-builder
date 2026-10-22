@@ -1,6 +1,7 @@
 # Named after the Enclii service (enclii.yaml `cv`) on port 80: the tunnel routes for cv.madfam.io,
 # cv-app.madfam.io and cv-api.madfam.io all point at this Service on port 80 (enclii.yaml pins each domain's
-# port to 80); the pod tells the hosts apart by the Host header.
+# port to 80); the pod tells the hosts apart by the Host header. The pod's metrics port (9090) is deliberately NOT
+# published here: Prometheus scrapes the pod IP directly (deployment.yaml annotations), so no route can name it.
 apiVersion: v1
 kind: Service
 metadata:

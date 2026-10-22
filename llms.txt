@@ -39,6 +39,7 @@ repo-boundary contract (docs/REPO_BOUNDARY.md).
 - `apps/web/`: @cv/web, Next.js 16 App Router; `src/proxy.ts` routes by Host; `src/lib/` holds the pure routing, header, robots and config logic
 - `Dockerfile`, `infra/k8s/production/`, `enclii.yaml`, `.github/workflows/build-deploy.yml`: the one image, its kustomize base, the Enclii manifest, the dispatch-only build caller
 - `apps/web/src/server/`: Janua token verification, the Drizzle schema and owner-scoped repository, the API handler
+- `apps/web/src/server/metrics*.ts`: observability; `/metrics` on the internal port 9090 only (never a public host), route-template labels, JSON request logs without PII
 - `apps/web/drizzle/`: committed SQL migrations; `apps/web/test-pg/`: the real-Postgres cross-owner suite
 - `janua.client.yaml`: Janua registrations (names only)
 - `apps/web/src/components/ui/`, `src/components/app/`, `src/lib/client/`, `src/lib/copy/`: UI primitives, the app frame, the typed data layer, per-surface copy

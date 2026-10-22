@@ -105,6 +105,25 @@ jobs:
           check unknown.example /robots.txt 404
           echo "smoke: checks=25 problems=$problems $([ "$problems" = 0 ] && echo OK || echo FAIL)"
           [ "$problems" = 0 ]
+      - name: Metrics listener (internal port 9090 only; never on the app port)
+        # The container publishes 3000 alone (as Service `cv` does); 9090 is read from inside it with busybox wget.
+        run: |
+          set -euo pipefail
+          problems=0
+          docker exec cv wget -qO- http://127.0.0.1:9090/metrics > "$RUNNER_TEMP/metrics.txt"
+          for family in cv_http_requests_total cv_http_request_duration_seconds cv_ready cv_db_readiness_checks_total process_resident_memory_bytes; do
+            grep -q "^# TYPE $family " "$RUNNER_TEMP/metrics.txt" || { echo "metrics: FAIL no $family"; problems=$((problems+1)); }
+          done
+          grep -q '^cv_ready 1$' "$RUNNER_TEMP/metrics.txt" || { echo "metrics: FAIL cv_ready is not 1 after the /ready probes"; problems=$((problems+1)); }
+          for host in cv.madfam.io cv-app.madfam.io cv-api.madfam.io 10.0.0.1; do
+            code=$(curl -sS -o "$RUNNER_TEMP/m.b" -w '%{http_code}' -H "Host: $host" http://127.0.0.1:3000/metrics)
+            echo "GET $host/metrics on :3000 -> $code"
+            if [ "$code" != 404 ] || grep -q '# TYPE' "$RUNNER_TEMP/m.b"; then echo "metrics: FAIL $host/metrics is reachable on the app port"; problems=$((problems+1)); fi
+          done
+          docker port cv > "$RUNNER_TEMP/ports.txt"
+          if grep -q 9090 "$RUNNER_TEMP/ports.txt"; then echo "metrics: FAIL 9090 is published"; problems=$((problems+1)); fi
+          echo "metrics: checks=11 problems=$problems $([ "$problems" = 0 ] && echo OK || echo FAIL)"
+          [ "$problems" = 0 ]
       - name: Container log
         if: always()
         # The default shell has no pipefail, so a missing container (a failed build) only prints the error.
