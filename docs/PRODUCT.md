@@ -39,8 +39,21 @@ An artifact is private until its owner publishes it:
 - **Moderation**: an operator can suspend an artifact (`suspended_at`, `suspended_reason`); a suspended artifact is
   never served publicly and its owner cannot publish it again (docs/DEPLOYMENT.md "Moderation").
 
-The public reads are plain JSON in W2. Public pages will be rendered later, probably on a separate flat host
-(W3 proposes one; the label is the owner's call), so no public-page host is hard-coded anywhere.
+The public reads are plain JSON on cv-api. The rendered pages live on a separate flat host for user content (W3-1;
+working label `cv-p.madfam.io`, the label is the owner's call): `/<slug>` and `/l/<token>`, inert until `CV_HOST_PAGES`
+names it. The host is read from configuration, never hard-coded.
+
+### The app (cv-app.madfam.io), declared in W3-1
+
+| Path (en under `/en`) | Page | Built in |
+|---|---|---|
+| `/` | home: the three parts of the journey | W3-1 |
+| `/perfil` | the core profile and its items | W3-2 |
+| `/empleos`, `/empleos/:id` | jobs pipeline, one job | W3-3 |
+| `/empleos/:id/adaptar` | tailoring workspace: keyword match (no AI), selection, overrides, «Crear CV, portafolio y presentación» | W3-3 |
+| `/documentos`, `/documentos/:id` | artifacts, the editor and the publish dialog | W3-4 |
+| `/documentos/:id/vista-previa`, `/documentos/:id/imprimir` | preview (same renderer as the pages host), print view | W3-4 |
+| `/ajustes` | account and data settings | later |
 
 ### Tailoring before AI: `GET /api/v1/jobs/:id/match`
 
@@ -57,10 +70,12 @@ covers. It calls no network and no model. Assisted writing through Selva arrives
 | `GET /api/v1/me` | `{sub}` |
 | `GET`, `PUT /api/v1/profile` | the profile and its items; full replace of the editable fields |
 | `GET`, `POST /api/v1/profile/items`; `GET`, `PATCH`, `DELETE /api/v1/profile/items/:id` | profile items |
+| `POST /api/v1/profile/items/reorder` `{itemIds}` | «Subir» / «Bajar»: positions 0..n-1 in one transaction; any foreign id refuses all (422) |
 | `GET`, `POST /api/v1/jobs`; `GET`, `PATCH`, `DELETE /api/v1/jobs/:id` | jobs (deleting a job that still has artifacts is a 409) |
 | `GET /api/v1/jobs/:id/match` | the deterministic match |
 | `GET /api/v1/artifacts?job_id=&kind=`, `POST /api/v1/artifacts`; `GET`, `PATCH`, `DELETE /api/v1/artifacts/:id` | artifacts |
-| `POST /api/v1/artifacts/:id/publish` `{visibility:'link'}` or `{visibility:'public', slug, indexable?}`; `POST /api/v1/artifacts/:id/unpublish` | sharing |
+| `POST /api/v1/artifacts/batch` `{jobId?, locale?, template?, artifacts: [{kind, title, content}] (1-4)}` | several artifacts for one job in ONE transaction: all or none |
+| `POST /api/v1/artifacts/:id/publish` `{visibility:'link'}` or `{visibility:'public', slug, indexable?}`; `POST /api/v1/artifacts/:id/unpublish` | sharing (publishing: at most 20 per owner per 24 h, then 429 `publish_limit`) |
 | `GET /api/v1/public/a/:slug`, `GET /api/v1/public/s/:token` | public reads (no token) |
 
 Bodies are validated with zod and strict: an unknown field is a 400, so `owner_sub`, ids, status, tokens and

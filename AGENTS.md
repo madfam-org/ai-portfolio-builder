@@ -38,6 +38,12 @@ routed by the `Host` header:
 | `cv.madfam.io` | landing (es-MX at `/`, en at `/en`) | `noindex` until the brand is ruled (`CV_INDEXABLE`); robots allow AI crawlers (R40) |
 | `cv-app.madfam.io` | app: shell, Janua sign-in (Auth.js, dormant until configured), the same-origin `/api/v1/*` proxy | never; robots disallow all |
 | `cv-api.madfam.io` | API: `/api/v1/meta` and the owner-scoped API ([`docs/PRODUCT.md`](docs/PRODUCT.md)) | never; robots disallow all |
+| **pages host, label pending** (working label `cv-p.madfam.io`, env `CV_HOST_PAGES`) | user pages: `/<slug>` (public artifact), `/l/<token>` (link-shared) | per page: public only when its owner chose `indexable`; otherwise `noindex, nofollow, noai, noimageai`; `/l/*` always noindex, `no-store`, `no-referrer` |
+
+The pages host is **inert until `CV_HOST_PAGES` is set**: the row exists in the host table (W3-1), but the owner
+has not named the label, so no request is routed to it and `enclii.yaml` / DNS do not carry it yet (coordinator:
+domain, tunnel, domain-map row, decision addendum, gate `cv.pages-live`). Its own strict CSP (`default-src 'none'`,
+`form-action 'none'`, `base-uri 'none'`), no cookies read or set, an abuse link to `legal@madfam.io` on every page.
 
 `/health` (liveness) and `/ready` (readiness) answer 200 JSON on **any** Host, before host routing
 (kubelet probes use the pod IP). Unknown hosts get a plain 404. The container listens on 3000; the
@@ -83,7 +89,14 @@ Kubernetes Service publishes 80; every `enclii.yaml` domain pins `port: 80`. Fla
 | `apps/web/src/lib/config.ts` | the host table and strict env validation (`CV_HOST_*`, `CV_INDEXABLE`, `CV_REVISION`) |
 | `apps/web/src/lib/routing.ts` | pure routing: probes on any Host, exact host match, per-role path allowlists rewritten to internal `/h/...` routes |
 | `apps/web/src/lib/headers.ts` | nonce CSP, security headers, `X-Robots-Tag` |
-| `apps/web/src/lib/robots.ts`, `meta.ts`, `copy.ts`, `brand.ts` | robots/sitemap, probe and meta bodies, es/en copy, the working label |
+| `apps/web/src/lib/robots.ts`, `meta.ts`, `brand.ts` | robots/sitemap, probe and meta bodies, the working label |
+| `apps/web/src/lib/copy/` | es-MX (source) and en strings per surface: `landing.ts`, `app.ts` (shared app strings and kind labels), `pages.ts`; one file per follow-on PR: `profile.ts`, `jobs.ts`, `render.ts` |
+| `apps/web/src/lib/app-routes.ts` | every app page of the core journey, declared once (typed builders `appPath.*`, matcher, nav) |
+| `apps/web/src/lib/client/` | the cv-app data layer: typed `fetch` to the same-origin `/api/v1/*` proxy, results not exceptions, dormant-aware (`not_configured`) |
+| `apps/web/src/components/ui/` | app-owned UI primitives (R1): Button, fields, Notice/EmptyState/ErrorState/Badge, layout, nav, Toast, ConfirmDialog (native `<dialog>`), icons; CSS Modules, never a `style` prop |
+| `apps/web/src/components/app/` | `AppFrame` (dormant / signed-out / signed-in states, nav, account switching), `UnderConstruction`, page param helpers |
+| `apps/web/src/components/render/`, `src/app/h/pages/` | the artifact renderer (minimal in W3-1) and the pages-host routes; `src/server/pages-gate.ts` lets the proxy 404 or set per-page headers before rendering |
+| `apps/web/e2e/`, `playwright.config.ts` | Playwright over the built standalone server: `e2e/support/serve.ts` (throwaway DB, local JWKS, test-only token/cookie mint), one spec per surface |
 | `apps/web/src/app/h/...` | internal routes (never public: no Host allowlist names them) |
 | `apps/web/test/` | unit tests (`node:test`, Node type stripping) |
 | `apps/web/test-server/` | smoke test over the built standalone server, per Host |
@@ -110,6 +123,7 @@ pnpm db:generate                # SQL migrations from apps/web/src/server/db/sch
 pnpm db:migrate                 # apply them to DIRECT_DATABASE_URL ?? DATABASE_URL (the owner role)
 pnpm build                      # Next.js standalone build
 pnpm test:server                # boots the standalone server, checks every host
+pnpm test:e2e                   # Playwright (Chromium) over the built server: CV_TEST_OWNER_URL + CV_TEST_APP_URL as test:pg
 python3 scripts/qa/check_file_size.py
 ```
 
@@ -122,7 +136,9 @@ Public repository: every job runs on **GitHub-hosted** runners (R116). Top-level
 `permissions: contents: read`; every action pinned to a full commit SHA; no `secrets: inherit`; no
 `|| true` masks. `ci.yml`: `agent-docs` (required files and markers), `web` (frozen install, lint,
 typecheck, unit tests, build, standalone smoke), `pg` (the real-Postgres suite on a `postgres:16-alpine`
-service container, as the `cv_app` role; fails on fewer than 8 passing tests), `guards` (file size, forbidden-domain grep),
+service container, as the `cv_app` role; fails on fewer than 12 passing tests), `e2e` (Playwright on GitHub-hosted runners:
+`npx playwright install --with-deps chromium`, the built server, its own Postgres service; fails on fewer than 9
+passing specs or any failed, flaky or skipped), `guards` (file size, forbidden-domain grep),
 `secrets` (gitleaks over every commit after the legacy base `7959f356`, plus the checked-out tree;
 the legacy history was scanned in full by the 2026-10-22 audit). `image.yml` builds the Dockerfile on
 pull requests that touch its inputs (no push) and smoke-tests it read-only as uid 1001 across all
@@ -143,11 +159,38 @@ MADFAM platform repo; **the owner confirms it at merge of the baseline pull requ
 - **Product scope** (D1): recommended standalone, one core journey (sign in → create → edit →
   publish); CV import decided with the AI wave.
 - **Repository `homepage`**: set by the coordinator after go-live.
+- **Pages host label** (lane X §3): working label `cv-p.madfam.io`; inert until named. Abuse mailbox `legal@madfam.io`
+  (recommended over `support@`; owner to confirm).
+
+## App routes and W3 directory ownership
+
+Every app page is declared once in `apps/web/src/lib/app-routes.ts` (English under `/en/...`; `:id` is a UUID):
+`/` · `/perfil` · `/empleos` · `/empleos/:id` · `/empleos/:id/adaptar` · `/documentos` · `/documentos/:id` ·
+`/documentos/:id/vista-previa` · `/documentos/:id/imprimir` · `/ajustes`. Each renders inside `AppFrame` and shows an
+honest «En construcción» until its PR lands. The pages host serves `/<slug>` and `/l/<token>`.
+
+After W3-1 (foundation) merges, three PRs run in parallel on disjoint directories:
+
+| PR | Owns (create and edit freely) |
+|---|---|
+| **W3-2** core profile editor | `apps/web/src/app/h/app/[locale]/perfil/**`, `src/components/profile/**`, `src/lib/copy/profile.ts`, `e2e/profile*.spec.ts`, `test/profile*.test.ts` |
+| **W3-3** jobs, pipeline, tailoring | `apps/web/src/app/h/app/[locale]/empleos/**`, `src/components/jobs/**`, `src/lib/copy/jobs.ts`, `e2e/jobs*.spec.ts`, `test/jobs*.test.ts` |
+| **W3-4** renderers, preview, print, publish | `apps/web/src/app/h/app/[locale]/documentos/**`, `src/app/h/pages/**`, `src/components/render/**`, `src/lib/copy/render.ts`, `src/lib/copy/pages.ts`, `e2e/pages*.spec.ts`, `e2e/documents*.spec.ts`, `test/render*.test.ts` |
+
+Everything else stays W3-1's and is **append-only** for the three: routing, config, headers, robots, `app-routes.ts`,
+`api-routes.ts`, the server (`schema.ts`, `repository.ts`, `validation.ts`, `handler.ts`, migrations), `lib/client/**`,
+`components/ui/**`, `components/app/**`, `lib/copy/{landing,app}.ts`, `globals.css`, `playwright.config.ts`,
+`e2e/support/**`, CI and the lockfile. A PR that needs a new API route or repository function appends exactly that
+(with its cross-owner test in `test-pg/`) and says so in its body; styles go in CSS Modules inside the PR's own
+directory. The API the three need already exists: profile and items (plus `POST /profile/items/reorder`), jobs and
+`/match`, artifacts (plus `POST /artifacts/batch`, all-or-none), publish/unpublish (429 `publish_limit` after 20 a day).
 
 ## What comes next
 
 W2 (this code, dormant until configured): Janua sign-in on `cv-app.madfam.io` (Auth.js, callback
 `/api/auth/callback/janua`), the owner-scoped model of [`docs/PRODUCT.md`](docs/PRODUCT.md) (one profile, jobs,
 tailored CVs / portfolios / presentations per job) with cross-owner tests on a real Postgres, and the AI-free
-job match. It goes live after the provisioning order in `docs/DEPLOYMENT.md`. Then: the editor and public pages
-(W3), money on Dhanam, AI on Selva (W6), and the remaining seams.
+job match. It goes live after the provisioning order in `docs/DEPLOYMENT.md`. W3-1 (foundation): the route map, the
+app frame, UI primitives, the client data layer, the inert pages host with a minimal renderer, the Playwright harness.
+Then W3-2 / W3-3 / W3-4 in parallel (ownership table above), money on Dhanam, AI on Selva (W6), and the remaining
+seams.

@@ -19,6 +19,10 @@ repo-boundary contract (docs/REPO_BOUNDARY.md).
 - Every data row is owned by a Janua `sub`; repository functions take ownerSub first; other owners' ids are 404.
 - Sign-in and data are dormant (503 not_configured) until their settings exist.
 - Public repo CI runs on GitHub-hosted runners; every action is SHA-pinned; Build & Deploy is dispatch-only.
+- A fourth host for user pages (public /<slug>, link-shared /l/<token>; working label cv-p.madfam.io) is inert until
+  CV_HOST_PAGES names it; per-page indexing is the owner's choice, link pages are never indexed or cached.
+- App pages are declared once (apps/web/src/lib/app-routes.ts): /perfil, /empleos, /empleos/:id, /empleos/:id/adaptar,
+  /documentos, /documentos/:id, /documentos/:id/vista-previa, /documentos/:id/imprimir, /ajustes (en under /en).
 
 ## Docs
 
@@ -37,3 +41,5 @@ repo-boundary contract (docs/REPO_BOUNDARY.md).
 - `apps/web/src/server/`: Janua token verification, the Drizzle schema and owner-scoped repository, the API handler
 - `apps/web/drizzle/`: committed SQL migrations; `apps/web/test-pg/`: the real-Postgres cross-owner suite
 - `janua.client.yaml`: Janua registrations (names only)
+- `apps/web/src/components/ui/`, `src/components/app/`, `src/lib/client/`, `src/lib/copy/`: UI primitives, the app frame, the typed data layer, per-surface copy
+- `apps/web/e2e/`: Playwright specs over the built server (two owners, local JWKS, throwaway Postgres)

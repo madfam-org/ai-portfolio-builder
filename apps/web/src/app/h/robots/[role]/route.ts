@@ -3,7 +3,7 @@ import { robotsTxt } from '@/lib/robots';
 
 export const dynamic = 'force-dynamic';
 
-const ROLES: readonly Role[] = ['landing', 'app', 'api'];
+const ROLES: readonly Role[] = ['landing', 'app', 'api', 'pages'];
 
 /** /robots.txt of each host (proxy.ts rewrites it here with the host's role). */
 export async function GET(_req: Request, ctx: { params: Promise<{ role: string }> }): Promise<Response> {

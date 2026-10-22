@@ -1,0 +1,273 @@
+/*
+ * The app-owned UI primitives (R1). Classes only: the nonce CSP blocks every style attribute, so no component takes
+ * a `style` prop. Colours come from the tokens in app/globals.css (light and dark).
+ */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 2.75rem;
+  padding: 0.55rem 1.1rem;
+  border: 1px solid var(--brand);
+  border-radius: 999px;
+  background: var(--brand);
+  color: var(--brand-ink);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+.button:hover {
+  filter: brightness(1.08);
+}
+.button:focus-visible,
+.input:focus-visible,
+.navLink:focus-visible,
+.toastClose:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.button:disabled,
+.button[aria-disabled='true'] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.secondary {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--line);
+}
+.danger {
+  background: transparent;
+  color: #a1291c;
+  border-color: #a1291c;
+}
+.ghost {
+  background: transparent;
+  color: var(--ink);
+  border-color: transparent;
+}
+.small {
+  min-height: 2.25rem;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.95rem;
+}
+
+.field {
+  display: grid;
+  gap: 0.3rem;
+}
+.label {
+  font-weight: 600;
+}
+.hint {
+  color: var(--muted);
+  font-size: 0.92rem;
+  margin: 0;
+}
+.error {
+  color: #a1291c;
+  font-size: 0.92rem;
+  margin: 0;
+}
+.input {
+  font: inherit;
+  width: 100%;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+}
+.input[aria-invalid='true'] {
+  border-color: #a1291c;
+}
+textarea.input {
+  min-height: 6rem;
+  resize: vertical;
+}
+.check {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+.check input {
+  margin-top: 0.35rem;
+}
+
+.notice {
+  border: 1px solid var(--line);
+  border-left-width: 4px;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+  margin: 1rem 0;
+}
+.notice p {
+  margin: 0;
+}
+.info {
+  border-left-color: var(--brand);
+}
+.success {
+  border-left-color: #2e7d4f;
+}
+.warning {
+  border-left-color: var(--accent);
+}
+.danger-notice {
+  border-left-color: #a1291c;
+}
+
+.empty {
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  padding: 2rem 1.25rem;
+  text-align: center;
+  color: var(--muted);
+}
+.empty h2 {
+  color: var(--ink);
+  font-size: 1.2rem;
+  margin: 0 0 0.4rem;
+}
+
+.badge {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 0.1rem 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  background: var(--tag-bg);
+  color: var(--ink);
+}
+
+.pageHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0 0 1.5rem;
+}
+.pageHeader h1 {
+  margin: 0.25rem 0 0;
+}
+.pageHeader p {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+}
+.stack {
+  display: grid;
+  gap: 1rem;
+}
+.cluster {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+}
+.cards {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+}
+.card {
+  display: block;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.1rem 1.2rem;
+  background: var(--surface);
+  color: var(--ink);
+  text-decoration: none;
+}
+.card:hover {
+  border-color: var(--brand);
+}
+.card h2 {
+  font-size: 1.15rem;
+  margin: 0 0 0.3rem;
+}
+.card p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+.navLink {
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.navLink[aria-current='page'] {
+  background: var(--tag-bg);
+  font-weight: 700;
+}
+
+.toasts {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  display: grid;
+  gap: 0.5rem;
+  max-width: min(24rem, calc(100vw - 2rem));
+  z-index: 10;
+}
+.toast {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  justify-content: space-between;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.7rem 0.9rem;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 4px 18px rgb(0 0 0 / 15%);
+}
+.toastClose {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.dialog {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  background: var(--surface);
+  color: var(--ink);
+  max-width: min(30rem, calc(100vw - 2rem));
+}
+.dialog::backdrop {
+  background: rgb(0 0 0 / 45%);
+}
+
+.icon {
+  width: 1.1em;
+  height: 1.1em;
+  flex: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  .danger,
+  .error {
+    color: #ff9c8f;
+  }
+  .danger,
+  .input[aria-invalid='true'] {
+    border-color: #ff9c8f;
+  }
+  .danger-notice {
+    border-left-color: #ff9c8f;
+  }
+}

@@ -7,7 +7,7 @@
  * `getPublicArtifactBySlug` (visibility 'public') and `getLinkArtifactByToken` (visibility 'link').
  */
 import { randomBytes } from 'node:crypto';
-import { and, asc, desc, eq, inArray, isNull, sql, type SQL } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, inArray, isNull, ne, sql, type SQL } from 'drizzle-orm';
 import type { Db } from './client.ts';
 import { artifacts, jobs, profileItems, profiles } from './schema.ts';
 import { referencedItemIds, type ArtifactContent } from '../api/validation.ts';
@@ -27,6 +27,12 @@ export class ForeignItemsError extends Error {
 export class SlugTakenError extends Error {}
 export class SuspendedError extends Error {}
 export class JobHasArtifactsError extends Error {}
+export class PublishLimitError extends Error {}
+
+/** At most this many artifacts published (or re-published) per owner in any 24 hours (lane X §4.8, anti-spam). */
+export const PUBLISH_DAILY_LIMIT = 20;
+/** At most this many artifacts created in one `createArtifactSet` call (one per kind). */
+export const ARTIFACT_SET_MAX = 4;
 
 function pgCode(err: unknown): { code?: string; constraint?: string } {
   let e: unknown = err;
@@ -136,6 +142,30 @@ export function createRepository(db: Db) {
       return rows.length === 1;
     },
 
+    /**
+     * «Subir» / «Bajar» and any reorder: `itemIds` in their new order get positions 0..n-1 in ONE transaction. Every
+     * id must be one of the owner's items (ForeignItemsError otherwise, and nothing changes); items not listed keep
+     * their position.
+     */
+    async reorderItems(ownerSub: string, itemIds: readonly string[]): Promise<ProfileItem[]> {
+      return db.transaction(async (tx) => {
+        const ids = [...new Set(itemIds)];
+        const rows = ids.length
+          ? await tx.select({ id: profileItems.id }).from(profileItems).where(and(eq(profileItems.ownerSub, ownerSub), inArray(profileItems.id, ids)))
+          : [];
+        const found = new Set(rows.map((r) => r.id));
+        const missing = ids.filter((id) => !found.has(id));
+        if (missing.length > 0) throw new ForeignItemsError(missing);
+        for (const [position, id] of ids.entries()) {
+          await tx
+            .update(profileItems)
+            .set({ position, updatedAt: now })
+            .where(and(eq(profileItems.ownerSub, ownerSub), eq(profileItems.id, id)));
+        }
+        return tx.select().from(profileItems).where(eq(profileItems.ownerSub, ownerSub)).orderBy(asc(profileItems.position), asc(profileItems.createdAt));
+      });
+    },
+
     // ---- jobs ------------------------------------------------------------------------------------------------
     async listJobs(ownerSub: string): Promise<Job[]> {
       return db.select().from(jobs).where(eq(jobs.ownerSub, ownerSub)).orderBy(desc(jobs.createdAt));
@@ -196,6 +226,35 @@ export function createRepository(db: Db) {
       });
     },
 
+    /**
+     * «Crear CV, portafolio y presentación para este empleo»: several artifacts in ONE transaction, so either all
+     * exist or none does. Null when `jobId` is set but is not one of the owner's jobs; ForeignItemsError on foreign
+     * item ids; any insert failure rolls every insert back.
+     */
+    async createArtifactSet(
+      ownerSub: string,
+      input: { jobId: string | null; locale: string; template: string; artifacts: { kind: string; title: string; content: ArtifactContent }[] },
+    ): Promise<Artifact[] | null> {
+      if (input.artifacts.length < 1 || input.artifacts.length > ARTIFACT_SET_MAX) throw new Error('artifact set size out of range');
+      return db.transaction(async (tx) => {
+        if (input.jobId) {
+          const [job] = await tx.select({ id: jobs.id }).from(jobs).where(and(eq(jobs.ownerSub, ownerSub), eq(jobs.id, input.jobId)));
+          if (!job) return null;
+        }
+        const created: Artifact[] = [];
+        for (const a of input.artifacts) {
+          await assertOwnItems(tx, ownerSub, a.content);
+          const [row] = await tx
+            .insert(artifacts)
+            .values({ ownerSub, jobId: input.jobId, kind: a.kind, title: a.title, locale: input.locale, template: input.template, content: a.content })
+            .returning();
+          if (!row) throw new Error('artifact insert returned nothing');
+          created.push(row);
+        }
+        return created;
+      });
+    },
+
     async getArtifact(ownerSub: string, id: string): Promise<Artifact | null> {
       const [row] = await db.select().from(artifacts).where(and(eq(artifacts.ownerSub, ownerSub), eq(artifacts.id, id)));
       return row ?? null;
@@ -241,6 +300,12 @@ export function createRepository(db: Db) {
         const [existing] = await db.select({ suspendedAt: artifacts.suspendedAt }).from(artifacts).where(and(eq(artifacts.ownerSub, ownerSub), eq(artifacts.id, id)));
         if (!existing) return null;
         if (existing.suspendedAt) throw new SuspendedError('artifact suspended');
+        // Rate limit (a count, no new table): the owner's OTHER artifacts published within the last 24 hours.
+        const [recent] = await db
+          .select({ n: sql<number>`count(*)::int` })
+          .from(artifacts)
+          .where(and(eq(artifacts.ownerSub, ownerSub), ne(artifacts.id, id), gt(artifacts.publishedAt, sql`now() - interval '1 day'`)));
+        if ((recent?.n ?? 0) >= PUBLISH_DAILY_LIMIT) throw new PublishLimitError('publish limit reached');
         const [row] = await db
           .update(artifacts)
           .set({ ...set, status: 'published', publishedAt: now, updatedAt: now })
@@ -303,20 +368,29 @@ async function publicProjection(db: Db, row: Artifact): Promise<PublicArtifact> 
   };
 }
 
+/** The one rule of both public reads: published, unsuspended, and shared the way it is asked for. */
+function sharedWhere(share: 'public' | 'link', key: string): SQL | undefined {
+  const handle = share === 'public' ? eq(artifacts.slug, key) : eq(artifacts.shareToken, key);
+  return and(handle, eq(artifacts.visibility, share), eq(artifacts.status, 'published'), isNull(artifacts.suspendedAt));
+}
+
 /** UNSCOPED public read: a published, unsuspended artifact with visibility 'public', by slug. Never a draft, private, link or suspended one. */
 export async function getPublicArtifactBySlug(db: Db, slug: string): Promise<PublicArtifact | null> {
-  const [row] = await db
-    .select()
-    .from(artifacts)
-    .where(and(eq(artifacts.slug, slug), eq(artifacts.visibility, 'public'), eq(artifacts.status, 'published'), isNull(artifacts.suspendedAt)));
+  const [row] = await db.select().from(artifacts).where(sharedWhere('public', slug));
   return row ? publicProjection(db, row) : null;
 }
 
 /** UNSCOPED public read: a published, unsuspended artifact with visibility 'link', by its share token. */
 export async function getLinkArtifactByToken(db: Db, token: string): Promise<PublicArtifact | null> {
-  const [row] = await db
-    .select()
-    .from(artifacts)
-    .where(and(eq(artifacts.shareToken, token), eq(artifacts.visibility, 'link'), eq(artifacts.status, 'published'), isNull(artifacts.suspendedAt)));
+  const [row] = await db.select().from(artifacts).where(sharedWhere('link', token));
   return row ? publicProjection(db, row) : null;
+}
+
+/**
+ * UNSCOPED, for the pages-host proxy only: whether a shared page exists and how it may be indexed, under the SAME
+ * rule as the two reads above (one indexed lookup; no content).
+ */
+export async function sharedPageGate(db: Db, share: 'public' | 'link', key: string): Promise<{ indexable: boolean; locale: string } | null> {
+  const [row] = await db.select({ indexable: artifacts.indexable, locale: artifacts.locale }).from(artifacts).where(sharedWhere(share, key));
+  return row ? { indexable: share === 'public' && row.indexable, locale: row.locale } : null;
 }

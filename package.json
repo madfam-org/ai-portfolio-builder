@@ -19,6 +19,7 @@
     "test:server": "pnpm --filter @cv/web run test:server",
     "test:pg": "pnpm --filter @cv/web run test:pg",
     "db:migrate": "pnpm --filter @cv/web run db:migrate",
-    "db:generate": "pnpm --filter @cv/web run db:generate"
+    "db:generate": "pnpm --filter @cv/web run db:generate",
+    "test:e2e": "pnpm --filter @cv/web run test:e2e"
   }
 }

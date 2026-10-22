@@ -44,3 +44,29 @@ test('no legacy platform artefacts in the tree (Supabase, Prisma, Vercel, Railwa
   const deps = (JSON.parse(pkg) as { dependencies: Record<string, string> }).dependencies;
   assert.equal(deps['next-auth'], '5.0.0-beta.32');
 });
+
+/** Source files under apps/web/src (read-proof counted). */
+function sourceFiles(ext: RegExp): string[] {
+  return trackedFiles().filter((f) => f.startsWith('apps/web/src/') && ext.test(f));
+}
+
+test('user content renders as React text only: no dangerouslySetInnerHTML and no style attribute in the source (lane X §4)', () => {
+  const files = sourceFiles(/\.(tsx|ts)$/);
+  assert.ok(files.length >= 40, `scanned only ${files.length} files`);
+  const danger = ['dangerously', 'SetInnerHTML'].join('');
+  const hits: string[] = [];
+  for (const f of files) {
+    const text = readFileSync(join(root, f), 'utf8');
+    if (text.includes(danger)) hits.push(`${f}: raw HTML`);
+    // JSX style props and string style attributes are both blocked by the nonce CSP (no 'unsafe-inline').
+    if (/\sstyle\s*=\s*[{"']/.test(text)) hits.push(`${f}: style attribute`);
+  }
+  assert.deepEqual(hits, []);
+});
+
+test('renderers invent nothing: no Math.random under src/components/render (R85, lane X §1.3)', () => {
+  const files = sourceFiles(/^apps\/web\/src\/components\/render\/.+\.tsx?$/);
+  assert.ok(files.length >= 1, 'no renderer scanned');
+  const random = ['Math', 'random'].join('.');
+  assert.deepEqual(files.filter((f) => readFileSync(join(root, f), 'utf8').includes(random)), []);
+});

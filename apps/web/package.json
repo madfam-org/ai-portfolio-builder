@@ -15,7 +15,8 @@
     "test:server": "node --test --test-reporter=spec \"test-server/**/*.test.ts\"",
     "test:pg": "node --test --test-concurrency=1 --test-reporter=spec \"test-pg/**/*.pg.test.ts\"",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "node scripts/migrate.ts"
+    "db:migrate": "node scripts/migrate.ts",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "drizzle-orm": "0.45.4",
@@ -28,6 +29,7 @@
     "zod": "4.6.5"
   },
   "devDependencies": {
+    "@playwright/test": "1.64.0",
     "@types/node": "22.20.5",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",

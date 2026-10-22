@@ -21,8 +21,16 @@ incubating, pre-launch; sign-in and data are built but dormant until provisioned
   Applebot-Extended) and everyone else, so crawlers can see the noindex; the sitemap exists only when
   indexable.
 - cv-app.madfam.io: the app shell (pre-launch notice while sign-in is not configured; then «Iniciar sesión»,
-  account switching and RP-logout per R44, and «Mis portafolios»). Auth.js /api/auth/*, POST /auth/entrar,
-  POST /auth/salir and the same-origin /api/v1/* proxy live on this host only. noindex; robots disallow all.
+  account switching and RP-logout per R44). Every page of the core journey is declared (W3-1): /perfil, /empleos,
+  /empleos/:id, /empleos/:id/adaptar, /documentos (with «Mis documentos»), /documentos/:id,
+  /documentos/:id/vista-previa, /documentos/:id/imprimir, /ajustes; English under /en; each shows «En construcción»
+  until its PR lands. Auth.js /api/auth/*, POST /auth/entrar, POST /auth/salir and the same-origin /api/v1/* proxy
+  live on this host only. noindex; robots disallow all.
+- Pages host (label pending; working label cv-p.madfam.io; inert until CV_HOST_PAGES is set): /<slug> (a public
+  artifact; indexed only when its owner chose indexable, else noindex, nofollow, noai, noimageai) and /l/<token>
+  (link-shared; always noindex, Cache-Control private, no-store, Referrer-Policy no-referrer). The proxy looks the
+  artifact up first (published, unsuspended), so anything else is the noindex HTML 404. Strict CSP (default-src
+  'none', form-action 'none'), no cookies, abuse link to legal@madfam.io.
 - cv-api.madfam.io: GET /api/v1/meta -> {name, service, version, revision, api}; the bearer-authenticated,
   owner-scoped API (docs/PRODUCT.md); JSON 404 elsewhere. noindex; robots disallow all.
 - Any Host: GET /health (liveness, static) and GET /ready (readiness: valid configuration, plus a bounded
@@ -46,7 +54,8 @@ incubating, pre-launch; sign-in and data are built but dormant until provisioned
   (APP_DATABASE_URL), migrations as the owner (DATABASE_URL) via a PreSync Job running the image with
   CV_MIGRATE_AND_EXIT=true.
 - Tests: node:test over TypeScript (Node type stripping) in apps/web/test; a real-Postgres suite in
-  apps/web/test-pg (run as cv_app); a smoke test over the built standalone server in apps/web/test-server.
+  apps/web/test-pg (run as cv_app); a smoke test over the built standalone server in apps/web/test-server;
+  Playwright (Chromium, @playwright/test 1.64.0) in apps/web/e2e over the built server with two owners.
 
 ## Deployment
 

@@ -84,6 +84,9 @@ export const ITEM_CONTENT: Record<(typeof PROFILE_ITEM_KINDS)[number], z.ZodType
 export const itemCreateBody = z
   .object({ kind: z.enum(PROFILE_ITEM_KINDS), position: z.number().int().min(0).max(10_000).default(0), content: z.unknown(), tags: tags.default([]) })
   .strict();
+/** «Subir» / «Bajar»: the owner's item ids in their new order (positions 0..n-1). */
+export const itemReorderBody = z.object({ itemIds: z.array(z.uuid()).min(1).max(500) }).strict();
+
 export const itemPatchBody = z.object({ position: z.number().int().min(0).max(10_000).optional(), content: z.unknown().optional(), tags: tags.optional() }).strict();
 
 export const jobCreateBody = z
@@ -150,6 +153,22 @@ export const artifactCreateBody = z
     content: z.unknown().default({}),
   })
   .strict();
+/**
+ * Several artifacts at once, in one transaction (the tailoring workspace's «Crear CV, portafolio y presentación para
+ * este empleo»): same job, locale and template; each with its kind, title and content (validated per kind).
+ */
+export const artifactSetBody = z
+  .object({
+    jobId: z.uuid().nullable().default(null),
+    locale: z.enum(LOCALES).default('es-MX'),
+    template: z.string().regex(/^[a-z0-9-]{1,40}$/).default('base'),
+    artifacts: z
+      .array(z.object({ kind: z.enum(ARTIFACT_KINDS), title: required(200), content: z.unknown().default({}) }).strict())
+      .min(1)
+      .max(4),
+  })
+  .strict();
+
 export const artifactPatchBody = z
   .object({
     title: required(200).optional(),

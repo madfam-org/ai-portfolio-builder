@@ -3,7 +3,7 @@
  * no users, metrics, logos or testimonials; anything not built says so; the incubating CTA is a waitlist;
  * no licence named by hand. `{name}` renders PRODUCT_LABEL.
  */
-import type { Locale } from './routing.ts';
+import type { Locale } from '../routing.ts';
 
 export interface Item {
   title: string;

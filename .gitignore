@@ -11,3 +11,5 @@ __pycache__/
 *.log
 next-env.d.ts
 *.tsbuildinfo
+test-results/
+playwright-report/

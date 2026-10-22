@@ -8,6 +8,7 @@
  * X-Forwarded-Host different from Host is refused: Auth.js reads X-Forwarded-Host when it builds URLs, so a forged
  * one must never reach it.
  */
+import { matchAppPath } from './app-routes.ts';
 import { authPublicHosts } from './auth-env.ts';
 import { hostname } from './routing.ts';
 
@@ -52,10 +53,13 @@ export function isSameOriginRequest(request: Request, env: Env): boolean {
   }
 }
 
-/** Only same-site absolute paths survive as a post-sign-in target; anything that could name a host becomes `/`. */
+/**
+ * Only an exact page of the app (lib/app-routes.ts: `/`, `/en`, `/perfil`, `/en/empleos/<uuid>`, ...) survives as a
+ * post-sign-in target; anything else, including anything that could name a host or carry a query, becomes `/`.
+ */
 export function safeRedirectPath(raw: unknown): string {
   if (typeof raw !== 'string' || !raw.startsWith('/') || raw.startsWith('//') || raw.includes('\\')) return '/';
-  return raw === '/en' ? '/en' : '/';
+  return matchAppPath(raw) ? raw : '/';
 }
 
 export function jsonResponse(status: number, body: unknown, extra: Record<string, string> = {}): Response {
