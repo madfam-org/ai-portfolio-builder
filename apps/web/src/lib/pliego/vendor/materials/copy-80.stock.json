@@ -1,0 +1,234 @@
+{
+  "stock": {
+    "slug": "copy-80",
+    "name": {
+      "en": "Copy paper 80 g/m²",
+      "es": "Papel bond 80 g/m²",
+      "fr": "Papier ramette 80 g/m²",
+      "pt": "Papel sulfite 80 g/m²"
+    },
+    "class": "text",
+    "fiber": [
+      "wood-pulp"
+    ],
+    "finish": "uncoated",
+    "color": "#f7f7f2",
+    "grain": "long"
+  },
+  "physical": {
+    "gsm": {
+      "value": 80,
+      "status": "nominal",
+      "source": "grade designation"
+    },
+    "caliper_um": {
+      "value": 100,
+      "status": "estimated",
+      "basis": "typical 0.8 g/cm³ office grade"
+    },
+    "E_md_gpa": {
+      "value": 5.5,
+      "status": "estimated",
+      "basis": "rsE §b, TSI × density"
+    },
+    "E_cd_gpa": {
+      "value": 2.5,
+      "status": "estimated",
+      "basis": "MD/CD ≈ 2.2 (Baum et al. 1981)"
+    },
+    "nu": {
+      "value": 0.293,
+      "status": "estimated",
+      "basis": "√(ν12·ν21) = 0.293 for machine-made paper (Baum et al. 1981)"
+    },
+    "bending_stiffness_mNm": {
+      "md": null,
+      "cd": null,
+      "method": null
+    },
+    "crease_length_scale_t": {
+      "value": 200,
+      "status": "estimated",
+      "basis": "L* ≈ 200·t measured on Mylar (Lechenault 2014); paper unmeasured"
+    },
+    "crease_yield_deg": {
+      "value": 35,
+      "status": "estimated",
+      "basis": "rest opening 27–43° after creasing (Lechenault 2014)"
+    },
+    "tear_strain": {
+      "value": 0.02,
+      "status": "estimated",
+      "basis": "typical elongation at break, office grade"
+    },
+    "friction": {
+      "value": 0.4,
+      "status": "estimated",
+      "basis": "paper on paper 0.3–0.6 (rsE §a3)"
+    }
+  },
+  "fabrication": {
+    "min_feature_mm": 1.0,
+    "score": "recommended above 160 g/m²",
+    "laser": null,
+    "plotter": null,
+    "glue": [
+      "pva",
+      "glue-stick",
+      "double-sided-tape"
+    ],
+    "perforation": {
+      "cut_mm": 3.0,
+      "bridge_mm": 1.0
+    }
+  },
+  "appearance": {
+    "front": "#f7f7f2",
+    "back": "#f7f7f2",
+    "translucency": 0.15,
+    "roughness": 0.9
+  },
+  "derived": {
+    "areal_density": 8e-05,
+    "thickness": 0.1,
+    "E_md": 5500000000.0,
+    "E_cd": 2500000000.0,
+    "nu": 0.293,
+    "D_md": 501376.0,
+    "D_cd": 227898.0,
+    "crease_k": 16901.4,
+    "crease_yield_deg": 35.0,
+    "crease_set_rate": 0.5,
+    "score_factor": 0.35,
+    "perf_factor": 0.25,
+    "tear_strain": 0.02,
+    "friction": 0.4,
+    "collision_thickness": 0.1,
+    "G12": 1435030000.0,
+    "score_yield_deg": 12.25,
+    "perf_cut_mm": 3.0,
+    "perf_bridge_mm": 1.0
+  },
+  "derived_basis": "pliego.stock.derive v1",
+  "provenance": {
+    "author": "Innovaciones MADFAM",
+    "license": "CERN-OHL-W-2.0",
+    "sources": [
+      "Pliego research memo rsE (2026-10-10) §b material default table — engineering estimates [E] unless a source is cited",
+      "Baum, Habeger & Fleischman 1981, Measurement of the orthotropic elastic constants of paper — https://bioresources.cnr.ncsu.edu/resources/measurement-of-the-orthotropic-elastic-constants-of-paper/",
+      "Lechenault, Thiria & Adda-Bedia 2014, Mechanical response of a creased sheet, PRL 112, 244301 — https://arxiv.org/abs/1404.1243"
+    ]
+  },
+  "sheet_behaviour": {
+    "sheet_behaviour": "1.0",
+    "units": {
+      "caliper": "mm",
+      "areal_density": "kg/m^2",
+      "membrane": "N/m",
+      "bending": "N*m",
+      "angle": "deg"
+    },
+    "axis_1": "machine",
+    "caliper_mm": 0.1,
+    "areal_density_kg_m2": 0.08,
+    "source": {
+      "platform": "pliego",
+      "material_slug": "copy-80",
+      "rule": "pliego-stock/1",
+      "card_basis": "pliego.stock.derive v1"
+    },
+    "membrane": {
+      "E1t": 550000,
+      "E2t": 250000,
+      "G12t": 143503,
+      "nu12": 0.434589
+    },
+    "bending": {
+      "D11": 0.000501376,
+      "D22": 0.000227898,
+      "D12": 9.90421e-05,
+      "D66": 0.000119586
+    },
+    "crease": {
+      "crease_length_scale_t": 200,
+      "crease_yield_deg": 35,
+      "crease_set_rate": 0.5,
+      "score_factor": 0.35
+    },
+    "regime": {
+      "inextensible": true,
+      "stretchy": false,
+      "compressible": false,
+      "layered": false,
+      "self_folding": false
+    },
+    "contact": {
+      "friction_static": 0.4
+    },
+    "provenance": {
+      "caliper_mm": {
+        "status": "estimated",
+        "basis": "derived.thickness; physical.caliper_um estimated: typical 0.8 g/cm³ office grade"
+      },
+      "areal_density_kg_m2": {
+        "status": "measured",
+        "basis": "derived.areal_density (g/mm²) × 1000; physical.gsm nominal: grade designation"
+      },
+      "E1t": {
+        "status": "estimated",
+        "basis": "derived.E_md × t; physical.E_md_gpa estimated: rsE §b, TSI × density; physical.caliper_um estimated: typical 0.8 g/cm³ office grade"
+      },
+      "E2t": {
+        "status": "estimated",
+        "basis": "derived.E_cd × t; physical.E_cd_gpa estimated: MD/CD ≈ 2.2 (Baum et al. 1981); physical.caliper_um estimated: typical 0.8 g/cm³ office grade"
+      },
+      "G12t": {
+        "status": "estimated",
+        "basis": "derived.G12 × t, G12 = 0.387·√(E_md·E_cd) (Baum, Brennan & Habeger 1981, via pliego.stock.derive v1)"
+      },
+      "nu12": {
+        "status": "estimated",
+        "basis": "ν12 = ν·√(E_md/E_cd): the card's ν is the geometric mean √(ν12·ν21), split by reciprocity ν12/E1 = ν21/E2; physical.nu estimated: √(ν12·ν21) = 0.293 for machine-made paper (Baum et al. 1981)"
+      },
+      "D11": {
+        "status": "estimated",
+        "basis": "derived.D_md × 1e-9 (N·m), plate E·t³/(12(1−ν²)) in pliego.stock.derive v1; physical.E_md_gpa estimated: rsE §b, TSI × density; physical.nu estimated: √(ν12·ν21) = 0.293 for machine-made paper (Baum et al. 1981); physical.caliper_um estimated: typical 0.8 g/cm³ office grade"
+      },
+      "D22": {
+        "status": "estimated",
+        "basis": "derived.D_cd × 1e-9 (N·m), plate E·t³/(12(1−ν²)) in pliego.stock.derive v1; physical.E_cd_gpa estimated: MD/CD ≈ 2.2 (Baum et al. 1981); physical.nu estimated: √(ν12·ν21) = 0.293 for machine-made paper (Baum et al. 1981); physical.caliper_um estimated: typical 0.8 g/cm³ office grade"
+      },
+      "D12": {
+        "status": "estimated",
+        "basis": "ν21·D11, orthotropic plate (ν21 = ν·√(E_cd/E_md))"
+      },
+      "D66": {
+        "status": "estimated",
+        "basis": "G12·t³/12 with the estimated G12 above"
+      },
+      "crease_length_scale_t": {
+        "status": "estimated",
+        "basis": "physical.crease_length_scale_t estimated: L* ≈ 200·t measured on Mylar (Lechenault 2014); paper unmeasured"
+      },
+      "crease_yield_deg": {
+        "status": "estimated",
+        "basis": "physical.crease_yield_deg estimated: rest opening 27–43° after creasing (Lechenault 2014)"
+      },
+      "crease_set_rate": {
+        "status": "estimated",
+        "basis": "pliego.stock.derive v1 default (card has no physical.crease_set_rate)"
+      },
+      "score_factor": {
+        "status": "estimated",
+        "basis": "pliego.stock.derive v1 default (card has no physical.score_factor)"
+      },
+      "friction_static": {
+        "status": "estimated",
+        "basis": "physical.friction estimated: paper on paper 0.3–0.6 (rsE §a3)"
+      }
+    },
+    "notes": [
+      "friction: the card states one paper-on-paper coefficient; it is written as friction_static, and friction_kinetic and damping are left out rather than invented"
+    ]
+  }
+}

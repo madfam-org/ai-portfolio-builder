@@ -1,0 +1,141 @@
+/*
+ * The paper preview and the printing advice (W5-P). The sheet's look is SCREEN ONLY: print and the PDF keep the
+ * documents' own print rules (white page, no border, no shadow), so nothing here can change a printed page or its text
+ * layer. --paper-face and --paper-edge come from Pliego's stock card, set through the CSSOM by PaperSheet; without
+ * them (no script) the sheet stays white with a 1 px edge.
+ */
+
+@media screen {
+  /* Class + attribute: wins over the frame's own .sheet rules whatever order the modules load in. */
+  .paper[data-paper-stock] {
+    /* Nothing on the page is whiter than the paper it is printed on. */
+    --surface: var(--paper-face, #fff);
+    background: var(--paper-face, #fff);
+    border-color: transparent;
+    border-radius: 0;
+    box-shadow:
+      0 0 0 var(--paper-edge, 1px) rgb(23 32 27 / 0.1),
+      0 1px 2px rgb(23 32 27 / 0.12),
+      0 12px 28px -12px rgb(23 32 27 / 0.35);
+  }
+}
+
+@media screen and (prefers-color-scheme: dark) {
+  .paper[data-paper-stock] {
+    box-shadow:
+      0 0 0 var(--paper-edge, 1px) rgb(255 255 255 / 0.16),
+      0 16px 36px -10px rgb(0 0 0 / 0.75);
+  }
+}
+
+@media screen and (prefers-reduced-motion: no-preference) {
+  .paper[data-paper-stock] {
+    transition:
+      background-color 160ms ease,
+      box-shadow 160ms ease;
+  }
+}
+
+.picker {
+  margin: 0 0 1rem;
+}
+
+.stocks {
+  border: 0;
+  padding: 0;
+  margin: 0 0 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+}
+
+.stocks legend {
+  font-weight: 650;
+  margin-bottom: 0.4rem;
+  flex-basis: 100%;
+}
+
+.hint,
+.source {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.facts {
+  margin: 0 0 0.35rem;
+}
+
+.previewNote {
+  margin: 0.75rem 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* The fold guide (cover letters). */
+.fold {
+  border-top: 1px solid var(--line);
+  padding-top: 1rem;
+  margin: 0 0 1.25rem;
+}
+
+.foldTitle {
+  font-size: 1.15rem;
+  margin: 0 0 0.75rem;
+}
+
+.foldBody {
+  display: grid;
+  grid-template-columns: 6.5rem 1fr;
+  gap: 1rem 1.25rem;
+  align-items: start;
+}
+
+.foldArt {
+  width: 100%;
+  height: auto;
+}
+
+/* The drawing is a sheet of paper in both themes, so its colours are the light ones. */
+.foldPage {
+  fill: #fbfaf6;
+  stroke: #4c5a52;
+  stroke-width: 1.2;
+}
+
+.foldText {
+  stroke: #b9bfb6;
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.foldLine {
+  stroke: #b4530a;
+  stroke-width: 3;
+  stroke-dasharray: 8 6;
+}
+
+.foldIntro,
+.foldNote {
+  margin: 0 0 0.5rem;
+}
+
+.foldSteps {
+  margin: 0 0 0.5rem;
+  padding-left: 1.25rem;
+}
+
+@media (max-width: 30rem) {
+  .foldBody {
+    grid-template-columns: 4.5rem 1fr;
+  }
+}
+
+@media print {
+  .picker,
+  .fold,
+  .previewNote {
+    display: none;
+  }
+}

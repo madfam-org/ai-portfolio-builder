@@ -1,0 +1,37 @@
+{
+  "_provenance": "Pins of the Pliego data vendored here; written by scripts/pliego/sync_pliego_data.py. Do not edit by hand.",
+  "licence": "CERN-OHL-W-2.0",
+  "pliego": {
+    "repo": "https://github.com/madfam-org/pliego",
+    "commit": "db78ca6790c3c42cffee04f4aa547917360e7602"
+  },
+  "commons": {
+    "repo": "https://github.com/madfam-org/sheet-hyperobjects",
+    "commit": "b828142894a46192936ae118f79368980f1f9dfe",
+    "via": "Pliego's projects/ submodule at that commit"
+  },
+  "copies": [
+    {
+      "path": "materials/copy-80.stock.json",
+      "source": "materials/copy-80/stock.json",
+      "git_blob": "e1405b61910bba60a31c28a5c8d5b743a31d36e7"
+    },
+    {
+      "path": "materials/cardstock-160.stock.json",
+      "source": "materials/cardstock-160/stock.json",
+      "git_blob": "7c4268af8c39c9d3f4869b31bac4b189c281a127"
+    }
+  ],
+  "generated": [
+    {
+      "path": "print-folds-letter.json",
+      "cartridge": "print-folds",
+      "cartridge_git_blobs": {
+        "main.py": "1e8d8618d79754452b09e88079c30d92e3945321",
+        "project.json": "5aeff3058e4d5e12ff3e3f00613db18c41bdeef3"
+      },
+      "kernel": "pliego-kernel 0.3.0",
+      "sha256": "cdad6b5d5c0ec1e75f9342a4ed8e2e6c19b063c18342899b64e96442d2b92fc1"
+    }
+  ]
+}

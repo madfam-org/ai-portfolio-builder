@@ -197,3 +197,18 @@ job match. It goes live after the provisioning order in `docs/DEPLOYMENT.md`. W3
 app frame, UI primitives, the client data layer, the inert pages host with a minimal renderer, the Playwright harness.
 Then W3-2 / W3-3 / W3-4 in parallel (ownership table above), money on Dhanam, AI on Selva (W6), and the remaining
 seams.
+
+## Pliego paper data (W5-P, 2026-10-22)
+
+[Pliego](https://pliego.madfam.io) owns paper physics; cv **consumes** a pinned slice of it and never re-derives it.
+
+| Path | What it is |
+|---|---|
+| `apps/web/src/lib/pliego/vendor/` | CERN-OHL-W-2.0 data: Pliego's `copy-80` and `cardstock-160` stock cards (byte copies) and the letter fold its kernel computes with the commons cartridge `print-folds`; `LOCK.json` pins the commits and blobs. Never edit by hand |
+| `apps/web/src/lib/pliego/paper.ts` | the only reader: small views (stock facts, screen look, letter fold) built on the server and handed to client components |
+| `apps/web/src/components/paper/`, `src/lib/copy/paper.ts` | `PaperSheet` (stock colour and edge, `@media screen` only, set through the CSSOM), `StockPicker`, `FoldGuide` (cover letters) |
+| `scripts/pliego/sync_pliego_data.py` | check or refresh the vendored data against a Pliego checkout; CI job `pliego-pin` runs the check at the pinned commit |
+
+Rules: paper effects never reach `@media print` or the PDF text layer (`e2e/documents-paper.spec.ts` proves the same
+pages, sizes and text with every stock); refresh the data only with the script; a new stock or fold needs Pliego to
+publish it first.

@@ -246,3 +246,27 @@ jobs:
           gitleaks git --config .gitleaks.toml --redact --no-banner --log-opts="${LEGACY_BASE}..HEAD" .
       - name: Scan the checked-out tree (values redacted)
         run: gitleaks dir --config .gitleaks.toml --redact --no-banner .
+
+  pliego-pin:
+    # W5-P: cv vendors a pinned slice of Pliego's paper data (apps/web/src/lib/pliego/vendor/, CERN-OHL-W-2.0). This
+    # job fetches Pliego at the LOCK's commit (and the commons commit Pliego pins) from the public repositories, then
+    # compares every vendored byte and re-runs the print-folds cartridge with Pliego's own kernel (stdlib only).
+    name: Pliego paper data matches its pinned source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Pliego at the LOCK's commit, the commons at the commit it pins (public, read only)
+        run: |
+          set -euo pipefail
+          commit=$(python3 -c "import json; print(json.load(open('apps/web/src/lib/pliego/vendor/LOCK.json'))['pliego']['commit'])")
+          dir="$RUNNER_TEMP/pliego"
+          git init -q "$dir"
+          git -C "$dir" fetch -q --depth 1 https://github.com/madfam-org/pliego "$commit"
+          git -C "$dir" checkout -q FETCH_HEAD
+          git -C "$dir" submodule update -q --init --depth 1 projects
+          echo "PLIEGO_DIR=$dir" >> "$GITHUB_ENV"
+      - name: Byte check and cartridge re-run (read-proof)
+        run: python3 scripts/pliego/sync_pliego_data.py --pliego "$PLIEGO_DIR"
