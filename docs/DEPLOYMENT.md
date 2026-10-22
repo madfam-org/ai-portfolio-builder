@@ -51,7 +51,7 @@ COOP.
 | `HOSTNAME` | `0.0.0.0` | bind address; also keeps the proxy's rewrites internal (a loopback name would not) |
 | `CV_METRICS_PORT` | `9090` | the internal metrics listener (`GET /metrics` only, on `HOSTNAME`); `off` disables it (tests only); a value that is not a port, or equals `PORT`, stops the server at boot |
 
-## Identity and data (W2): dormant until configured
+## Identity and data (W2): live since 2026-10-22, dormant wherever unconfigured
 
 The code for Janua sign-in (Auth.js `next-auth@5.0.0-beta.32`, provider id `janua`) and the owner-scoped data
 model (Drizzle + postgres.js through PgBouncer) ships switched OFF. Merging it changes nothing live:
@@ -118,6 +118,10 @@ and exits 0 (the PreSync Job, PR B).
    holds both URLs first: a missing Secret stops the pods.
 5. Probe: `/ready` shows `"signIn":"configured","database":"ok"`; `cv-api.madfam.io/api/v1/me` without a token is
    401; one real sign-in on `cv-app.madfam.io`, then «Cerrar sesión» returns to `https://cv-app.madfam.io/`.
+
+Done 2026-10-22 in this order. The client secret went in through `--intake-profile default` (enclii#839): since
+ADR-003 only the platform_admin operator may write the intake, while admin@ administers Janua. Production went live
+with #5 at 19:32Z (`cv-web-auth` synced, `/ready` `signIn: configured`), and the owner's first real sign-in completed.
 
 ## Moderation (operator, manual; no admin UI yet)
 

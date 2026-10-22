@@ -3,9 +3,9 @@
 > A job-specific CV and portfolio builder from Innovaciones MADFAM, incubating and pre-launch: one core profile,
 > the jobs a person applies to, and a tailored CV, portfolio and presentation per job. One container serves
 > three hosts routed by Host: cv.madfam.io (landing, es-MX and en; noindex until the brand is ruled),
-> cv-app.madfam.io (app shell; Janua sign-in built, dormant until configured) and cv-api.madfam.io
-> (/api/v1/meta and the owner-scoped API, dormant until a database is configured). /health and /ready answer on
-> any Host. The old code is preserved at the git tag legacy-2025-09. No live accounts, AI or prices yet.
+> cv-app.madfam.io (the app, with Janua sign-in, live since 2026-10-22) and cv-api.madfam.io
+> (/api/v1/meta and the owner-scoped API). /health and /ready answer on
+> any Host. The old code is preserved at the git tag legacy-2025-09. No AI or prices yet.
 
 Boundary: public repository. Operational detail lives in MADFAM's private ops repository under the
 repo-boundary contract (docs/REPO_BOUNDARY.md).
@@ -17,7 +17,7 @@ repo-boundary contract (docs/REPO_BOUNDARY.md).
 - Identity is Janua, money is Dhanam, LLMs only through Selva, deploy is Enclii, analytics self-hosted Plausible only.
 - No invented proof, no prices, no secrets in the tree; madfam.io is the only MADFAM domain.
 - Every data row is owned by a Janua `sub`; repository functions take ownerSub first; other owners' ids are 404.
-- Sign-in and data are dormant (503 not_configured) until their settings exist.
+- Sign-in and data stay dormant (503 not_configured) wherever their settings are missing; production has them since 2026-10-22.
 - Public repo CI runs on GitHub-hosted runners; every action is SHA-pinned; Build & Deploy is dispatch-only.
 - A fourth host for user pages (public /<slug>, link-shared /l/<token>; working label cv-p.madfam.io) is inert until
   CV_HOST_PAGES names it; per-page indexing is the owner's choice, link pages are never indexed or cached.

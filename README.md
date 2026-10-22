@@ -28,7 +28,7 @@ The hosts go live when the coordinator dispatches the first build and onboards t
 
 1. Sign-in with Janua (MADFAM's identity service) on `cv-app.madfam.io` and the owner-scoped model (one
    profile, jobs, tailored artifacts per job), with tests on a real Postgres proving one person can never
-   read another's data. **Built, dormant until provisioned.**
+   read another's data. **Live since 2026-10-22** (Janua sign-in on `cv-app.madfam.io`, Postgres through PgBouncer).
 2. The core journey (W3, live): the profile editor, jobs with the tailoring workspace, and the document
    renderers with preview, print and publish, plus a separate host for the pages people publish (public
    `/<slug>` and link-shared `/l/<token>`; its label is not named yet, so it stays off). W4 (live): CV,

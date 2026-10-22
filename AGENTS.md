@@ -36,7 +36,7 @@ routed by the `Host` header:
 | Host | Role | Indexing |
 |---|---|---|
 | `cv.madfam.io` | landing (es-MX at `/`, en at `/en`) | `noindex` until the brand is ruled (`CV_INDEXABLE`); robots allow AI crawlers (R40) |
-| `cv-app.madfam.io` | app: shell, Janua sign-in (Auth.js, dormant until configured), the same-origin `/api/v1/*` proxy | never; robots disallow all |
+| `cv-app.madfam.io` | app: Janua sign-in (Auth.js; live since 2026-10-22), the same-origin `/api/v1/*` proxy | never; robots disallow all |
 | `cv-api.madfam.io` | API: `/api/v1/meta` and the owner-scoped API ([`docs/PRODUCT.md`](docs/PRODUCT.md)) | never; robots disallow all |
 | **pages host, label pending** (working label `cv-p.madfam.io`, env `CV_HOST_PAGES`) | user pages: `/<slug>` (public artifact), `/l/<token>` (link-shared) | per page: public only when its owner chose `indexable`; otherwise `noindex, nofollow, noai, noimageai`; `/l/*` always noindex, `no-store`, `no-referrer` |
 
@@ -191,10 +191,10 @@ directory. The API the three need already exists: profile and items (plus `POST 
 
 ## What comes next
 
-W2 (this code, dormant until configured): Janua sign-in on `cv-app.madfam.io` (Auth.js, callback
+W2 (live since 2026-10-22): Janua sign-in on `cv-app.madfam.io` (Auth.js, callback
 `/api/auth/callback/janua`), the owner-scoped model of [`docs/PRODUCT.md`](docs/PRODUCT.md) (one profile, jobs,
 tailored CVs / portfolios / presentations per job) with cross-owner tests on a real Postgres, and the AI-free
-job match. It goes live after the provisioning order in `docs/DEPLOYMENT.md`. W3-1 (foundation): the route map, the
+job match. It went live through the provisioning order in `docs/DEPLOYMENT.md`. W3-1 (foundation): the route map, the
 app frame, UI primitives, the client data layer, the inert pages host with a minimal renderer, the Playwright harness.
 Then W3-2 / W3-3 / W3-4 in parallel (ownership table above), money on Dhanam, AI on Selva (W6), and the remaining
 seams.
