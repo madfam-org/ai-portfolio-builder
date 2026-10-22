@@ -9,7 +9,11 @@
 import type { Config, Role } from './config.ts';
 import { hostRow } from './config.ts';
 
-export function htmlCsp(nonce: string, dev: boolean): string {
+/**
+ * `formAction`: the targets this page's forms may post to, redirects included (browsers apply form-action to the
+ * redirect chain). The landing has no form ('none'); the app posts to itself and is redirected to Janua.
+ */
+export function htmlCsp(nonce: string, dev: boolean, formAction: readonly string[] = []): string {
   return [
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${dev ? " 'unsafe-eval'" : ''}`,
@@ -19,7 +23,7 @@ export function htmlCsp(nonce: string, dev: boolean): string {
     "connect-src 'self'",
     "object-src 'none'",
     "base-uri 'self'",
-    "form-action 'none'",
+    `form-action ${formAction.length ? formAction.join(' ') : "'none'"}`,
     "frame-ancestors 'none'",
   ].join('; ');
 }

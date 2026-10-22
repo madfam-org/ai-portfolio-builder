@@ -12,9 +12,10 @@
 # domain's `port:`; the Kubernetes Service publishes 80 and the container listens on 3000, so every domain
 # pins `port: 80`. metadata.name IS the Kubernetes Service name.
 #
-# Wave 1 (this image) is stateless: no database, no object storage, no secret, no identity client. Secrets,
-# when the next wave needs them, are referenced by NAME only and reach the store only through
-# `enclii secrets intake`. Never `enclii secrets set`.
+# W2 adds dormant code for Janua sign-in (Auth.js) and owner-scoped data (Postgres via PgBouncer); it stays off
+# until its settings exist (docs/DEPLOYMENT.md). Secrets are referenced by NAME only and reach the store only
+# through `enclii secrets intake` (AUTH_*) or onboarding (`cv-secrets`: DATABASE_URL, APP_DATABASE_URL).
+# Never `enclii secrets set`.
 apiVersion: enclii.dev/v1
 kind: Project
 metadata:
@@ -67,7 +68,7 @@ spec:
         href: https://cv-api.madfam.io/api/v1/meta
         group: cv
         family: MADFAM Platform
-        description: API (readiness; no dependency in wave 1)
+        description: API (readiness; checks Postgres once configured)
         assertContains: '"status":"ok"'
         assertNotContains: "localhost:"
 
@@ -98,15 +99,16 @@ spec:
     availability: 99.5
     latencyP99Ms: 2000
 
-  # Tunnel ingress on the app port (3000) only. Egress: DNS only; wave 1 calls nothing outside the pod.
-  # The next wave (Janua sign-in) adds https; the one after (data) adds postgres through the pooler.
+  # Tunnel ingress on the app port (3000) only. Egress (W2): DNS, HTTPS (Janua discovery/JWKS/token/logout) and
+  # PgBouncer in `data` (6432). Declared here AND in infra/k8s/production/network-policy.yaml, before any
+  # `enclii onboard ensure` renders policies from this file (the 2026-10-21 MAP outage).
   network:
     services:
       - name: cv
         label: app.kubernetes.io/name
         port: 3000
         ingress: [cloudflare-tunnel]
-        egress: [dns]
+        egress: [dns, https, pgbouncer]
 
   dependencies:
     - platform: enclii

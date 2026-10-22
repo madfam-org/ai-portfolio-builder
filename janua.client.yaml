@@ -2,10 +2,9 @@
 # secrets are created by Enclii's OIDC provisioner and land in the secret store, from which the pod's Secret is
 # written through the intake (the next wave lists the key names in docs/DEPLOYMENT.md).
 #
-# NOT USED YET. Wave 1 (this tree) deploys without any Janua registration; these are prepared for the next wave
-# (sign-in on cv-app, owner-scoped data). Janua matches redirect URIs exactly: no wildcards, no trailing-slash
-# variants. The callback path is the Auth.js Janua provider's (/api/auth/callback/janua), so /api/auth/* on
-# cv-app.madfam.io is left unclaimed in wave 1.
+# USED BY THE W2 CODE, dormant until provisioned (enclii#838 registers `cv-app`; docs/DEPLOYMENT.md). Janua matches
+# redirect URIs exactly: no wildcards, no trailing-slash variants. The callback path is the Auth.js Janua
+# provider's (/api/auth/callback/janua), served on cv-app.madfam.io only.
 #
 # Two registrations:
 #   1. the API as a resource server (audience cv-api): it validates Janua RS256 tokens and mints none;

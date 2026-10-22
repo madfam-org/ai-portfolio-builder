@@ -52,15 +52,15 @@ export const COPY: Record<Locale, Copy> = {
   es: {
     htmlLang: 'es-MX',
     meta: {
-      title: '{name}: tu trayectoria, convertida en portafolio (próximamente)',
+      title: '{name}: un perfil, un CV a la medida de cada vacante (próximamente)',
       description:
-        'Un constructor de portafolios asistido por IA que Innovaciones MADFAM está desarrollando: partirá de tu CV, LinkedIn o GitHub para armar un sitio que tú revisas y publicas. Lista de espera abierta.',
+        'Un constructor de CV y portafolios que Innovaciones MADFAM está desarrollando: capturas tu perfil una vez y, para cada vacante, preparas un CV, un portafolio y una presentación a la medida, que tú revisas y publicas. Lista de espera abierta.',
       appTitle: '{name}: la app todavía no está abierta',
     },
     skip: 'Saltar al contenido',
     badge: 'En incubación · próximamente',
-    headline: 'Tu trayectoria, convertida en un portafolio que puedes publicar.',
-    lead: 'Estamos construyendo {name}, un constructor de portafolios asistido por IA. Partirá de lo que ya tienes —tu CV, tu perfil de LinkedIn o tu GitHub— y te ayudará a armar un sitio de portafolio que tú revisas, editas y publicas.',
+    headline: 'Un solo perfil. Un CV, un portafolio y una presentación a la medida de cada vacante.',
+    lead: 'Estamos construyendo {name}. Capturas tu trayectoria una sola vez —experiencia, estudios, proyectos y habilidades— y, para cada vacante a la que te postulas, te ayudará a preparar un CV, un portafolio y una presentación a la medida, que tú revisas, editas y publicas.',
     cta: 'Unirme a la lista de espera',
     ctaSubject: 'Lista de espera: {name}',
     ctaNote:
@@ -70,18 +70,23 @@ export const COPY: Record<Locale, Copy> = {
     buildingIntro: 'Nada de esto está disponible todavía. Así lo estamos diseñando:',
     building: [
       {
-        title: 'Importa lo que ya tienes',
-        body: 'Sube tu CV o conecta tu LinkedIn o tu GitHub para no empezar desde cero.',
+        title: 'Un perfil central',
+        body: 'Tu experiencia, estudios, proyectos y habilidades en un solo lugar, para no reescribirlos en cada postulación.',
+        tag: soon.es,
+      },
+      {
+        title: 'Tus vacantes, una por una',
+        body: 'Guarda el texto de cada vacante que te interesa y lleva el seguimiento de tus postulaciones.',
+        tag: soon.es,
+      },
+      {
+        title: 'Un CV, un portafolio y una presentación por vacante',
+        body: 'Para cada vacante preparas versiones a la medida que destacan lo que esa vacante pide. Compártelas con un enlace privado o publícalas; nada se publica sin tu aprobación.',
         tag: soon.es,
       },
       {
         title: 'Redacción asistida, con tu revisión',
-        body: 'La IA propone textos a partir de tu experiencia y tú decides qué se queda. Nada se publica sin tu aprobación.',
-        tag: soon.es,
-      },
-      {
-        title: 'Un portafolio que puedes compartir',
-        body: 'Publica tu sitio en una dirección propia y actualízalo cuando cambie tu trayectoria.',
+        body: 'La IA propondrá textos a partir de tu perfil y de cada vacante, y tú decides qué se queda.',
         tag: soon.es,
       },
       {
@@ -117,7 +122,7 @@ export const COPY: Record<Locale, Copy> = {
     app: {
       badge: 'Antes del lanzamiento',
       headline: 'La app todavía no está abierta.',
-      body: 'Estamos construyendo {name}. El inicio de sesión con Janua llegará próximamente; por ahora no hay cuentas y aquí no se guarda ningún dato.',
+      body: 'Estamos construyendo {name}. El inicio de sesión con Janua aún no está disponible: llegará próximamente. Por ahora no hay cuentas y aquí no se guarda ningún dato.',
       back: 'Conoce el proyecto',
     },
     footer: {
@@ -134,15 +139,15 @@ export const COPY: Record<Locale, Copy> = {
   en: {
     htmlLang: 'en',
     meta: {
-      title: '{name}: your career, turned into a portfolio (coming soon)',
+      title: '{name}: one profile, a CV tailored to every job (coming soon)',
       description:
-        'An AI-assisted portfolio builder in development by Innovaciones MADFAM: it will start from your CV, LinkedIn or GitHub to build a site you review and publish. Waitlist open.',
+        'A CV and portfolio builder in development by Innovaciones MADFAM: you enter your profile once and, for every job, prepare a tailored CV, portfolio and presentation that you review and publish. Waitlist open.',
       appTitle: '{name}: the app is not open yet',
     },
     skip: 'Skip to content',
     badge: 'Incubating · coming soon',
-    headline: 'Your career, turned into a portfolio you can publish.',
-    lead: 'We are building {name}, an AI-assisted portfolio builder. It will start from what you already have —your CV, your LinkedIn profile or your GitHub— and help you put together a portfolio site that you review, edit and publish.',
+    headline: 'One profile. A tailored CV, portfolio and presentation for every job you apply to.',
+    lead: 'We are building {name}. You enter your career once —experience, education, projects and skills— and, for every job you apply to, it will help you prepare a tailored CV, portfolio and presentation that you review, edit and publish.',
     cta: 'Join the waitlist',
     ctaSubject: 'Waitlist: {name}',
     ctaNote: 'The button opens your email with a message to hola@madfam.io. This site has no forms, cookies or analytics.',
@@ -151,18 +156,23 @@ export const COPY: Record<Locale, Copy> = {
     buildingIntro: 'None of this is available yet. This is how we are designing it:',
     building: [
       {
-        title: 'Import what you already have',
-        body: 'Upload your CV or connect your LinkedIn or GitHub so you never start from scratch.',
+        title: 'One core profile',
+        body: 'Your experience, education, projects and skills in one place, so you never rewrite them for each application.',
+        tag: soon.en,
+      },
+      {
+        title: 'Your jobs, one by one',
+        body: 'Save the text of each job you are interested in and keep track of your applications.',
+        tag: soon.en,
+      },
+      {
+        title: 'A CV, a portfolio and a presentation per job',
+        body: 'For each job you prepare tailored versions that highlight what that job asks for. Share them with a private link or publish them; nothing is published without your approval.',
         tag: soon.en,
       },
       {
         title: 'Assisted writing, with your review',
-        body: 'The AI suggests text from your experience and you decide what stays. Nothing is published without your approval.',
-        tag: soon.en,
-      },
-      {
-        title: 'A portfolio you can share',
-        body: 'Publish your site at an address of your own and update it as your career changes.',
+        body: 'The AI will suggest text from your profile and each job, and you decide what stays.',
         tag: soon.en,
       },
       {
@@ -198,7 +208,7 @@ export const COPY: Record<Locale, Copy> = {
     app: {
       badge: 'Pre-launch',
       headline: 'The app is not open yet.',
-      body: 'We are building {name}. Sign-in with Janua is coming soon; for now there are no accounts and no data is stored here.',
+      body: 'We are building {name}. Sign-in with Janua is not available yet: it is coming soon. For now there are no accounts and no data is stored here.',
       back: 'About the project',
     },
     footer: {

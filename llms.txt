@@ -1,10 +1,11 @@
 # MADFAM CV (working label) — ai-portfolio-builder
 
-> An AI-assisted portfolio / CV builder from Innovaciones MADFAM, incubating and pre-launch. One
-> container serves three hosts routed by Host: cv.madfam.io (landing, es-MX and en; noindex until the
-> brand is ruled), cv-app.madfam.io (pre-launch app shell; Janua sign-in next wave) and
-> cv-api.madfam.io (/api/v1/meta). /health and /ready answer on any Host. Rebuilt from scratch on
-> 2026-10-22; the old code is preserved at the git tag legacy-2025-09. No accounts, data, AI or prices yet.
+> A job-specific CV and portfolio builder from Innovaciones MADFAM, incubating and pre-launch: one core profile,
+> the jobs a person applies to, and a tailored CV, portfolio and presentation per job. One container serves
+> three hosts routed by Host: cv.madfam.io (landing, es-MX and en; noindex until the brand is ruled),
+> cv-app.madfam.io (app shell; Janua sign-in built, dormant until configured) and cv-api.madfam.io
+> (/api/v1/meta and the owner-scoped API, dormant until a database is configured). /health and /ready answer on
+> any Host. The old code is preserved at the git tag legacy-2025-09. No live accounts, AI or prices yet.
 
 Boundary: public repository. Operational detail lives in MADFAM's private ops repository under the
 repo-boundary contract (docs/REPO_BOUNDARY.md).
@@ -15,12 +16,15 @@ repo-boundary contract (docs/REPO_BOUNDARY.md).
 - The host table is data (apps/web/src/lib/config.ts); exact Host matches; unknown Host is a 404.
 - Identity is Janua, money is Dhanam, LLMs only through Selva, deploy is Enclii, analytics self-hosted Plausible only.
 - No invented proof, no prices, no secrets in the tree; madfam.io is the only MADFAM domain.
+- Every data row is owned by a Janua `sub`; repository functions take ownerSub first; other owners' ids are 404.
+- Sign-in and data are dormant (503 not_configured) until their settings exist.
 - Public repo CI runs on GitHub-hosted runners; every action is SHA-pinned; Build & Deploy is dispatch-only.
 
 ## Docs
 
 - [AGENTS.md](https://github.com/madfam-org/ai-portfolio-builder/blob/main/AGENTS.md): canonical instructions, topology, doctrine, layout, CI lanes, pending rulings
 - [README.md](https://github.com/madfam-org/ai-portfolio-builder/blob/main/README.md): what is live today and what comes next
+- [docs/PRODUCT.md](https://github.com/madfam-org/ai-portfolio-builder/blob/main/docs/PRODUCT.md): the owner requirement, the profile / jobs / artifacts model, the API
 - [docs/DEPLOYMENT.md](https://github.com/madfam-org/ai-portfolio-builder/blob/main/docs/DEPLOYMENT.md): runtime contract, hosts, configuration, first-deploy steps
 - [ECOSYSTEM.md](https://github.com/madfam-org/ai-portfolio-builder/blob/main/ECOSYSTEM.md): which MADFAM platform owns which capability
 - [SECURITY.md](https://github.com/madfam-org/ai-portfolio-builder/blob/main/SECURITY.md): reporting and scope
@@ -30,4 +34,6 @@ repo-boundary contract (docs/REPO_BOUNDARY.md).
 
 - `apps/web/`: @cv/web, Next.js 16 App Router; `src/proxy.ts` routes by Host; `src/lib/` holds the pure routing, header, robots and config logic
 - `Dockerfile`, `infra/k8s/production/`, `enclii.yaml`, `.github/workflows/build-deploy.yml`: the one image, its kustomize base, the Enclii manifest, the dispatch-only build caller
-- `janua.client.yaml`: Janua registrations for the next wave (names only)
+- `apps/web/src/server/`: Janua token verification, the Drizzle schema and owner-scoped repository, the API handler
+- `apps/web/drizzle/`: committed SQL migrations; `apps/web/test-pg/`: the real-Postgres cross-owner suite
+- `janua.client.yaml`: Janua registrations (names only)

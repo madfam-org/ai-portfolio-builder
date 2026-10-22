@@ -96,9 +96,14 @@ jobs:
           check cv-app.madfam.io /robots.txt 200 'Disallow: /'
           check cv-api.madfam.io /api/v1/meta 200 "\"revision\":\"${WANT_REVISION}\""
           check cv-api.madfam.io / 404 '"error":"not_found"'
+          # W2 is dormant in an unconfigured image: sign-in and data answer 503 not_configured on their own host only.
+          check cv-app.madfam.io /api/auth/session 503 '"error":"not_configured"'
+          check cv-api.madfam.io /api/v1/profile 503 '"error":"not_configured"'
+          check cv.madfam.io /api/auth/session 404
+          test -n "$(docker run --rm --entrypoint ls cv:ci /app/apps/web/drizzle)" || { echo "smoke: FAIL migrations missing from the image"; problems=$((problems+1)); }
           check 10.0.0.1 / 404
           check unknown.example /robots.txt 404
-          echo "smoke: checks=21 problems=$problems $([ "$problems" = 0 ] && echo OK || echo FAIL)"
+          echo "smoke: checks=25 problems=$problems $([ "$problems" = 0 ] && echo OK || echo FAIL)"
           [ "$problems" = 0 ]
       - name: Container log
         if: always()

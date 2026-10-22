@@ -12,17 +12,26 @@
     "lint": "eslint --max-warnings=0 .",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "node --test --test-reporter=spec \"test/**/*.test.ts\"",
-    "test:server": "node --test --test-reporter=spec \"test-server/**/*.test.ts\""
+    "test:server": "node --test --test-reporter=spec \"test-server/**/*.test.ts\"",
+    "test:pg": "node --test --test-concurrency=1 --test-reporter=spec \"test-pg/**/*.pg.test.ts\"",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "node scripts/migrate.ts"
   },
   "dependencies": {
+    "drizzle-orm": "0.45.4",
+    "jose": "6.2.12",
     "next": "16.4.2",
+    "next-auth": "5.0.0-beta.32",
+    "postgres": "3.4.9",
     "react": "19.3.1",
-    "react-dom": "19.3.1"
+    "react-dom": "19.3.1",
+    "zod": "4.6.5"
   },
   "devDependencies": {
     "@types/node": "22.20.5",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
+    "drizzle-kit": "0.31.11",
     "eslint": "9.39.5",
     "eslint-config-next": "16.4.2",
     "typescript": "5.9.3"

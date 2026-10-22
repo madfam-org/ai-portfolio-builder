@@ -36,8 +36,8 @@ routed by the `Host` header:
 | Host | Role | Indexing |
 |---|---|---|
 | `cv.madfam.io` | landing (es-MX at `/`, en at `/en`) | `noindex` until the brand is ruled (`CV_INDEXABLE`); robots allow AI crawlers (R40) |
-| `cv-app.madfam.io` | app (pre-launch shell; Janua sign-in next wave) | never; robots disallow all |
-| `cv-api.madfam.io` | API: `/api/v1/meta` (more under `/api/v1/` later) | never; robots disallow all |
+| `cv-app.madfam.io` | app: shell, Janua sign-in (Auth.js, dormant until configured), the same-origin `/api/v1/*` proxy | never; robots disallow all |
+| `cv-api.madfam.io` | API: `/api/v1/meta` and the owner-scoped API ([`docs/PRODUCT.md`](docs/PRODUCT.md)) | never; robots disallow all |
 
 `/health` (liveness) and `/ready` (readiness) answer 200 JSON on **any** Host, before host routing
 (kubelet probes use the pod IP). Unknown hosts get a plain 404. The container listens on 3000; the
@@ -49,8 +49,16 @@ Kubernetes Service publishes 80; every `enclii.yaml` domain pins `port: 80`. Fla
 
 - Production operations are **Enclii-first**. This repository carries no break-glass procedure and
   no raw cluster, SSH or provider access path.
-- Secrets reach production only through the Enclii secret intake; this repo holds secret **names**.
-  Wave 1 needs none.
+- Secrets reach production only through the Enclii secret intake (or onboarding, for `cv-secrets`); this repo
+  holds secret **names** ([`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) "Env contract").
+- **Dormant by default.** Sign-in and data ship OFF: without every `AUTH_*` value, sign-in routes answer 503
+  `not_configured`; without `APP_DATABASE_URL`, data routes do. Nothing reads them at import or build time, and
+  `/ready` blocks only on a dependency that IS configured and fails (fail closed).
+- **Owner-scoped data, always:** every row carries `owner_sub` (the Janua `sub`); every repository function
+  (`apps/web/src/server/db/repository.ts`) takes `ownerSub` first; another person's id is a 404; children use
+  composite FKs `(parent_id, owner_sub)`. The only unscoped reads are the two public ones (published only). New
+  tables follow the same rules and get cross-owner tests in `apps/web/test-pg/` against a real Postgres, run as
+  the `cv_app` role.
 - **Never take a ruling** (brand, licence confirmation, prices, tiers, visibility, indexing): prepare
   to the ruling point and list it.
 - **Consume the ecosystem seams, never rebuild them** ([`ECOSYSTEM.md`](ECOSYSTEM.md)): identity is
@@ -58,7 +66,7 @@ Kubernetes Service publishes 80; every `enclii.yaml` domain pins `port: 80`. Fla
   self-hosted Plausible only (R41), messaging goes through Angelia. No Supabase, Prisma, Vercel,
   Railway, Stripe key or LLM provider key in this repo, ever (a test enforces the obvious ones).
 - **Sequencing trap:** never expose sign-in before owner-scoped queries and their cross-tenant tests
-  exist.
+  exist (they exist since W2: `apps/web/test-pg/`; keep them green before any new table is reachable).
 - **Truth in copy:** no invented users, metrics, logos or testimonials (R85); anything not built says
   "próximamente"; the incubating CTA is a waitlist (R29); legal entity "Innovaciones MADFAM S.A.S. de
   C.V." · Cuernavaca, Morelos (R37/R47); mailboxes only `hola@`, `privacy@`, `legal@`, `security@`,
@@ -80,7 +88,13 @@ Kubernetes Service publishes 80; every `enclii.yaml` domain pins `port: 80`. Fla
 | `apps/web/test/` | unit tests (`node:test`, Node type stripping) |
 | `apps/web/test-server/` | smoke test over the built standalone server, per Host |
 | `Dockerfile`, `infra/k8s/production/`, `enclii.yaml`, `.github/workflows/build-deploy.yml` | the one image, its kustomize base (digest pinned by Build & Deploy), the Enclii manifest, the dispatch-only build caller |
-| `janua.client.yaml` | names only, for the next wave |
+| `apps/web/src/auth.ts`, `src/app/api/auth/`, `src/app/auth/` | Auth.js with the Janua OIDC provider; sign-in, account switching (R44) and RP-logout |
+| `apps/web/src/lib/auth-env.ts`, `public-origin.ts`, `api-routes.ts` | the env contract and dormancy rules; the public-origin allow-list and CSRF guard; the API route table (shared by the proxy and the handler) |
+| `apps/web/src/server/` | `janua.ts` (RS256 JWKS verification), `db/` (schema, client, migrations runner, owner-scoped repository), `api/` (handler, zod bodies, the deterministic job match) |
+| `apps/web/drizzle/` | committed SQL migrations (`0001` grants the `cv_app` runtime role) |
+| `apps/web/test-pg/`, `test-support/` | the real-Postgres suite (`pnpm test:pg`) and the local RS256/JWKS token fixture |
+| `janua.client.yaml` | names only: the `cv-api` resource server and the `cv-web` client the W2 code uses |
+| `docs/PRODUCT.md` | the owner requirement and the profile → jobs → tailored artifacts model |
 | `scripts/qa/check_file_size.py` | the file-size gate |
 
 ## Commands
@@ -91,6 +105,9 @@ pnpm install --frozen-lockfile  # ONE root lockfile (pnpm workspace: apps/*)
 pnpm lint                       # eslint, zero warnings
 pnpm typecheck                  # next typegen + tsc --noEmit (strict)
 pnpm test                       # unit tests (node:test over TypeScript; Node >= 22.18)
+pnpm test:pg                    # real-Postgres suite: CV_TEST_OWNER_URL + CV_TEST_APP_URL (db name *_test, role cv_app)
+pnpm db:generate                # SQL migrations from apps/web/src/server/db/schema.ts (commit them)
+pnpm db:migrate                 # apply them to DIRECT_DATABASE_URL ?? DATABASE_URL (the owner role)
 pnpm build                      # Next.js standalone build
 pnpm test:server                # boots the standalone server, checks every host
 python3 scripts/qa/check_file_size.py
@@ -104,7 +121,8 @@ then open `http://cv.localhost:3000/` (browsers resolve `*.localhost` to loopbac
 Public repository: every job runs on **GitHub-hosted** runners (R116). Top-level
 `permissions: contents: read`; every action pinned to a full commit SHA; no `secrets: inherit`; no
 `|| true` masks. `ci.yml`: `agent-docs` (required files and markers), `web` (frozen install, lint,
-typecheck, unit tests, build, standalone smoke), `guards` (file size, forbidden-domain grep),
+typecheck, unit tests, build, standalone smoke), `pg` (the real-Postgres suite on a `postgres:16-alpine`
+service container, as the `cv_app` role; fails on fewer than 8 passing tests), `guards` (file size, forbidden-domain grep),
 `secrets` (gitleaks over every commit after the legacy base `7959f356`, plus the checked-out tree;
 the legacy history was scanned in full by the 2026-10-22 audit). `image.yml` builds the Dockerfile on
 pull requests that touch its inputs (no push) and smoke-tests it read-only as uid 1001 across all
@@ -128,7 +146,8 @@ MADFAM platform repo; **the owner confirms it at merge of the baseline pull requ
 
 ## What comes next
 
-Next wave: Janua sign-in on `cv-app.madfam.io` (Auth.js Janua provider, callback
-`/api/auth/callback/janua`; `/api/auth/*` is deliberately unclaimed today) and an owner-scoped data
-model (Drizzle on Postgres through the platform pooler) with cross-tenant tests first. Then the core
-journey, money on Dhanam, AI on Selva, and the remaining seams.
+W2 (this code, dormant until configured): Janua sign-in on `cv-app.madfam.io` (Auth.js, callback
+`/api/auth/callback/janua`), the owner-scoped model of [`docs/PRODUCT.md`](docs/PRODUCT.md) (one profile, jobs,
+tailored CVs / portfolios / presentations per job) with cross-owner tests on a real Postgres, and the AI-free
+job match. It goes live after the provisioning order in `docs/DEPLOYMENT.md`. Then: the editor and public pages
+(W3), money on Dhanam, AI on Selva (W6), and the remaining seams.

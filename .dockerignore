@@ -5,6 +5,8 @@ node_modules
 **/.next
 apps/web/test
 apps/web/test-server
+apps/web/test-pg
+apps/web/test-support
 docs
 scripts
 infra
