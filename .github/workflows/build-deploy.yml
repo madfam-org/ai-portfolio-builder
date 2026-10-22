@@ -37,7 +37,7 @@ permissions:
 
 jobs:
   build-publish:
-    uses: madfam-org/enclii/.github/workflows/build-publish.yml@33e2dc67e11e83cb674553a439be56c6f1fdba12 # enclii main 2026-10-21 (the fulcra pin; build-publish.yml byte-identical to the 2026-10-10 pin, last changed by enclii#714)
+    uses: madfam-org/enclii/.github/workflows/build-publish.yml@62469f3988f226f250b08a86e546666a4e9aa4da # enclii main 2026-10-21 (the fulcra pin; build-publish.yml byte-identical to the 2026-10-10 pin, last changed by enclii#714)
     with:
       image_prefix: ghcr.io/madfam-org
       kustomization_path: infra/k8s/production
