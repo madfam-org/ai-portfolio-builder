@@ -6,6 +6,7 @@
 import { z } from 'zod';
 import { isAllowedSlug } from '../../lib/api-routes.ts';
 import { ARTIFACT_KINDS, ARTIFACT_STATUSES, JOB_STATUSES, LOCALES, PROFILE_ITEM_KINDS, SOURCE_TEXT_MAX } from '../db/schema.ts';
+import { isTemplateFor } from '../../lib/templates.ts';
 
 const text = (max: number) => z.string().trim().max(max);
 const required = (max: number) => z.string().trim().min(1).max(max);
@@ -152,7 +153,8 @@ export const artifactCreateBody = z
     template: z.string().regex(/^[a-z0-9-]{1,40}$/).default('base'),
     content: z.unknown().default({}),
   })
-  .strict();
+  .strict()
+  .superRefine((b, ctx) => templateAllowed(b.kind, b.template, ['template'], ctx));
 /**
  * Several artifacts at once, in one transaction (the tailoring workspace's «Crear CV, portafolio y presentación para
  * este empleo»): same job, locale and template; each with its kind, title and content (validated per kind).
@@ -163,11 +165,24 @@ export const artifactSetBody = z
     locale: z.enum(LOCALES).default('es-MX'),
     template: z.string().regex(/^[a-z0-9-]{1,40}$/).default('base'),
     artifacts: z
-      .array(z.object({ kind: z.enum(ARTIFACT_KINDS), title: required(200), content: z.unknown().default({}) }).strict())
+      .array(
+        z
+          .object({
+            kind: z.enum(ARTIFACT_KINDS),
+            title: required(200),
+            content: z.unknown().default({}),
+            // W4-T: each document of a set may pick its own template; absent → the set's `template`.
+            template: z.string().regex(/^[a-z0-9-]{1,40}$/).optional(),
+          })
+          .strict(),
+      )
       .min(1)
       .max(4),
   })
-  .strict();
+  .strict()
+  .superRefine((b, ctx) =>
+    b.artifacts.forEach((a, i) => templateAllowed(a.kind, a.template ?? b.template, a.template === undefined ? ['template'] : ['artifacts', i, 'template'], ctx)),
+  );
 
 export const artifactPatchBody = z
   .object({
@@ -216,3 +231,18 @@ export const itemBatchBody = z
 /** `DELETE /me` body: an explicit, fixed confirmation (the UI asks the person to type «ELIMINAR» / «DELETE» first). */
 export const DELETE_ME_CONFIRMATION = 'delete-all-my-data';
 export const deleteMeBody = z.object({ confirm: z.literal(DELETE_ME_CONFIRMATION) }).strict();
+
+/**
+ * W4-T: the template allowlist, from the registry (`lib/templates.ts`). The shape check (`^[a-z0-9-]{1,40}$`) above
+ * stays; on top of it a template must be one its kind offers. A PATCH carries no kind, so the handler checks it
+ * against the stored artifact's kind with `templateIssue`. Rows stored before the allowlist keep rendering (the
+ * renderer falls back to `base`) and can still be edited without sending `template`.
+ */
+export function templateIssue(kind: string, template: string): string | null {
+  return isTemplateFor(kind, template) ? null : `unknown template for ${kind}`;
+}
+
+function templateAllowed(kind: string, template: string, path: (string | number)[], ctx: z.RefinementCtx): void {
+  const message = templateIssue(kind, template);
+  if (message) ctx.addIssue({ code: 'custom', path, message });
+}

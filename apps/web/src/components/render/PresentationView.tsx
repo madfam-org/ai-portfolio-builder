@@ -12,13 +12,13 @@ import s from './render.module.css';
 export function PresentationView({ model }: { model: DocModel }) {
   const t = RENDER_COPY[model.locale];
   const slides = [
-    <section key="title" className={`${s.slide} ${s.titleSlide}`} aria-label={model.title}>
+    <section key="title" className={`${s.slide} ${s.titleSlide}`} aria-label={model.title} data-part="slide">
       <h1 className={s.slideTitle}>{model.title}</h1>
       {model.name ? <p className={s.slideLead}>{model.name}</p> : null}
-      {model.headline ? <p className={s.headline}>{model.headline}</p> : null}
+      {model.headline ? <p className={s.headline} data-part="headline">{model.headline}</p> : null}
     </section>,
     ...model.slides.map((slide, i) => (
-      <section key={`s${i}`} className={s.slide} aria-label={slide.title ?? slidePosition(model.locale, i + 2, model.slides.length + 1)}>
+      <section key={`s${i}`} className={s.slide} data-part="slide" aria-label={slide.title ?? slidePosition(model.locale, i + 2, model.slides.length + 1)}>
         {slide.title ? <h2 className={s.slideTitle}>{slide.title}</h2> : null}
         <Paragraphs text={slide.body} />
         {slide.entries.length && slide.entries.every((e) => e.kind === 'skill' || e.kind === 'language' || e.kind === 'link') ? (
@@ -31,7 +31,7 @@ export function PresentationView({ model }: { model: DocModel }) {
   ];
   if (model.contact) {
     slides.push(
-      <section key="contact" className={s.slide} aria-label={t.contact}>
+      <section key="contact" className={s.slide} aria-label={t.contact} data-part="slide">
         <h2 className={s.slideTitle}>{t.contact}</h2>
         <ContactLine contact={model.contact} />
       </section>,

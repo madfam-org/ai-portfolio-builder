@@ -44,6 +44,7 @@ import {
   itemBatchBody,
   deleteMeBody,
   publishBody,
+  templateIssue,
   type ArtifactContent,
 } from './validation.ts';
 
@@ -242,7 +243,7 @@ async function dispatch(repo: Repository, quota: QuotaCheck, sub: string, nameHi
     }
     case 'artifacts-batch': {
       const body = parse(artifactSetBody, await readJson(request));
-      const items = body.artifacts.map((a) => ({ kind: a.kind, title: a.title, content: artifactContent(a.kind, a.content) }));
+      const items = body.artifacts.map((a) => ({ kind: a.kind, title: a.title, content: artifactContent(a.kind, a.content), template: a.template }));
       await quota('artifacts', items.length);
       const rows = await repo.createArtifactSet(sub, { jobId: body.jobId, locale: body.locale, template: body.template, artifacts: items });
       return rows ? json(201, { artifacts: rows.map(view) }) : notFound();
@@ -253,6 +254,9 @@ async function dispatch(repo: Repository, quota: QuotaCheck, sub: string, nameHi
       if (method === 'GET') return json(200, { artifact: view(existing) });
       if (method === 'DELETE') return (await repo.deleteArtifact(sub, id)) ? json(204, null) : notFound();
       const patch = parse(artifactPatchBody, await readJson(request));
+      // W4-T: the template allowlist needs the stored kind (a PATCH carries none); same 400 shape as zod's.
+      const templateProblem = patch.template === undefined ? null : templateIssue(existing.kind, patch.template);
+      if (templateProblem) throw new HttpError(400, { error: 'invalid_body', issues: [{ path: 'template', message: templateProblem }] });
       const content = patch.content === undefined ? undefined : artifactContent(existing.kind, patch.content);
       const row = await repo.updateArtifact(sub, id, { ...patch, content });
       return row ? json(200, { artifact: view(row) }) : notFound();

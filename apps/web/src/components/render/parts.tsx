@@ -41,7 +41,7 @@ export function UserLink({ link }: { link: DocLink }) {
 export function LinkList({ links }: { links: DocLink[] }) {
   if (!links.length) return null;
   return (
-    <ul className={s.links}>
+    <ul className={s.links} data-part="links">
       {links.map((l, i) => (
         <li key={i}>
           <UserLink link={l} />
@@ -56,14 +56,14 @@ export function EntryView({ entry, Heading = 'h3' }: { entry: Entry; Heading?: '
   const line = [entry.subtitle, ...entry.meta].filter(Boolean).join(' · ');
   return (
     <article className={s.entry} data-item-id={entry.id}>
-      <div className={s.entryHead}>
+      <div className={s.entryHead} data-part="entry-head">
         {entry.title ? <Heading className={s.entryTitle}>{entry.title}</Heading> : null}
-        {entry.dates ? <p className={s.dates}>{entry.dates}</p> : null}
+        {entry.dates ? <p className={s.dates} data-part="dates">{entry.dates}</p> : null}
       </div>
-      {line ? <p className={s.entryLine}>{line}</p> : null}
+      {line ? <p className={s.entryLine} data-part="entry-line">{line}</p> : null}
       <Paragraphs text={entry.summary} />
       {entry.highlights.length ? (
-        <ul className={s.highlights}>
+        <ul className={s.highlights} data-part="highlights">
           {entry.highlights.map((h, i) => (
             <li key={i}>{h}</li>
           ))}
@@ -77,7 +77,7 @@ export function EntryView({ entry, Heading = 'h3' }: { entry: Entry; Heading?: '
 /** Skills, languages and links: one compact list («Python — Avanzado, 5 años»). */
 export function CompactList({ entries }: { entries: Entry[] }) {
   return (
-    <ul className={s.compact}>
+    <ul className={s.compact} data-part="compact">
       {entries.map((e) => (
         <li key={e.id} data-item-id={e.id}>
           {e.kind === 'link' && e.links[0] ? (
@@ -112,7 +112,7 @@ export function ContactLine({ contact }: { contact: NonNullable<DocModel['contac
   if (contact.phone) parts.push(contact.phone.href ? <a key="tel" href={contact.phone.href} rel={USER_LINK_REL}>{contact.phone.text}</a> : <span key="tel">{contact.phone.text}</span>);
   contact.links.forEach((l, i) => parts.push(<UserLink key={`l${i}`} link={l} />));
   return (
-    <ul className={s.contact}>
+    <ul className={s.contact} data-part="contact">
       {parts.map((p, i) => (
         <li key={i}>{p}</li>
       ))}

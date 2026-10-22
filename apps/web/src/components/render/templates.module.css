@@ -1,0 +1,281 @@
+/*
+ * W4-T templates: typography and density over the SAME semantic markup the `base` renderers draw (render.module.css).
+ * Each class sits on the sheet (ArtifactView) and reaches the document through elements and `data-part` hooks, so a
+ * template never changes structure: every CV stays one column of real text under h1–h3, no layout tables, no images.
+ * System fonts only (the nonce CSP loads no web font). Print keeps base's rules (A4 / Letter named pages, entries and
+ * cards never split, headings never end a page) and adds the template's own sizes; nothing is clipped (no fixed
+ * heights, no overflow hidden outside the slide, which base already sizes per page).
+ */
+
+/* ---- cv/compacto: denser single column ---------------------------------------------------------------------- */
+.cvCompacto > article {
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+
+.cvCompacto > article header {
+  margin-bottom: 0.75rem;
+}
+
+.cvCompacto > article h1 {
+  font-size: 1.6rem;
+  margin-bottom: 0.1rem;
+}
+
+.cvCompacto > article [data-part='headline'] {
+  font-size: 1rem;
+  margin-bottom: 0.25rem;
+}
+
+.cvCompacto > article section {
+  margin-top: 0.9rem;
+}
+
+.cvCompacto > article h2 {
+  font-size: 0.95rem;
+  margin-bottom: 0.4rem;
+  padding-bottom: 0.1rem;
+}
+
+.cvCompacto > article h3 {
+  font-size: 0.98rem;
+}
+
+.cvCompacto > article [data-item-id] {
+  margin-bottom: 0.55rem;
+}
+
+.cvCompacto > article p {
+  margin: 0 0 0.2rem;
+}
+
+.cvCompacto > article [data-part='entry-line'],
+.cvCompacto > article [data-part='dates'] {
+  margin-bottom: 0.1rem;
+}
+
+.cvCompacto > article [data-part='highlights'] {
+  margin: 0.1rem 0 0.25rem;
+  padding-left: 1.1rem;
+}
+
+/* Skills, languages and links on wrapping lines instead of one per line (still a real <ul> of text). */
+.cvCompacto > article [data-part='compact'] {
+  list-style: none;
+  padding-left: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.1rem 1.1rem;
+}
+
+/* ---- cv/clasico: traditional serif hierarchy, one column ---------------------------------------------------- */
+.cvClasico > article,
+.letterFormal > article {
+  font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, 'Times New Roman', serif;
+}
+
+.cvClasico > article header {
+  text-align: center;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.cvClasico > article h1 {
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.cvClasico > article [data-part='headline'] {
+  font-style: italic;
+}
+
+.cvClasico > article [data-part='contact'] {
+  justify-content: center;
+}
+
+.cvClasico > article h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  text-transform: none;
+  font-variant: small-caps;
+  letter-spacing: 0.08em;
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.cvClasico > article h3 {
+  font-weight: 600;
+}
+
+.cvClasico > article [data-part='entry-line'] {
+  font-style: italic;
+}
+
+.cvClasico > article [data-part='dates'] {
+  font-variant-numeric: oldstyle-nums;
+}
+
+/* ---- portfolio/lista: one column, no cards ------------------------------------------------------------------ */
+.portfolioLista > article [data-part='cards'] {
+  display: block;
+}
+
+.portfolioLista > article [data-part='card'] {
+  background: none;
+  border: 0;
+  border-left: 3px solid var(--line);
+  border-radius: 0;
+  padding: 0.1rem 0 0.1rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.portfolioLista > article [data-part='card'] [data-item-id] {
+  margin-bottom: 0;
+}
+
+/* ---- presentation/contraste: dark slides, larger left-aligned titles ---------------------------------------- */
+.presentationContraste > article [data-part='slide'] {
+  background: #111;
+  color: #f5f5f5;
+  border-color: #111;
+  border-top: 0.4rem solid #f2c94c;
+  text-align: left;
+  justify-content: flex-start;
+}
+
+.presentationContraste > article [data-part='slide'] h1,
+.presentationContraste > article [data-part='slide'] h2 {
+  font-size: clamp(1.6rem, 4.2vw, 2.7rem);
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.presentationContraste > article [data-part='slide'] [data-part='headline'],
+.presentationContraste > article [data-part='slide'] [data-part='dates'],
+.presentationContraste > article [data-part='slide'] [data-part='entry-line'] {
+  color: #d0d0d0;
+}
+
+.presentationContraste > article [data-part='slide'] a {
+  color: #b8e0ff;
+}
+
+.presentationContraste > article [data-part='slide'] a:focus-visible {
+  outline: 3px solid #f2c94c;
+  outline-offset: 2px;
+}
+
+/* ---- cover_letter/formal: traditional letter ---------------------------------------------------------------- */
+.letterFormal > article header {
+  text-align: right;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.letterFormal > article h1 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.letterFormal > article [data-part='headline'] {
+  font-size: 1rem;
+}
+
+.letterFormal > article [data-part='contact'] {
+  justify-content: flex-end;
+}
+
+.letterFormal > article [data-part='letter-body'] {
+  max-width: 36rem;
+  line-height: 1.6;
+}
+
+.letterFormal > article [data-part='letter-body'] p {
+  margin: 0 0 0.9rem;
+}
+
+.letterFormal > article h2 {
+  font-size: 1rem;
+  font-weight: 600;
+  text-transform: none;
+  font-variant: small-caps;
+  letter-spacing: 0.06em;
+  border-bottom: 0;
+}
+
+.letterFormal > article [data-part='letter-body'] p[data-part='signature'] {
+  margin-top: 2.5rem;
+}
+
+/* ---- print -------------------------------------------------------------------------------------------------- */
+@media print {
+  .cvCompacto > article {
+    font-size: 9.5pt;
+    line-height: 1.25;
+  }
+
+  .cvCompacto > article h1 {
+    font-size: 17pt;
+  }
+
+  .cvCompacto > article h2 {
+    font-size: 10pt;
+  }
+
+  .cvCompacto > article h3 {
+    font-size: 10pt;
+  }
+
+  .cvClasico > article {
+    font-size: 11pt;
+  }
+
+  .cvClasico > article header,
+  .letterFormal > article header {
+    border-bottom-color: #999;
+  }
+
+  .portfolioLista > article [data-part='card'] {
+    border-left-color: #999;
+    padding-left: 0.6rem;
+  }
+
+  /* Ink: contraste prints black on white; the larger, left-aligned titles stay. */
+  .presentationContraste > article [data-part='slide'] {
+    background: #fff;
+    color: #000;
+    border-top: 0.15in solid #000;
+  }
+
+  .presentationContraste > article [data-part='slide'] [data-part='headline'],
+  .presentationContraste > article [data-part='slide'] [data-part='dates'],
+  .presentationContraste > article [data-part='slide'] [data-part='entry-line'] {
+    color: #333;
+  }
+
+  .presentationContraste > article [data-part='slide'] a {
+    color: #000;
+  }
+
+  .presentationContraste > article [data-part='slide'] h1,
+  .presentationContraste > article [data-part='slide'] h2 {
+    font-size: 34pt;
+  }
+
+  .letterFormal > article {
+    font-size: 11pt;
+    padding: 0 8mm;
+  }
+
+  .letterFormal > article [data-part='letter-body'] {
+    max-width: none;
+    line-height: 1.45;
+  }
+
+  /* The closing and the signature stay with the last paragraph. */
+  .letterFormal > article [data-part='letter-body'] p[data-part='signature'] {
+    break-before: avoid;
+    margin-top: 1.5rem;
+  }
+}

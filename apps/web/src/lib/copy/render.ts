@@ -195,7 +195,7 @@ export const DOCUMENTS_COPY: Record<Locale, DocumentsCopy> = {
     localeLabel: 'Idioma del documento',
     locales: { 'es-MX': 'Español (México)', en: 'Inglés' },
     templateLabel: 'Plantilla',
-    templateHint: 'Por ahora hay una plantilla por tipo de documento; los sistemas de reclutamiento (ATS) leen su texto sin problema.',
+    templateHint: 'Cambia el aspecto, nunca el contenido. Todas las plantillas de CV y carta son de una columna con texto real: los sistemas de reclutamiento (ATS) las leen sin problema.',
     templates: { base: 'Básica (compatible con ATS)' },
     statusLabel: 'Estado',
     statusPublishedHint: 'Está publicado. Para volverlo borrador o listo, primero despublícalo.',
@@ -276,7 +276,7 @@ export const DOCUMENTS_COPY: Record<Locale, DocumentsCopy> = {
     localeLabel: 'Document language',
     locales: { 'es-MX': 'Spanish (Mexico)', en: 'English' },
     templateLabel: 'Template',
-    templateHint: 'For now there is one template per document type.',
+    templateHint: 'It changes the look, never the content. Every CV and letter template is one column of real text: applicant tracking systems (ATS) read them without trouble.',
     templates: { base: 'Basic (ATS-friendly)' },
     statusLabel: 'Status',
     statusPublishedHint: 'It is published. To make it a draft or ready again, unpublish it first.',
@@ -340,3 +340,39 @@ export const DOCUMENTS_COPY: Record<Locale, DocumentsCopy> = {
 export function slidePosition(locale: Locale, n: number, total: number): string {
   return RENDER_COPY[locale].position.replace('{n}', String(n)).replace('{total}', String(total));
 }
+
+/**
+ * W4-T: the template pickers (the tailoring workspace and `/documentos/:id`). Template names, descriptions and ATS
+ * notes come from the registry (`lib/templates.ts`); these are the picker's own words.
+ */
+export interface TemplatePickerCopy {
+  legend: string;
+  /** «Plantilla: CV» (the workspace offers one picker per chosen kind). */
+  legendFor: (kindLabel: string) => string;
+  /** A stored template the kind no longer offers (a row from before the allowlist). */
+  legacy: (id: string) => string;
+  legacyNote: string;
+  /** Under the picker of a published document: the change is live on save. */
+  publishedNote: string;
+  /** The preview link next to the picker. */
+  seePreview: string;
+}
+
+export const TEMPLATE_PICKER_COPY: Record<Locale, TemplatePickerCopy> = {
+  es: {
+    legend: 'Plantilla',
+    legendFor: (kind) => `Plantilla: ${kind}`,
+    legacy: (id) => `«${id}» (anterior)`,
+    legacyNote: 'Esta plantilla ya no se ofrece; el documento se muestra con la básica hasta que elijas otra.',
+    publishedNote: 'El documento está publicado: al guardar, la página pública cambia de plantilla de inmediato.',
+    seePreview: 'Ver la vista previa',
+  },
+  en: {
+    legend: 'Template',
+    legendFor: (kind) => `Template: ${kind}`,
+    legacy: (id) => `“${id}” (previous)`,
+    legacyNote: 'This template is no longer offered; the document shows with the basic one until you choose another.',
+    publishedNote: 'This document is published: on save, the public page switches template at once.',
+    seePreview: 'See the preview',
+  },
+};
