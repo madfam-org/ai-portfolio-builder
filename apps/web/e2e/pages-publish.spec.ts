@@ -6,7 +6,9 @@
 import { expect, test, type Page } from '@playwright/test';
 import postgres from 'postgres';
 import { apiAs, cspViolations, raw, signIn } from './support/fixtures.ts';
-import { OWNER_A, url } from './support/env.ts';
+import { suiteOwners, url } from './support/env.ts';
+
+const { OWNER_A } = suiteOwners('pages-publish');
 
 const RUN = Date.now().toString(36);
 const SLUG = `ana-${RUN}`;

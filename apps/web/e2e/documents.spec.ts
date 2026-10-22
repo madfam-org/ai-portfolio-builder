@@ -6,7 +6,9 @@
 import { expect, test, type Page } from '@playwright/test';
 import { readPdf } from './documents-pdf.ts';
 import { apiAs, cspViolations, signIn } from './support/fixtures.ts';
-import { OWNER_A, OWNER_B, url } from './support/env.ts';
+import { suiteOwners, url } from './support/env.ts';
+
+const { OWNER_A, OWNER_B } = suiteOwners('documents');
 
 const RUN = Date.now().toString(36);
 const ids: Record<'cv' | 'portfolio' | 'presentation' | 'cover_letter', string> = { cv: '', portfolio: '', presentation: '', cover_letter: '' };
