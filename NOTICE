@@ -11,3 +11,9 @@ requires you to offer those users the Corresponding Source of your modified vers
 
 The code that lived in this repository before 2026-10-22 is preserved at the git tag
 `legacy-2025-09`; this notice does not relicense it.
+
+Pliego paper data (added 2026-10-22, W5-P): the JSON files in apps/web/src/lib/pliego/vendor/ are commons
+objects of Pliego (github.com/madfam-org/pliego), copyright Innovaciones MADFAM S.A.S. de C.V., licensed under
+the CERN Open Hardware Licence Version 2 - Weakly Reciprocal (CERN-OHL-W-2.0); the full text is in
+apps/web/src/lib/pliego/vendor/CERN-OHL-W-2.0.txt. They are pinned, unmodified copies or unmodified Pliego output
+(provenance in LOCK.json and README.md there) and are not relicensed by this repository.

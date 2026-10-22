@@ -24,3 +24,9 @@ journey (from the next waves), the portfolio data model and the public portfolio
 | User custom domains | Enclii custom hostnames | the app never holds a DNS provider token | later |
 
 Today (wave 1) the product holds no money, no identity, no personal data and no secret.
+
+## Paper physics: Pliego (W5-P, 2026-10-22)
+
+| Capability | Owner | How this product uses it | When |
+|---|---|---|---|
+| Paper stocks (grammage, caliper, colour, bending stiffness, scoring) and print folds | Pliego (`pliego.madfam.io`) | build-time, pinned copies of two stock cards and of the letter fold its kernel computes (`apps/web/src/lib/pliego/vendor/`, CERN-OHL-W-2.0); screen-only paper preview and printing advice; no runtime call | now |
