@@ -116,6 +116,7 @@ spec:
         label: app.kubernetes.io/name
         port: 3000
         ingress: [cloudflare-tunnel]
+        # W5-H: https also carries the call to Symbiosis HCM's public host (hcm-api.madfam.io), like Janua's.
         egress: [dns, https, pgbouncer]
 
   dependencies:

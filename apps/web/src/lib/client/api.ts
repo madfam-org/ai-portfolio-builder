@@ -15,6 +15,7 @@ import type {
   ArtifactDto,
   ArtifactPatchInput,
   ArtifactSetInput,
+  BenchmarkDto,
   ItemBatchInput,
   ItemCreateInput,
   ItemDto,
@@ -124,6 +125,8 @@ export function createApiClient(fetchImpl: Fetch = (i, init) => fetch(i, init), 
     /** 409 `job_has_artifacts` while artifacts still point at it (never a silent cascade). */
     deleteJob: (jobId: string) => call<null>('DELETE', `/jobs/${id(jobId)}`),
     match: (jobId: string) => call<MatchDto>('GET', `/jobs/${id(jobId)}/match`),
+    /** W5-H: the job's market range from Symbiosis HCM; 503 `not_configured` while the HCM edge is dormant. */
+    benchmark: (jobId: string) => call<BenchmarkDto>('GET', `/jobs/${id(jobId)}/benchmark`),
 
     listArtifacts: (filter: { jobId?: string; kind?: string } = {}) => call<{ artifacts: ArtifactDto[] }>('GET', `/artifacts${query({ job_id: filter.jobId, kind: filter.kind })}`),
     createArtifact: (body: ArtifactCreateInput) => call<{ artifact: ArtifactDto }>('POST', '/artifacts', body),

@@ -233,3 +233,16 @@ and `apps/web/scripts/pliego-page-turn.ts` keeps its mid-height cross-section pe
 `src/components/render/page-turn/turn.ts` plays it, loaded lazily by `SlideDeck` only for a deck of two or more slides
 when reduced motion is off: an inert, `aria-hidden` copy of the slide in CSS-3D strips over the new slide for 0.8 s,
 then only real text. Never in print (`e2e/documents-page-turn.spec.ts` compares the PDFs with and without it).
+
+## W5-H: market income range from Symbiosis HCM
+
+`/empleos/:id` shows «Rango de ingreso en el mercado» from Symbiosis HCM (INEGI ENOE, official public statistics;
+[`docs/PRODUCT.md`](docs/PRODUCT.md) «Market income range»). W5-H owns `apps/web/src/server/hcm/**`,
+`src/components/jobs/benchmark/**`, `src/lib/copy/benchmark.ts`, `e2e/benchmark*.spec.ts`, `test/hcm-*.test.ts`,
+`test-pg/benchmark.pg.test.ts`, `test-support/hcm-fake.ts` and `infra/k8s/production/externalsecret-hcm-client.yaml`.
+Rules: HCM is the data owner (cv stores no figure); only the job title and ISO state leave cv, never the person;
+every figure on screen carries «Datos de la ENOE (INEGI), <trimestre>, n = …»; withheld figures say «sin datos
+suficientes», never an estimate; the panel never blocks `/ready`. The structured state and salary fields come from
+lane W5-J (`stateCode` ISO 3166-2, `countryCode`, `salaryMin`/`salaryMax`/`salaryCurrency`/`salaryPeriod`):
+`server/hcm/facts.ts` names the fields it reads and `test/hcm-facts.test.ts` pins them; rows from before W5-J fall
+back to a state named in the location text.

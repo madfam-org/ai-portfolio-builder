@@ -7,6 +7,8 @@ export const E2E_PORT = Number(process.env.CV_E2E_PORT ?? 3311);
 export const E2E_MINT_PORT = Number(process.env.CV_E2E_MINT_PORT ?? 3312);
 /** The server's internal metrics listener (CV_METRICS_PORT; production uses 9090, never a public host). */
 export const E2E_METRICS_PORT = Number(process.env.CV_E2E_METRICS_PORT ?? 3313);
+/** W5-H: the launcher's SYNTHETIC Symbiosis HCM (test-support/hcm-fake.ts: token + market benchmarks). */
+export const E2E_HCM_PORT = Number(process.env.CV_E2E_HCM_PORT ?? 3314);
 
 export const HOSTS = {
   landing: 'cv.localhost',

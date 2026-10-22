@@ -18,6 +18,9 @@ resources:
 - network-policy-migrate.yaml
 - migrate-job.yaml
 - externalsecret-web-auth.yaml
+# W5-H: the Symbiosis HCM machine client (Vault secret/cv hcm_client_id / hcm_client_secret, written by
+# `enclii secrets provision oidc --platform cv-hcm-benchmarks`); read with optional: true by the Deployment.
+- externalsecret-hcm-client.yaml
 
 # Image digest: pinned by the Build & Deploy workflow (Enclii's reusable build-publish runs
 # `kustomize edit set image <image>=<image>@sha256:...`, commits the pin to main, and the GitOps sync rolls it).
