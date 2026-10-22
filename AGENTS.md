@@ -106,6 +106,7 @@ Kubernetes Service publishes 80; every `enclii.yaml` domain pins `port: 80`. Fla
 | `apps/web/src/lib/auth-env.ts`, `public-origin.ts`, `api-routes.ts` | the env contract and dormancy rules; the public-origin allow-list and CSRF guard; the API route table (shared by the proxy and the handler) |
 | `apps/web/src/server/` | `janua.ts` (RS256 JWKS verification), `db/` (schema, client, migrations runner, owner-scoped repository), `api/` (handler, zod bodies, the deterministic job match) |
 | `apps/web/drizzle/` | committed SQL migrations (`0001` grants the `cv_app` runtime role) |
+| `apps/web/src/server/metrics*.ts` | observability (W4): the dependency-free registry, route-template labels, process metrics, and the internal `/metrics` listener on `CV_METRICS_PORT` (9090) plus the JSON request log, started from `src/instrumentation.ts` ([`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) "Observability") |
 | `apps/web/test-pg/`, `test-support/` | the real-Postgres suite (`pnpm test:pg`) and the local RS256/JWKS token fixture |
 | `janua.client.yaml` | names only: the `cv-api` resource server and the `cv-web` client the W2 code uses |
 | `docs/PRODUCT.md` | the owner requirement and the profile → jobs → tailored artifacts model |
