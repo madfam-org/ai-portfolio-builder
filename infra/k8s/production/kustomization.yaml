@@ -8,6 +8,8 @@ kind: Kustomization
 # schema. Sign-in reads the ExternalSecret cv-web-auth (Vault secret/cv: the Janua client id and secret, AUTH_SECRET).
 namespace: cv
 
+# Sign-in (2026-10-22): Vault secret/cv holds auth_janua_client_id, auth_janua_client_secret and auth_secret
+# (intakes int_1792692829253561061 and int_1792692328556323018, both ready). ESO is all-or-nothing.
 resources:
 - deployment.yaml
 - poddisruptionbudget.yaml
@@ -15,8 +17,6 @@ resources:
 - network-policy.yaml
 - network-policy-migrate.yaml
 - migrate-job.yaml
-# Sign-in (2026-10-22): Vault secret/cv holds auth_janua_client_id, auth_janua_client_secret and auth_secret
-# (intakes int_1792692829253561061 and int_1792692328556323018, both ready). ESO is all-or-nothing.
 - externalsecret-web-auth.yaml
 
 # Image digest: pinned by the Build & Deploy workflow (Enclii's reusable build-publish runs
@@ -25,6 +25,6 @@ resources:
 # run unpinned before a real pin lands. The workload names the image with a `:latest` decoy that this block
 # rewrites to the digest (the rendered manifest carries no tag at all).
 images:
-- digest: sha256:7dd9e52ce5b2ec022b6250c25b8810982aa7d589941d2eec148f6285b46b534a
+- digest: sha256:4174f2de585b1abb79bf3dda60f84287876b458b147d9130088d9638529018ff
   name: ghcr.io/madfam-org/cv
   newName: ghcr.io/madfam-org/cv
