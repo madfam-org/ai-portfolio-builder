@@ -15,6 +15,7 @@ import type {
   ArtifactDto,
   ArtifactPatchInput,
   ArtifactSetInput,
+  ItemBatchInput,
   ItemCreateInput,
   ItemDto,
   ItemPatchInput,
@@ -134,6 +135,14 @@ export function createApiClient(fetchImpl: Fetch = (i, init) => fetch(i, init), 
     /** `{visibility:'link'}` (a fresh token each time: «Cambiar enlace») or `{visibility:'public', slug, indexable?}`. */
     publishArtifact: (artifactId: string, body: PublishInput) => call<{ artifact: ArtifactDto }>('POST', `/artifacts/${id(artifactId)}/publish`, body),
     unpublishArtifact: (artifactId: string) => call<{ artifact: ArtifactDto }>('POST', `/artifacts/${id(artifactId)}/unpublish`),
+
+    // W4-I: import, export, deletion.
+    /** The confirmed import: items (and chosen header fields), all or none. */
+    importItems: (body: ItemBatchInput) => call<{ profile: ProfileDto; items: ItemDto[] }>('POST', '/profile/items/batch', body),
+    /** Everything the person holds (`full`) or their profile as JSON Resume; the parsed document. */
+    exportMine: (format: 'full' | 'json-resume' = 'full') => call<Record<string, unknown>>('GET', `/me/export${query({ format: format === 'full' ? undefined : format })}`),
+    /** Deletes every row the person holds (profile, items, jobs, documents, publications). */
+    deleteMine: () => call<{ deleted: { profiles: number; items: number; jobs: number; artifacts: number } }>('DELETE', '/me', { confirm: 'delete-all-my-data' }),
   };
 }
 

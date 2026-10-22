@@ -1,0 +1,45 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jsonresume/resume-schema/v1.0.0/schema.json",
+  "basics": {
+    "name": "Beto Ejemplo",
+    "label": "Desarrollador web",
+    "email": "beto@example.test",
+    "phone": "+52 777 000 0000",
+    "url": "https://beto.example.test",
+    "summary": "Construyo sitios accesibles.",
+    "location": { "city": "Cuernavaca", "region": "Morelos", "countryCode": "MX" },
+    "profiles": [
+      { "network": "GitHub", "username": "beto-ejemplo", "url": "https://code.example.test/beto-ejemplo" },
+      { "network": "Sin enlace", "username": "beto" }
+    ]
+  },
+  "work": [
+    { "name": "Taller Ejemplo", "position": "Desarrollador", "url": "https://taller.example.test", "startDate": "2020-02", "summary": "Sitios para pequeños negocios.", "highlights": ["Bajé el tiempo de carga a la mitad", "Accesibilidad AA"] },
+    { "company": "Agencia Prueba", "position": "Practicante", "startDate": "2019-06-01", "endDate": "2019-12-15" },
+    { "name": "Sin puesto" }
+  ],
+  "volunteer": [
+    { "organization": "Biblioteca Comunitaria Ejemplo", "position": "Tutor", "startDate": "2018", "endDate": "2019", "summary": "Clases de computación", "highlights": ["40 alumnos"] }
+  ],
+  "education": [
+    { "institution": "Universidad Prueba", "area": "Ingeniería en Computación", "studyType": "Licenciatura", "startDate": "2015-08", "endDate": "2019-06", "score": "9.1", "courses": ["Redes", "Bases de datos"] }
+  ],
+  "awards": [{ "title": "Hackatón local", "date": "2018-11-03", "awarder": "Colectivo Ejemplo", "summary": "Segundo lugar" }],
+  "certificates": [{ "name": "Accesibilidad web", "date": "2021-05", "issuer": "Escuela Ejemplo", "url": "https://escuela.example.test/c/1" }],
+  "publications": [{ "name": "Guía de formularios accesibles", "publisher": "Blog Ejemplo", "releaseDate": "2022-01-10", "url": "https://blog.example.test/formularios", "summary": "Buenas prácticas" }],
+  "skills": [
+    { "name": "TypeScript", "level": "Master", "keywords": ["React", "Node.js", "react"] },
+    { "name": "CSS", "level": "Intermediate" }
+  ],
+  "languages": [
+    { "language": "Español", "fluency": "Native speaker" },
+    { "language": "Inglés", "fluency": "B2" },
+    { "language": "Italiano", "fluency": "Algo" }
+  ],
+  "projects": [
+    { "name": "Formulario universal", "description": "Componentes de formulario", "highlights": ["Usado en 3 sitios"], "keywords": ["a11y"], "startDate": "2022", "url": "https://code.example.test/beto-ejemplo/formulario", "roles": ["Autor", "Mantenedor"] }
+  ],
+  "interests": [{ "name": "Ciclismo" }],
+  "references": [{ "name": "Persona Ejemplo", "reference": "Texto de referencia" }],
+  "meta": { "version": "v1.0.0" }
+}

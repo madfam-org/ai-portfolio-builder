@@ -43,11 +43,13 @@ export function matchRoute(segments: readonly string[]): Route | null {
     if (b === 's' && SHARE_TOKEN.test(c)) return { kind: 'public-token', token: c };
     return null;
   }
-  if (a === 'me' && n === 1) return authed('me', ['GET']);
+  if (a === 'me' && n === 1) return authed('me', ['GET', 'DELETE']);
+  if (a === 'me' && n === 2 && b === 'export') return authed('me-export', ['GET']);
   if (a === 'profile') {
     if (n === 1) return authed('profile', ['GET', 'PUT']);
     if (b === 'items' && n === 2) return authed('items', ['GET', 'POST']);
     if (b === 'items' && n === 3 && c === 'reorder') return authed('items-reorder', ['POST']);
+    if (b === 'items' && n === 3 && c === 'batch') return authed('items-batch', ['POST']);
     if (b === 'items' && n === 3 && isId(c)) return authed('item', ['GET', 'PATCH', 'DELETE'], [c]);
     return null;
   }

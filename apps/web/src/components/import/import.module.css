@@ -1,0 +1,105 @@
+/*
+ * The import panel (W4-I). Classes only (the nonce CSP blocks style attributes); colours from app/globals.css tokens.
+ */
+
+.panel {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 1.25rem;
+  display: grid;
+  gap: 1rem;
+}
+.panel > h2 {
+  margin: 0;
+}
+.panel > p {
+  margin: 0;
+  color: var(--muted);
+}
+.privacy h3,
+.source h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
+}
+.privacy ul {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 0.3rem;
+}
+.sources {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+}
+.source {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  display: grid;
+  gap: 0.5rem;
+}
+.hint {
+  color: var(--muted);
+  font-size: 0.92rem;
+  margin: 0;
+}
+.preview {
+  display: grid;
+  gap: 0.9rem;
+}
+.previewTitle {
+  margin: 0;
+  font-size: 1.15rem;
+}
+.previewTitle:focus {
+  outline: none;
+}
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+}
+.group {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.6rem 1rem 0.9rem;
+  margin: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+.group legend {
+  font-weight: 600;
+  padding: 0 0.3rem;
+}
+.items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+.item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 0.6rem;
+  align-items: start;
+}
+.item input {
+  margin-top: 0.3rem;
+  width: 1.05rem;
+  height: 1.05rem;
+}
+.meta {
+  grid-column: 2;
+  margin: 0.1rem 0 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+  overflow-wrap: anywhere;
+}
+.dup {
+  font-weight: 600;
+  color: var(--ink);
+}
