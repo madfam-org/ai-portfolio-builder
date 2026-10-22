@@ -1,0 +1,32 @@
+# Egress for the migrate PreSync Job's pod (app.kubernetes.io/name=cv-migrate): DNS and PgBouncer in `data` only
+# (the same rules as the app's, network-policy.yaml). default-deny-all already covers it; nothing reaches it.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-migrate-egress
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: cv-migrate
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: data
+          podSelector:
+            matchLabels:
+              app: pgbouncer
+      ports:
+        - protocol: TCP
+          port: 6432

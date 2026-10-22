@@ -97,6 +97,14 @@ spec:
             # The brand is not ruled: the landing answers noindex until this is "true" (one flag, one place).
             - name: CV_INDEXABLE
               value: "false"
+            # W2 data: the runtime role cv_app only (DML). The owner URL (DATABASE_URL) in the same onboarding
+            # Secret is deliberately NOT given to the app; only the migrate Job reads it. Sign-in (AUTH_*) is
+            # wired separately once Vault secret/cv holds its values (docs/DEPLOYMENT.md).
+            - name: APP_DATABASE_URL
+              valueFrom:
+                secretKeyRef: { name: cv-secrets, key: APP_DATABASE_URL }
+            - name: DATABASE_POOL_MAX
+              value: "3"
           volumeMounts:
             - name: tmp
               mountPath: /tmp
