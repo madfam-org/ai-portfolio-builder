@@ -97,10 +97,11 @@ test('landing: es and en pages, nonce CSP, noindex, canon footer', async () => {
     assert.doesNotMatch(csp, /unsafe-inline|unsafe-eval/);
     assert.match(r.body, new RegExp(`<html lang="${lang}"`));
     // Every script tag carries this response's nonce; no inline style attributes.
-    const scripts = r.body.match(/<script\b[^>]*>/g) ?? [];
+    // Case-insensitive: HTML tag and attribute names are, so `<SCRIPT>` must not slip past.
+    const scripts = r.body.match(/<script\b[^>]*>/gi) ?? [];
     assert.ok(scripts.length > 0);
     for (const s of scripts) assert.ok(s.includes(`nonce="${nonce}"`), s);
-    assert.doesNotMatch(r.body, /\sstyle="/);
+    assert.doesNotMatch(r.body, /\sstyle\s*=/i);
     assert.equal(r.headers['x-robots-tag'], 'noindex, nofollow');
     assert.match(r.body, /<meta name="robots" content="noindex, nofollow"/);
     assert.match(r.body, /Innovaciones MADFAM S\.A\.S\. de C\.V\./);
