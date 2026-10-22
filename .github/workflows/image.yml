@@ -110,6 +110,7 @@ jobs:
         run: |
           set -euo pipefail
           problems=0
+          # test-only: the runner's local container, never production (production is scraped by the platform).
           docker exec cv wget -qO- http://127.0.0.1:9090/metrics > "$RUNNER_TEMP/metrics.txt"
           for family in cv_http_requests_total cv_http_request_duration_seconds cv_ready cv_db_readiness_checks_total process_resident_memory_bytes; do
             grep -q "^# TYPE $family " "$RUNNER_TEMP/metrics.txt" || { echo "metrics: FAIL no $family"; problems=$((problems+1)); }
