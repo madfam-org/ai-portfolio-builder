@@ -1,0 +1,333 @@
+/*
+ * The artifact renderers (W3-4). System fonts, real text, no images, no inline styles. Screen uses the app's colour
+ * tokens; print is black on white with A4 / Letter named pages (the print view's paper toggle) and, for the
+ * presentation, one 13.333 × 7.5 in slide per page.
+ */
+
+.sheet {
+  width: 100%;
+}
+
+.doc {
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.doc h1,
+.doc h2,
+.doc h3,
+.doc h4 {
+  letter-spacing: normal;
+}
+
+.header {
+  margin-bottom: 1.25rem;
+}
+
+.name {
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+  margin: 0 0 0.25rem;
+}
+
+.headline {
+  font-size: 1.1rem;
+  color: var(--muted);
+  margin: 0 0 0.5rem;
+}
+
+.lead {
+  font-size: 1.1rem;
+}
+
+.contact,
+.links {
+  list-style: none;
+  padding: 0;
+  margin: 0.25rem 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1.25rem;
+}
+
+.host {
+  color: var(--muted);
+}
+
+.section {
+  margin-top: 1.5rem;
+}
+
+.sectionTitle {
+  font-size: 1.15rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 0.2rem;
+  margin: 0 0 0.75rem;
+}
+
+.entry {
+  margin-bottom: 1rem;
+}
+
+.entryHead {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0 1rem;
+}
+
+.entryTitle {
+  font-size: 1.05rem;
+  margin: 0;
+}
+
+.dates,
+.entryLine {
+  color: var(--muted);
+  margin: 0 0 0.25rem;
+}
+
+.highlights {
+  margin: 0.25rem 0 0.5rem;
+  padding-left: 1.25rem;
+}
+
+.compact {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.compactName {
+  font-weight: 600;
+}
+
+/* portfolio */
+.hero {
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.cards {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 44rem) {
+  .cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem 0.25rem;
+}
+
+/* cover letter */
+.letterBody {
+  max-width: 40rem;
+}
+
+.greeting {
+  margin-top: 1rem;
+}
+
+.letterBlock {
+  margin-top: 1rem;
+}
+
+.closing {
+  margin-top: 1.5rem;
+}
+
+.signature {
+  font-weight: 600;
+}
+
+/* presentation */
+.deck {
+  display: grid;
+  gap: 1rem;
+}
+
+.slideFrame[hidden] {
+  display: none;
+}
+
+.slide {
+  aspect-ratio: 16 / 9;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: clamp(1rem, 4vw, 2.5rem);
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.titleSlide {
+  text-align: center;
+}
+
+.slideTitle {
+  font-size: clamp(1.4rem, 3.5vw, 2.2rem);
+  margin: 0 0 0.75rem;
+}
+
+.slideLead {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.deckControls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+
+.deckButton {
+  min-height: 2.5rem;
+  padding: 0.4rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.deckButton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.deckButton:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.deckPosition {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.deckHint {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+/* print */
+@page cvLetter {
+  size: letter;
+  margin: 15mm 16mm;
+}
+
+@page cvA4 {
+  size: A4;
+  margin: 15mm 16mm;
+}
+
+@page cvSlides {
+  size: 13.333in 7.5in;
+  margin: 0;
+}
+
+@media print {
+  .paperLetter {
+    page: cvLetter;
+  }
+
+  .paperA4 {
+    page: cvA4;
+  }
+
+  .paperSlides {
+    page: cvSlides;
+  }
+
+  .doc {
+    color: #000;
+    font-size: 10.5pt;
+    line-height: 1.35;
+  }
+
+  .doc a {
+    color: #000;
+    text-decoration: none;
+  }
+
+  .headline,
+  .dates,
+  .entryLine,
+  .host {
+    color: #333;
+  }
+
+  .sectionTitle {
+    border-bottom-color: #999;
+    break-after: avoid;
+  }
+
+  .entry,
+  .card,
+  .compact li {
+    break-inside: avoid;
+  }
+
+  .cards {
+    grid-template-columns: 1fr;
+  }
+
+  .card {
+    border: 0;
+    padding: 0;
+  }
+
+  .deck {
+    display: block;
+  }
+
+  .slideFrame,
+  .slideFrame[hidden] {
+    display: block;
+  }
+
+  .slideFrame + .slideFrame {
+    break-before: page;
+  }
+
+  .slide {
+    width: 13.333in;
+    height: 7.5in;
+    aspect-ratio: auto;
+    border: 0;
+    border-radius: 0;
+    padding: 0.6in 0.8in;
+    overflow: hidden;
+  }
+
+  .slideTitle {
+    font-size: 30pt;
+  }
+
+  .presentation {
+    font-size: 16pt;
+  }
+
+  .deckControls {
+    display: none;
+  }
+}

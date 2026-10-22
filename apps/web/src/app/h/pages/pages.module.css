@@ -1,0 +1,13 @@
+/* The pages host's frame around a person's document (W3-4): the document is the page. */
+.main {
+  max-width: 52rem;
+  padding-top: clamp(1.5rem, 6vw, 4rem);
+  padding-bottom: clamp(1.5rem, 6vw, 4rem);
+}
+
+@media print {
+  .main {
+    max-width: none;
+    padding: 0;
+  }
+}
