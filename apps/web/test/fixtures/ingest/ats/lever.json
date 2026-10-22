@@ -1,0 +1,15 @@
+{
+  "id": "5f3c2b1a-0000-4000-8000-00000000abcd",
+  "text": "Product Manager, Payments",
+  "categories": { "commitment": "Full-time", "department": "Product", "location": "Monterrey, Nuevo León", "team": "Payments", "allLocations": ["Monterrey, Nuevo León"] },
+  "country": "MX",
+  "workplaceType": "hybrid",
+  "description": "<div>Lead our payments roadmap.</div>",
+  "descriptionPlain": "Lead our payments roadmap across Mexico and Colombia.",
+  "lists": [{ "text": "What you will do", "content": "<li>Own discovery</li><li>Ship weekly</li>" }],
+  "additional": "<div>Benefits above the law.</div>",
+  "additionalPlain": "Benefits above the law.",
+  "salaryRange": { "currency": "MXN", "interval": "per-month-salary", "min": 90000, "max": 120000 },
+  "hostedUrl": "https://jobs.lever.co/ejemplo/5f3c2b1a-0000-4000-8000-00000000abcd",
+  "applyUrl": "https://jobs.lever.co/ejemplo/5f3c2b1a-0000-4000-8000-00000000abcd/apply"
+}

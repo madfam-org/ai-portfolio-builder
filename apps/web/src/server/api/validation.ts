@@ -7,6 +7,17 @@ import { z } from 'zod';
 import { isAllowedSlug } from '../../lib/api-routes.ts';
 import { ARTIFACT_KINDS, ARTIFACT_STATUSES, JOB_STATUSES, LOCALES, PROFILE_ITEM_KINDS, SOURCE_TEXT_MAX } from '../db/schema.ts';
 import { isTemplateFor } from '../../lib/templates.ts';
+import {
+  COUNTRY_CODE_PATTERN,
+  CURRENCY_PATTERN,
+  EMPLOYMENT_TYPES,
+  MX_STATE_CODES,
+  SALARY_MAX_AMOUNT,
+  SALARY_PERIODS,
+  SOURCE_KINDS,
+  STATE_CODE_PATTERN,
+  WORK_MODES,
+} from '../ingest/vocab.ts';
 
 const text = (max: number) => z.string().trim().max(max);
 const required = (max: number) => z.string().trim().min(1).max(max);
@@ -90,6 +101,51 @@ export const itemReorderBody = z.object({ itemIds: z.array(z.uuid()).min(1).max(
 
 export const itemPatchBody = z.object({ position: z.number().int().min(0).max(10_000).optional(), content: z.unknown().optional(), tags: tags.optional() }).strict();
 
+/**
+ * W5-J: the typed posting fields of a job (ingest/vocab.ts; all optional and nullable, so old clients keep working).
+ * A state code must be a real Mexican entity when it starts with `MX-`. Amounts have at most two decimals.
+ */
+const isoDay = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD')
+  .refine((v) => {
+    const d = new Date(`${v}T00:00:00Z`);
+    return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === v;
+  }, 'not a calendar date');
+const money = z
+  .number()
+  .positive()
+  .max(SALARY_MAX_AMOUNT)
+  .refine((v) => Math.abs(Math.round(v * 100) - v * 100) < 1e-6, 'at most two decimals');
+export const jobPostingFields = {
+  sourceKind: z.enum(SOURCE_KINDS).nullable(),
+  countryCode: z.string().regex(COUNTRY_CODE_PATTERN, 'ISO 3166-1 alpha-2').nullable(),
+  stateCode: z
+    .string()
+    .regex(STATE_CODE_PATTERN, 'ISO 3166-2')
+    .refine((v) => !v.startsWith('MX-') || (MX_STATE_CODES as readonly string[]).includes(v), 'not a Mexican state code')
+    .nullable(),
+  employmentType: z.enum(EMPLOYMENT_TYPES).nullable(),
+  workMode: z.enum(WORK_MODES).nullable(),
+  salaryMin: money.nullable(),
+  salaryMax: money.nullable(),
+  salaryCurrency: z.string().regex(CURRENCY_PATTERN, 'ISO 4217').nullable(),
+  salaryPeriod: z.enum(SALARY_PERIODS).nullable(),
+  datePosted: isoDay.nullable(),
+  validThrough: isoDay.nullable(),
+};
+type SalaryShape = { salaryMin?: number | null; salaryMax?: number | null; salaryCurrency?: string | null; salaryPeriod?: string | null };
+/** The salary rules the database also enforces (min ≤ max; a currency or period needs an amount). Null when fine. */
+export function salaryIssue(v: SalaryShape): { path: string; message: string } | null {
+  if (v.salaryMin != null && v.salaryMax != null && v.salaryMin > v.salaryMax) return { path: 'salaryMax', message: 'must be at least salaryMin' };
+  if ((v.salaryCurrency != null || v.salaryPeriod != null) && v.salaryMin == null && v.salaryMax == null) return { path: 'salaryMin', message: 'a currency or period needs an amount' };
+  return null;
+}
+const salaryRule = (v: SalaryShape, ctx: z.RefinementCtx) => {
+  const issue = salaryIssue(v);
+  if (issue) ctx.addIssue({ code: 'custom', path: [issue.path], message: issue.message });
+};
+
 export const jobCreateBody = z
   .object({
     title: required(200),
@@ -99,8 +155,20 @@ export const jobCreateBody = z
     sourceText: required(SOURCE_TEXT_MAX),
     status: z.enum(JOB_STATUSES).default('saved'),
     notes: text(5000).default(''),
+    sourceKind: jobPostingFields.sourceKind.default(null),
+    countryCode: jobPostingFields.countryCode.default(null),
+    stateCode: jobPostingFields.stateCode.default(null),
+    employmentType: jobPostingFields.employmentType.default(null),
+    workMode: jobPostingFields.workMode.default(null),
+    salaryMin: jobPostingFields.salaryMin.default(null),
+    salaryMax: jobPostingFields.salaryMax.default(null),
+    salaryCurrency: jobPostingFields.salaryCurrency.default(null),
+    salaryPeriod: jobPostingFields.salaryPeriod.default(null),
+    datePosted: jobPostingFields.datePosted.default(null),
+    validThrough: jobPostingFields.validThrough.default(null),
   })
-  .strict();
+  .strict()
+  .superRefine(salaryRule);
 export const jobPatchBody = z
   .object({
     title: required(200).optional(),
@@ -110,6 +178,17 @@ export const jobPatchBody = z
     sourceText: required(SOURCE_TEXT_MAX).optional(),
     status: z.enum(JOB_STATUSES).optional(),
     notes: text(5000).optional(),
+    // The source kind records how the job arrived; it is set at creation only.
+    countryCode: jobPostingFields.countryCode.optional(),
+    stateCode: jobPostingFields.stateCode.optional(),
+    employmentType: jobPostingFields.employmentType.optional(),
+    workMode: jobPostingFields.workMode.optional(),
+    salaryMin: jobPostingFields.salaryMin.optional(),
+    salaryMax: jobPostingFields.salaryMax.optional(),
+    salaryCurrency: jobPostingFields.salaryCurrency.optional(),
+    salaryPeriod: jobPostingFields.salaryPeriod.optional(),
+    datePosted: jobPostingFields.datePosted.optional(),
+    validThrough: jobPostingFields.validThrough.optional(),
   })
   .strict();
 

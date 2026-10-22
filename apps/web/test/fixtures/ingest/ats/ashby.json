@@ -1,0 +1,13 @@
+{
+  "apiVersion": "1",
+  "jobs": [
+    { "id": "11111111-1111-4111-8111-111111111111", "title": "Otro puesto", "location": "Remote", "employmentType": "FullTime", "descriptionPlain": "No es este.", "jobUrl": "https://jobs.ashbyhq.com/ejemplo/11111111-1111-4111-8111-111111111111" },
+    { "id": "22222222-2222-4222-8222-222222222222", "title": "Frontend Engineer", "department": "Engineering", "team": "Web",
+      "employmentType": "Contract", "location": "Mérida, Yucatán", "secondaryLocations": [],
+      "workplaceType": "Hybrid", "isRemote": false, "publishedAt": "2026-09-30T10:00:00.000+00:00",
+      "address": { "postalAddress": { "addressLocality": "Mérida", "addressRegion": "Yucatán", "addressCountry": "Mexico" } },
+      "descriptionHtml": "<p>React y TypeScript.</p>", "descriptionPlain": "React y TypeScript. Accesibilidad primero.",
+      "jobUrl": "https://jobs.ashbyhq.com/ejemplo/22222222-2222-4222-8222-222222222222",
+      "compensation": { "compensationTierSummary": "$50K – $70K", "summaryComponents": [ { "compensationType": "Salary", "interval": "1 YEAR", "currencyCode": "USD", "minValue": 50000, "maxValue": 70000 } ] } }
+  ]
+}
