@@ -106,6 +106,12 @@ spec:
               value: cv-app.madfam.io
             - name: CV_HOST_API
               value: cv-api.madfam.io
+            # W6-A (owner-approved name, 2026-10-22): the pages host, people's published CVs and portfolios (`/<slug>`,
+            # `/l/<token>`). Its unauthenticated reads are rate limited per client in the app (server/read-limit.ts;
+            # CV_READ_LIMIT_BURST / CV_READ_LIMIT_PER_MINUTE, defaults 60 and 60). Needs the enclii.yaml domain and its
+            # tunnel route (docs/DEPLOYMENT.md "Pages host").
+            - name: CV_HOST_PAGES
+              value: cv-p.madfam.io
             # The brand is not ruled: the landing answers noindex until this is "true" (one flag, one place).
             - name: CV_INDEXABLE
               value: "false"

@@ -45,6 +45,13 @@ has not named the label, so no request is routed to it and `enclii.yaml` / DNS d
 domain, tunnel, domain-map row, decision addendum, gate `cv.pages-live`). Its own strict CSP (`default-src 'none'`,
 `form-action 'none'`, `base-uri 'none'`), no cookies read or set, an abuse link to `legal@madfam.io` on every page.
 
+**W6-A update (2026-10-22):** the owner approved **`cv-p.madfam.io`**. `CV_HOST_PAGES` is set in
+`infra/k8s/production/deployment.yaml` and the domain is in `enclii.yaml`; the host answers once the coordinator runs
+domains reconcile and tunnels-apply (docs/DEPLOYMENT.md "Pages host"). Its reads and cv-api's public reads are rate
+limited per client before any lookup (`apps/web/src/server/read-limit.ts`; `CF-Connecting-IP` only, never
+`X-Forwarded-For`). Sign-in sessions expire after 7 days without use (`SESSION_OPTIONS`, `lib/auth-env.ts`). The landing
+also serves `/lector` and `/en/lector` (`LANDING_PAGES` in `lib/routing.ts`), the page the job reader's User-Agent links to.
+
 `/health` (liveness) and `/ready` (readiness) answer 200 JSON on **any** Host, before host routing
 (kubelet probes use the pod IP). Unknown hosts get a plain 404. The container listens on 3000; the
 Kubernetes Service publishes 80; every `enclii.yaml` domain pins `port: 80`. Flat labels only (never
@@ -113,6 +120,9 @@ Kubernetes Service publishes 80; every `enclii.yaml` domain pins `port: 80`. Fla
 | `janua.client.yaml` | names only: the `cv-api` resource server and the `cv-web` client the W2 code uses |
 | `docs/PRODUCT.md` | the owner requirement and the profile → jobs → tailored artifacts model |
 | `scripts/qa/check_file_size.py` | the file-size gate |
+| `apps/web/src/server/read-limit.ts` | W6-A: the per-client token bucket on unauthenticated reads (pages host, cv-api public reads), keyed on `CF-Connecting-IP` only; settings `CV_READ_LIMIT_*` in `lib/config.ts` |
+| `apps/web/src/lib/copy/reader.ts`, `src/app/h/landing/[locale]/lector/` | W6-A: the job-link reader page (`/lector`, `/en/lector`); the reader's User-Agent links to it |
+| `apps/web/e2e/activation.spec.ts`, `test/{read-limit,activation}.test.ts` | W6-A: the reader page, the pages host under `cv-p.madfam.io`, the 429s, the 7-day session cookie |
 
 ## Commands
 
@@ -141,7 +151,7 @@ Public repository: every job runs on **GitHub-hosted** runners (R116). Top-level
 `|| true` masks. `ci.yml`: `agent-docs` (required files and markers), `web` (frozen install, lint,
 typecheck, unit tests, build, standalone smoke), `pg` (the real-Postgres suite on a `postgres:16-alpine`
 service container, as the `cv_app` role; fails on fewer than 29 passing tests), `e2e` (Playwright on GitHub-hosted runners:
-`npx playwright install --with-deps chromium`, the built server, its own Postgres service; fails on fewer than 61
+`npx playwright install --with-deps chromium`, the built server, its own Postgres service; fails on fewer than 68
 passing specs or any failed, flaky or skipped), `guards` (file size, forbidden-domain grep),
 `secrets` (gitleaks over every commit after the legacy base `7959f356`, plus the checked-out tree;
 the legacy history was scanned in full by the 2026-10-22 audit). `image.yml` builds the Dockerfile on

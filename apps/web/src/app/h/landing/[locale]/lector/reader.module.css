@@ -1,0 +1,56 @@
+/* W6-A: the job-link reader page (landing host). Global tokens from globals.css; no inline styles (nonce CSP). */
+.page {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: clamp(2rem, 6vw, 4rem) 1.25rem clamp(1.5rem, 4vw, 3rem);
+}
+
+.section {
+  margin-top: 2.25rem;
+  padding-top: 1.75rem;
+  border-top: 1px solid var(--line);
+}
+
+.list {
+  padding-left: 1.25rem;
+  margin: 0.75rem 0 0;
+}
+
+.list li + li {
+  margin-top: 0.5rem;
+}
+
+.facts {
+  display: grid;
+  gap: 0.35rem 1rem;
+  grid-template-columns: max-content minmax(0, 1fr);
+  margin: 1rem 0 0;
+}
+
+.facts dt {
+  font-weight: 650;
+}
+
+.facts dd {
+  margin: 0;
+  min-width: 0;
+}
+
+.code {
+  display: block;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.9rem 1.1rem;
+  margin: 0.75rem 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.92rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 34rem) {
+  .facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -43,6 +43,10 @@ spec:
     - name: cv-api.madfam.io
       environment: production
       port: 80
+    # W6-A: the pages host (people's published CVs and portfolios), owner-approved name; CV_HOST_PAGES in deployment.yaml.
+    - name: cv-p.madfam.io
+      environment: production
+      port: 80
 
   status:
     enabled: true

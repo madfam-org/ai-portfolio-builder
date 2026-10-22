@@ -69,8 +69,19 @@ function htmlPages(role: 'landing' | 'app', path: string): Decision | null {
   }
   if (path === '/') return { kind: 'rewrite', role, to: `/h/${role}/es`, html: true, locale: 'es' };
   if (path === '/en') return { kind: 'rewrite', role, to: `/h/${role}/en`, html: true, locale: 'en' };
+  const page = LANDING_PAGES[path];
+  if (page) return { kind: 'rewrite', role, to: page.internal, html: true, locale: page.locale };
   return null;
 }
+
+/**
+ * W6-A: the landing's other public pages (path → internal route). Spanish segments in both languages, English under
+ * `/en` (the app's convention). `/lector` explains the job-link reader; its URL is in the reader's User-Agent.
+ */
+export const LANDING_PAGES: Readonly<Record<string, { internal: string; locale: Locale }>> = {
+  '/lector': { internal: '/h/landing/es/lector', locale: 'es' },
+  '/en/lector': { internal: '/h/landing/en/lector', locale: 'en' },
+};
 
 /** The pages host: `/<slug>` and `/l/<token>` only. Reserved slugs (health, ready, l, ...) never match. */
 function userPage(path: string): Decision | null {

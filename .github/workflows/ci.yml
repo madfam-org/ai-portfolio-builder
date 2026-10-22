@@ -184,7 +184,7 @@ jobs:
           cat "$out"
           if [ "$status" != 0 ]; then echo "e2e: FAIL exit=$status"; exit "$status"; fi
           passed=$(grep -Eo '^ *[0-9]+ passed' "$out" | grep -Eo '[0-9]+' | tail -1)
-          if grep -Eq '^ *[0-9]+ (failed|flaky|skipped)' "$out" || [ -z "$passed" ] || [ "$passed" -lt 61 ]; then echo "e2e: passed=${passed:-none} FAIL (expected >= 61 passing, none failed, flaky or skipped)"; exit 1; fi
+          if grep -Eq '^ *[0-9]+ (failed|flaky|skipped)' "$out" || [ -z "$passed" ] || [ "$passed" -lt 68 ]; then echo "e2e: passed=${passed:-none} FAIL (expected >= 68 passing, none failed, flaky or skipped)"; exit 1; fi
           echo "e2e: passed=$passed OK"
 
   guards:

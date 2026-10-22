@@ -49,7 +49,8 @@ test('a public answer is fetched over the vetted address with cv headers and no 
   const req = f.seen[0]!;
   assert.deepEqual(req.address, { address: '93.184.215.14', family: 4 });
   assert.equal(req.headers['User-Agent'], INTAKE_USER_AGENT);
-  assert.match(INTAKE_USER_AGENT, /https:\/\/cv\.madfam\.io\//);
+  // W6-A: the User-Agent points at the public page that explains the reader (routed by lib/routing.ts LANDING_PAGES).
+  assert.match(INTAKE_USER_AGENT, /\(\+https:\/\/cv\.madfam\.io\/lector; /);
   const names = Object.keys(req.headers).map((h) => h.toLowerCase());
   for (const forbidden of ['cookie', 'authorization', 'proxy-authorization']) assert.ok(!names.includes(forbidden), forbidden);
 });

@@ -28,10 +28,10 @@ Two replicas, surge rollout (`maxUnavailable: 0`), a PodDisruptionBudget
 
 | Host | Surface | Indexing | robots.txt |
 |---|---|---|---|
-| `cv.madfam.io` | landing: es-MX `/`, en `/en` | `X-Robots-Tag: noindex, nofollow` while `CV_INDEXABLE` is not `true` | allows the R40 AI crawlers and everyone (so crawlers can see the noindex); `Sitemap:` and `/sitemap.xml` only when indexable |
+| `cv.madfam.io` | landing: es-MX `/`, en `/en`; the job-link reader page `/lector`, `/en/lector` (W6-A) | `X-Robots-Tag: noindex, nofollow` while `CV_INDEXABLE` is not `true` | allows the R40 AI crawlers and everyone (so crawlers can see the noindex); `Sitemap:` and `/sitemap.xml` only when indexable |
 | `cv-app.madfam.io` | app shell `/`, `/en`; Auth.js `/api/auth/*`; `POST /auth/entrar`, `POST /auth/salir`; the same-origin API proxy `/api/v1/*` | always noindex | disallow all, AI crawlers named |
 | `cv-api.madfam.io` | `/api/v1/meta`; the owner-scoped API (docs/PRODUCT.md); JSON 404 elsewhere | always noindex | disallow all, AI crawlers named |
-| pages host (label pending; working label `cv-p.madfam.io`; set by `CV_HOST_PAGES`) | `/<slug>` (public artifact), `/l/<token>` (link-shared); the proxy looks each up first (published, unsuspended), anything else is the HTML 404 | per page: `index, follow` only for a public artifact whose owner chose `indexable`; otherwise `noindex, nofollow, noai, noimageai`; `/l/*` also `Cache-Control: private, no-store` and `Referrer-Policy: no-referrer`; public pages `no-store` | allows everyone and names the R40 AI crawlers (so the per-page header is seen); no sitemap |
+| `cv-p.madfam.io` (pages host, owner-approved 2026-10-22; set by `CV_HOST_PAGES`; W6-A) | `/<slug>` (public artifact), `/l/<token>` (link-shared); the proxy looks each up first (published, unsuspended), anything else is the HTML 404 | per page: `index, follow` only for a public artifact whose owner chose `indexable`; otherwise `noindex, nofollow, noai, noimageai`; `/l/*` also `Cache-Control: private, no-store` and `Referrer-Policy: no-referrer`; public pages `no-store` | allows everyone and names the R40 AI crawlers (so the per-page header is seen); no sitemap |
 | any other Host | `/health`, `/ready` only | — | 404 |
 
 Tunnel routes: each domain in `enclii.yaml` pins `port: 80`; the Service `cv` publishes 80 → the
@@ -45,7 +45,8 @@ COOP.
 | Variable | Production value | Meaning |
 |---|---|---|
 | `CV_HOST_LANDING`, `CV_HOST_APP`, `CV_HOST_API` | `cv.madfam.io`, `cv-app.madfam.io`, `cv-api.madfam.io` | the host table; exact lowercase hostnames, distinct; invalid values stop the server at boot |
-| `CV_HOST_PAGES` | unset (inert) | the user-pages host; until the owner names the label (working label `cv-p.madfam.io`) it stays unset and the host is not served. Setting it also needs the domain in `enclii.yaml` (`port: 80`), domains reconcile and the tunnel apply (coordinator) |
+| `CV_HOST_PAGES` | `cv-p.madfam.io` (W6-A) | the user-pages host (unset = inert, not served). It also needs the domain in `enclii.yaml` (`port: 80`, present), domains reconcile and the tunnel apply (coordinator; "Pages host" below) |
+| `CV_READ_LIMIT_BURST`, `CV_READ_LIMIT_PER_MINUTE` | unset (defaults `60`, `60`) | the per-client token bucket on unauthenticated reads ("Rate limit on unauthenticated reads" below); whole numbers 1–100000, anything else stops the server at boot |
 | `CV_INDEXABLE` | `false` | the one indexing flag; only `true` lifts noindex on the landing (never on user pages) |
 | `CV_REVISION` | set by the image build arg | the commit reported by `/health` and `/api/v1/meta` |
 | `HOSTNAME` | `0.0.0.0` | bind address; also keeps the proxy's rewrites internal (a loopback name would not) |
@@ -91,6 +92,11 @@ Nothing reads these at import or build time; nothing throws at boot. The boot lo
   are plain form POSTs to `/auth/entrar`; «Cerrar sesión» is `POST /auth/salir` (RP-initiated logout). Both are
   same-origin only (403) and POST only (405 on GET). The app's CSP allows `form-action 'self'` plus the issuer
   origin; the landing keeps `form-action 'none'`.
+- **Session lifetime (W6-A, owner directive 2026-10-22):** 7 days without use (`SESSION_OPTIONS` in
+  `lib/auth-env.ts`; Auth.js's default is 30). JWT sessions: every session read (each app page and same-origin API call)
+  re-signs the token and re-sets the cookie for another 7 days, so the limit is an idle window; `updateAge` is not
+  set because Auth.js ignores it for JWT sessions. A failed Janua refresh also ends the session. There is no absolute
+  cap beyond Janua's refresh-token lifetime (an owner decision if one is wanted).
 - The browser never holds a Janua token: the app's `/api/v1/*` proxy reads the session server-side and calls
   the API handler in-process with the bearer; the API verifies it like any other request (RS256 against the
   JWKS, issuer, audience `cv-api`; HS256 and `none` refused; 401 / 403 / 503 when the JWKS is unreachable).
@@ -118,6 +124,50 @@ and exits 0 (the PreSync Job, PR B).
    holds both URLs first: a missing Secret stops the pods.
 5. Probe: `/ready` shows `"signIn":"configured","database":"ok"`; `cv-api.madfam.io/api/v1/me` without a token is
    401; one real sign-in on `cv-app.madfam.io`, then «Cerrar sesión» returns to `https://cv-app.madfam.io/`.
+
+## Pages host (W6-A): `cv-p.madfam.io`
+
+People's published CVs and portfolios, hosted on MADFAM's own infrastructure: `/<slug>` (public) and `/l/<token>`
+(link-shared). The owner approved the name on 2026-10-22, on the condition that it goes live behind a rate limit.
+This repo now carries `CV_HOST_PAGES=cv-p.madfam.io` in `deployment.yaml` and the domain in `enclii.yaml` (`port: 80`,
+Service `cv`). The e2e suite runs the pages host under that exact name (Chromium maps it to loopback), and it checks the
+pages CSP, the per-page indexing, the caching, the paper look and the published-link URLs (`https://cv-p.madfam.io/…`).
+
+Activation (coordinator; deploy the image FIRST so the host never answers without the limiter; each apply only after
+reading its own dry run):
+
+1. Merge, dispatch Build & Deploy, wait for the digest-pin commit and the rollout (pods log `pages=cv-p.madfam.io`).
+2. `enclii ops domains reconcile cv --project cv --ref <pin sha> --domain cv-p.madfam.io` (dry run), then the same
+   with `--apply --reason …`. This writes the DNS record ONLY.
+3. `enclii providers cloudflare tunnels-apply --project cv` (dry run: exactly one new route, `cv-p.madfam.io` to the
+   `cv` Service on 80, and no change to the other three), then `--apply --expect-plan <fingerprint> --reason …`.
+4. Probe through the edge (`curl --resolve`): `/health` 200; `/robots.txt` allows; an unknown slug is the HTML 404 with
+   `X-Robots-Tag: noindex, nofollow, noai, noimageai`; a burst of about 130 requests to one unknown slug from one
+   address starts answering `429` with `Retry-After` (two pods, 60 each).
+
+## Rate limit on unauthenticated reads (W6-A)
+
+`apps/web/src/server/read-limit.ts`, applied by the proxy **before** any database lookup:
+
+- **What counts:** the pages host's `/<slug>`, `/l/<token>` and its HTML 404; cv-api's `/api/v1/public/a/<slug>` and
+  `/api/v1/public/s/<token>`. Not counted: build assets, `robots.txt`, probes, signed-in routes (those have quotas and
+  the per-owner intake ceilings).
+- **Algorithm:** a token bucket per (surface, client): 60 at once, refilled at 60 a minute
+  (`CV_READ_LIMIT_BURST`, `CV_READ_LIMIT_PER_MINUTE`). Over budget: `429` with `Retry-After` (whole seconds),
+  `Cache-Control: no-store`, bilingual plain text on the pages host, `{"error":"rate_limited","retryAfter":n}` on
+  cv-api. A refused request costs nothing.
+- **In memory, per pod** (the estate's pattern: pliego, fashion-cabinet, voxa): with 2 replicas a client gets at most
+  twice the numbers. At most 50 000 clients are tracked; the least recently seen is dropped first.
+- **Client address:** `CF-Connecting-IP` only, and only when it parses as an IP. The pod's sole ingress on 3000 is the
+  Cloudflare tunnel (`allow-tunnel-ingress`), and Cloudflare's edge overwrites that header. `X-Forwarded-For`, `X-Real-IP`
+  and `True-Client-IP` are never read. IPv6 is counted per /64. A request without a valid header shares one
+  `unattributed` bucket (visible, never a bypass).
+- **Logs:** nothing new. The request log records the status by route template (`/:slug`, `/l/:token`), never a raw
+  path or token.
+- **Edge:** Enclii has no rate-limit or WAF feature for tenant domains (its Cloudflare code covers DNS, tunnels, zone
+  HTTPS settings, Access and R2 only). An optional Cloudflare rate-limiting rule is a manual dashboard step for the
+  owner; it depends on the zone's plan, and the coordinator holds the prepared rule (operator detail stays out of
+  this public repository).
 
 ## Moderation (operator, manual; no admin UI yet)
 

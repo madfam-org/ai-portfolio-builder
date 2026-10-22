@@ -43,6 +43,11 @@ The public reads are plain JSON on cv-api. The rendered pages live on a separate
 working label `cv-p.madfam.io`, the label is the owner's call): `/<slug>` and `/l/<token>`, inert until `CV_HOST_PAGES`
 names it. The host is read from configuration, never hard-coded.
 
+**W6-A:** the owner approved `cv-p.madfam.io` (2026-10-22): «We will be hosting our users' CVs and portfolios in our own
+infra and ecosystem». `CV_HOST_PAGES` is set in production and the domain is in `enclii.yaml`; it answers once the
+coordinator's DNS and tunnel steps run. Its reads, and cv-api's public reads, are rate limited per client
+(docs/DEPLOYMENT.md "Rate limit on unauthenticated reads").
+
 ### The app (cv-app.madfam.io), declared in W3-1
 
 | Path (en under `/en`) | Page | Built in |
@@ -126,7 +131,7 @@ edited. **Nothing is stored before «Guardar vacante»** (`POST /api/v1/jobs`, t
   signed-in owner, through an SSRF guard (`apps/web/src/server/ingest/fetcher.ts`: https and port 443 only, no userinfo,
   DNS resolved and EVERY answer checked public, the socket pinned to the vetted address, every redirect re-checked,
   at most 3; no cookie or credential sent; 2 MB after decompression; 8 s for the whole chain; HTML or JSON only;
-  User-Agent `MADFAM-CV-Intake/1.0 (+https://cv.madfam.io/; …)`; logs carry the host and outcome, never the URL).
+  User-Agent `MADFAM-CV-Intake/1.0 (+https://cv.madfam.io/lector; …)`, explained on that page; logs carry the host and outcome, never the URL).
   Order: a board that forbids server reads → `capture_only` (LinkedIn, Indeed, Google, Glassdoor, Talent.com,
   Computrabajo; `ingest/boards.ts`); a known ATS → its public, key-free API (Greenhouse, Lever, SmartRecruiters, Ashby,
   Workable, Recruitee, Pinpoint; `ingest/ats.ts` cites the provider docs); otherwise robots.txt for the token
@@ -164,7 +169,17 @@ edited. **Nothing is stored before «Guardar vacante»** (`POST /api/v1/jobs`, t
 | `date_posted`, `valid_through` (`datePosted`, `validThrough`) | dates (`YYYY-MM-DD`) |
 
 A currency or period without an amount is refused (API 400 and a database CHECK); `title`, `company` and `location`
-keep their W2 meaning. Rejected for now, with reasons in the W5-J report: crawling or searching boards, any login to a
+keep their W2 meaning.
+
+**The reader page (W6-A):** `cv.madfam.io/lector` (es-MX) and `/en/lector` explain the link reader to the operators of
+the sites it reads: when it fetches (one explicit request by a signed-in person), what (robots.txt, a documented ATS API
+or the one page, HTML only), the code's limits, what it never does (crawl, sign in, send cookies, evade blocks, retry a
+401/403/429/451, read the boards that forbid it), how to opt out (`User-agent: madfam-cv` / `Disallow: /`) and the
+contact, support@madfam.io. Copy: `apps/web/src/lib/copy/reader.ts`; the User-Agent and the token on the page are the
+code's own constants. Indexing follows the landing (noindex until `CV_INDEXABLE`); it is in the sitemap when that
+exists.
+
+Rejected for now, with reasons in the W5-J report: crawling or searching boards, any login to a
 board, e-mail forward-in (Angelia has no inbound mail), a PWA share target (shares a link only, which the blocked boards
 do not serve), OCR in cv, AI parsing (Selva's restricted tier answers 503; typed seam, off).
 

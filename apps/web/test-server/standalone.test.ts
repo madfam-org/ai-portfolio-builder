@@ -192,3 +192,19 @@ test('W3-1 dormant: every app route renders the pre-launch shell; bad ids are th
     assert.match(String(r.headers['content-type']), /text\/plain/, path);
   }
 });
+
+test('W6-A reader page: /lector and /en/lector on the landing only, nonce CSP, noindex like the landing, the real User-Agent', async () => {
+  for (const [path, lang] of [['/lector', 'es-MX'], ['/en/lector', 'en']] as const) {
+    const r = await get('cv.madfam.io', path);
+    assert.equal(r.status, 200, path);
+    assert.match(r.body, new RegExp(`<html lang="${lang}"`));
+    const nonce = /'nonce-([^']+)'/.exec(String(r.headers['content-security-policy']))?.[1];
+    assert.ok(nonce, 'nonce in CSP');
+    for (const s of r.body.match(/<script\b[^>]*>/gi) ?? []) assert.ok(s.includes(`nonce="${nonce}"`), s);
+    assert.doesNotMatch(r.body, /\sstyle\s*=/i);
+    assert.equal(r.headers['x-robots-tag'], 'noindex, nofollow');
+    assert.match(r.body, /MADFAM-CV-Intake\/1\.0 \(\+https:\/\/cv\.madfam\.io\/lector; /);
+    assert.match(r.body, /User-agent: madfam-cv\nDisallow: \//);
+  }
+  for (const host of ['cv-app.madfam.io', 'cv-api.madfam.io']) assert.equal((await get(host, '/lector')).status, 404, host);
+});

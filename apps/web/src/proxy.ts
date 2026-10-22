@@ -10,6 +10,7 @@ import { getConfig, type Config } from './lib/config.ts';
 import { BASELINE_HEADERS, LOCKED_CSP, htmlCsp, newNonce, pagesCsp, robotsTag, userPageHeaders } from './lib/headers.ts';
 import { NOT_FOUND_ROUTE, decide, type Decision } from './lib/routing.ts';
 import { gateUserPage } from './server/pages-gate.ts';
+import { checkRead, readSurface, tooManyText, type ReadSurface } from './server/read-limit.ts';
 
 function finish(res: NextResponse, decision: Decision, config: Config | null, csp: string, extra: Record<string, string> = {}): NextResponse {
   for (const [k, v] of Object.entries(BASELINE_HEADERS)) res.headers.set(k, v);
@@ -51,6 +52,15 @@ function text(status: number, body: string, extra: Record<string, string> = {}):
   return new NextResponse(body, { status, headers: { 'Content-Type': 'text/plain; charset=utf-8', ...extra } });
 }
 
+/** W6-A: an honest 429 for a client over its read budget (server/read-limit.ts); no database work was done. */
+function tooMany(surface: ReadSurface, retryAfter: number, decision: Decision, config: Config): NextResponse {
+  const extra: Record<string, string> = { 'Retry-After': String(retryAfter), 'Cache-Control': 'no-store' };
+  if (decision.kind === 'user-page' && decision.share === 'link') extra['Referrer-Policy'] = 'no-referrer';
+  const res = surface === 'public-api' ? NextResponse.json({ error: 'rate_limited', retryAfter }, { status: 429 }) : text(429, tooManyText(retryAfter));
+  // Through `finish`'s extra headers, applied after the baseline (a link page's no-referrer must win over it).
+  return finish(res, decision, config, LOCKED_CSP, extra);
+}
+
 export async function proxy(req: NextRequest): Promise<NextResponse> {
   let config: Config | null = null;
   try {
@@ -68,6 +78,12 @@ export async function proxy(req: NextRequest): Promise<NextResponse> {
   }
 
   const decision = decide(req.headers.get('host'), path, config);
+  // Unauthenticated reads (the pages host, cv-api's public reads) are counted per client BEFORE any lookup.
+  const surface = readSurface(decision);
+  if (surface) {
+    const wait = checkRead(surface, req.headers, config.readLimit);
+    if (wait > 0) return tooMany(surface, wait, decision, config);
+  }
   switch (decision.kind) {
     case 'probe':
     case 'pass':

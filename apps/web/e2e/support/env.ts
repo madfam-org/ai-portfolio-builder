@@ -12,7 +12,8 @@ export const HOSTS = {
   landing: 'cv.localhost',
   app: 'cv-app.localhost',
   api: 'cv-api.localhost',
-  pages: 'cv-p.localhost',
+  // W6-A: the pages host under its production name (Chromium maps it to loopback: playwright.config.ts).
+  pages: 'cv-p.madfam.io',
 } as const;
 
 export const url = (host: keyof typeof HOSTS, path = '/') => `http://${HOSTS[host]}:${E2E_PORT}${path}`;

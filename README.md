@@ -24,6 +24,15 @@ its settings are provisioned ([docs/DEPLOYMENT.md](docs/DEPLOYMENT.md), "Identit
 The hosts go live when the coordinator dispatches the first build and onboards the project
 ([docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)); until then this is the code that will serve them.
 
+**W6-A (2026-10-22), in the tree; live once deployed and activated by the coordinator:**
+
+| Host / change | What it is |
+|---|---|
+| `cv.madfam.io/lector` (es-MX), `/en/lector` | a public page for website operators about cv's job-link reader: what it fetches, when, its limits, what it never does, how to opt out (`User-agent: madfam-cv` / `Disallow: /` in robots.txt), support@madfam.io. The reader's User-Agent points at it; linked from the footer |
+| `cv-p.madfam.io` | people's published CVs and portfolios, on MADFAM's own infrastructure: `/<slug>` (public) and `/l/<token>` (link-shared); noindex unless the owner chose to be indexed. Live once the coordinator adds its DNS record and tunnel route |
+| rate limit | unauthenticated reads (the pages host and cv-api's public reads) are limited per client: 60 at once, then 60 a minute per server, an honest `429` with `Retry-After` ([docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) "Rate limit on unauthenticated reads") |
+| sessions | a sign-in session ends after 7 days without use (was Auth.js's 30) |
+
 ## What comes next
 
 1. Sign-in with Janua (MADFAM's identity service) on `cv-app.madfam.io` and the owner-scoped model (one

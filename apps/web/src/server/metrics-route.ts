@@ -3,7 +3,7 @@
  * the proxy takes (lib/routing.ts `decide`), so the set of possible values is the route tables themselves:
  *
  *   probes        /health, /ready (on any Host; a pod-IP or unknown Host is host_role "none")
- *   landing       /, /en, /robots.txt, /sitemap.xml
+ *   landing       /, /en, /robots.txt, /sitemap.xml, /lector, /en/lector (W6-A)
  *   app           the app pages with `:id` for the UUID (/empleos/:id/adaptar, /en/documentos/:id, ...),
  *                 /auth/entrar, /auth/salir, /api/auth/*, the same-origin /api/v1 proxy
  *   api           /api/v1/meta and every /api/v1 route with `:id`, `:slug`, `:token` for its parameters
@@ -17,7 +17,7 @@
 import { UUID, matchRoute } from '../lib/api-routes.ts';
 import { APP_ROUTE_SEGMENTS, matchAppPath } from '../lib/app-routes.ts';
 import type { Config } from '../lib/config.ts';
-import { APP_PASS_PATHS, decide, type Decision } from '../lib/routing.ts';
+import { APP_PASS_PATHS, LANDING_PAGES, decide, type Decision } from '../lib/routing.ts';
 
 export const UNMATCHED = 'unmatched';
 /** host_role for a Host the host table does not know (kubelet probes on the pod IP, scanners, typos). */
@@ -83,6 +83,7 @@ function template(path: string, decision: Decision): string {
       if (path.startsWith('/api/v1/')) return apiTemplate(path) ?? UNMATCHED;
       if (decision.role === 'app') return appTemplate(path) ?? UNMATCHED;
       if (decision.role === 'landing' && (path === '/' || path === '/en')) return path;
+      if (decision.role === 'landing' && path in LANDING_PAGES) return path;
       return UNMATCHED;
     }
   }

@@ -47,7 +47,7 @@ test('public: a chosen address, noindex by default, indexed only after the box i
   await page.getByLabel('Dirección', { exact: true }).fill(SLUG);
   await expect(page.getByLabel('Permitir que buscadores indexen esta página')).not.toBeChecked();
   await page.getByRole('button', { name: 'Publicar' }).click();
-  await expect(shared(page)).toHaveValue(`https://cv-p.localhost/${SLUG}`);
+  await expect(shared(page)).toHaveValue(`https://cv-p.madfam.io/${SLUG}`);
 
   const first = await raw('pages', 'GET', `/${SLUG}`);
   expect(first.status).toBe(200);
@@ -73,7 +73,7 @@ test('link: copy, change the link (the old one stops), unpublish (the page is go
   await openDocument(page, 'portfolio');
   await page.getByLabel('Con enlace').check();
   await page.getByRole('button', { name: 'Publicar' }).click();
-  await expect(shared(page)).toHaveValue(/^https:\/\/cv-p\.localhost\/l\/[A-Za-z0-9_-]{43}$/);
+  await expect(shared(page)).toHaveValue(/^https:\/\/cv-p\.madfam\.io\/l\/[A-Za-z0-9_-]{43}$/);
   const first = new URL(await shared(page).inputValue()).pathname;
   const res = await raw('pages', 'GET', first);
   expect(res.status).toBe(200);
@@ -84,11 +84,11 @@ test('link: copy, change the link (the old one stops), unpublish (the page is go
 
   await page.getByRole('button', { name: 'Copiar enlace' }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Enlace copiado' })).toBeVisible();
-  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(`https://cv-p.localhost${first}`);
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(`https://cv-p.madfam.io${first}`);
 
   await page.getByRole('button', { name: 'Cambiar enlace' }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Cambiar enlace' }).click();
-  await expect(shared(page)).not.toHaveValue(`https://cv-p.localhost${first}`);
+  await expect(shared(page)).not.toHaveValue(`https://cv-p.madfam.io${first}`);
   const second = new URL(await shared(page).inputValue()).pathname;
   expect((await raw('pages', 'GET', first)).status).toBe(404);
   expect((await raw('pages', 'GET', second)).status).toBe(200);

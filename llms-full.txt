@@ -82,3 +82,7 @@ Plausible (analytics, later), Angelia (messaging, later), PhyndCRM (consent/attr
 - Licence: code AGPL-3.0-only (owner confirms at merge of the baseline), docs MIT.
 - The old implementation (git tag legacy-2025-09) is reference only; nothing is ported without being
   rebuilt to this tree's standard.
+- W6-A (2026-10-22): the pages host is cv-p.madfam.io (owner-approved), behind a per-client rate limit on
+  unauthenticated reads (apps/web/src/server/read-limit.ts; CF-Connecting-IP only). Sign-in sessions expire after
+  7 days without use. cv.madfam.io/lector and /en/lector explain the job-link reader (User-Agent
+  MADFAM-CV-Intake/1.0, robots token madfam-cv).

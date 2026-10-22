@@ -27,6 +27,10 @@ repo-boundary contract (docs/REPO_BOUNDARY.md).
 - Job intake (W5-J) never stores before the person confirms; links are fetched once, only on an explicit POST, through
   an SSRF guard that respects robots.txt and never fetches boards whose terms forbid it (those use the person's own
   browser capture). No crawling, no login to boards, no AI, no OCR in cv.
+- W6-A: the pages host is cv-p.madfam.io (owner-approved; CV_HOST_PAGES set in production, live once DNS and the tunnel
+  route exist). Unauthenticated reads (pages host, cv-api /api/v1/public/*) are rate limited per client
+  (CF-Connecting-IP only, token bucket 60 + 60/min per pod, 429 with Retry-After). Sign-in sessions expire after 7 days
+  without use. cv.madfam.io/lector (es-MX) and /en/lector explain the job-link reader; its User-Agent links there.
 
 ## Docs
 
@@ -48,4 +52,5 @@ repo-boundary contract (docs/REPO_BOUNDARY.md).
 - `janua.client.yaml`: Janua registrations (names only)
 - `apps/web/src/components/ui/`, `src/components/app/`, `src/lib/client/`, `src/lib/copy/`: UI primitives, the app frame, the typed data layer, per-surface copy
 - `apps/web/e2e/`: Playwright specs over the built server (two owners, local JWKS, throwaway Postgres)
+- `apps/web/src/server/read-limit.ts`: W6-A per-client token bucket on unauthenticated reads; `src/lib/copy/reader.ts` and `src/app/h/landing/[locale]/lector/`: the reader page
 - `apps/web/src/server/ingest/`, `src/components/jobs/intake/`: W5-J job intake (link, ATS public APIs, paste, PDF/DOCX/HTML files, browser capture) and its typed job fields (migration 0002)
