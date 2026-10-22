@@ -189,3 +189,30 @@ export const publishBody = z.discriminatedUnion('visibility', [
     })
     .strict(),
 ]);
+
+// ---- W4-I: import, export, deletion (data portability and data rights) --------------------------------------------
+
+/** The most profile items one import may add (`POST /profile/items/batch`, one transaction). */
+export const ITEM_BATCH_MAX = 300;
+/**
+ * An import the person confirmed: items (each validated against its kind's content schema by the handler), and the
+ * header fields they chose to take. Positions are assigned by the server (after the existing items, in order).
+ * All or none.
+ */
+export const itemBatchBody = z
+  .object({
+    items: z
+      .array(z.object({ kind: z.enum(PROFILE_ITEM_KINDS), content: z.unknown(), tags: tags.default([]) }).strict())
+      .max(ITEM_BATCH_MAX)
+      .default([]),
+    profile: z
+      .object({ displayName: text(200).optional(), headline: text(200).optional(), summary: text(5000).optional(), contact: contactSchema.optional() })
+      .strict()
+      .optional(),
+  })
+  .strict()
+  .refine((b) => b.items.length > 0 || (b.profile !== undefined && Object.keys(b.profile).length > 0), { message: 'nothing to import', path: ['items'] });
+
+/** `DELETE /me` body: an explicit, fixed confirmation (the UI asks the person to type «ELIMINAR» / «DELETE» first). */
+export const DELETE_ME_CONFIRMATION = 'delete-all-my-data';
+export const deleteMeBody = z.object({ confirm: z.literal(DELETE_ME_CONFIRMATION) }).strict();

@@ -78,6 +78,19 @@ stopwords; a tag scores 3 when all its words appear in the posting and each othe
 scores 1; items are ranked by score, then position. It also lists the posting's most frequent words that no item
 covers. It calls no network and no model. Assisted writing through Selva arrives in W6.
 
+### Data portability and data rights (W4-I)
+
+- **Import** on `/perfil`: the person's OWN LinkedIn data export ZIP («Download your data»,
+  <https://www.linkedin.com/help/linkedin/answer/50191>) or a JSON Resume `.json`, read **in the browser**
+  (`src/components/import/`): from the ZIP only the index and the career files are opened (Profile, Positions,
+  Education, Skills, Certifications, Languages, Projects, Honors, Publications, Volunteering; categories per
+  <https://www.linkedin.com/help/linkedin/answer/a1339364>); messages, connections and every other file are never read.
+  LinkedIn does not publish its CSV headers, so each field is found by header aliases (English and Spanish). A grouped
+  preview (duplicates of existing items unchecked, «ya existe») is sent only on confirmation, as one batch call. No AI,
+  no scraping, no connection to LinkedIn.
+- **Export and deletion** on `/ajustes`: «Descargar mis datos» (full JSON), «Exportar como JSON Resume», «Eliminar mis
+  datos» behind a typed «ELIMINAR»; the Janua account is managed in Janua (linked, never deleted from here).
+
 ## API (cv-api.madfam.io, bearer Janua token of audience `cv-api`)
 
 | Method and path | What |
@@ -92,6 +105,9 @@ covers. It calls no network and no model. Assisted writing through Selva arrives
 | `POST /api/v1/artifacts/batch` `{jobId?, locale?, template?, artifacts: [{kind, title, content}] (1-4)}` | several artifacts for one job in ONE transaction: all or none |
 | `POST /api/v1/artifacts/:id/publish` `{visibility:'link'}` or `{visibility:'public', slug, indexable?}`; `POST /api/v1/artifacts/:id/unpublish` | sharing (publishing: at most 20 per owner per 24 h, then 429 `publish_limit`) |
 | `GET /api/v1/public/a/:slug`, `GET /api/v1/public/s/:token` | public reads (no token) |
+| `POST /api/v1/profile/items/batch` `{items: [{kind, content, tags?}] (≤300), profile?: {displayName?, headline?, summary?, contact?}}` | W4-I import: every item validated per kind, appended after the existing ones, chosen header fields applied (contact links added by URL), ONE transaction: all or none |
+| `GET /api/v1/me/export[?format=full\|json-resume]` | W4-I «Descargar mis datos»: everything the owner holds (`schema: "madfam-cv-export"`, `version: 1`; share state included; never the owner key) or the profile as JSON Resume v1.0.0; `Content-Disposition: attachment`, `no-store` |
+| `DELETE /api/v1/me` `{confirm: "delete-all-my-data"}` | W4-I «Eliminar mis datos»: every row of the owner in ONE transaction (published pages stop at once); the Janua account is not touched |
 
 Abuse ceilings (`apps/web/src/server/api/limits.ts`; not product tiers, the owner may tune them): a request body is at
 most 256 KiB (413 `body_too_large`; the server never buffers more than 512 KiB of any body, `next.config.ts`), and one

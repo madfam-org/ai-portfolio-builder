@@ -40,7 +40,7 @@ async function addItem(page: Page, kind: string, addLabel: string, fields: Recor
   await settled(row(page, kind, opts.title));
 }
 
-test('a fresh person: honest empty state, why a rich profile matters, name from Janua, the import seam, English', async ({ page, context }) => {
+test('a fresh person: honest empty state, why a rich profile matters, name from Janua, the import panel, English', async ({ page, context }) => {
   const violations = cspViolations(page);
   await signIn(context, FRESH);
   const res = await page.goto(url('app', '/perfil'));
@@ -51,8 +51,8 @@ test('a fresh person: honest empty state, why a rich profile matters, name from 
   await expect(page.getByText('con ellas comparamos tu perfil con el texto de cada vacante')).toBeVisible();
   await expect(page.getByLabel('Nombre como quieres que aparezca')).toHaveValue(FRESH.name);
   await expect(page.getByText('Lo tomamos de tu cuenta de Janua; puedes cambiarlo.')).toBeVisible();
-  await expect(page.getByRole('heading', { name: /Importar \(próximamente\)/ })).toBeVisible();
-  await expect(page.getByText('Nunca extraeremos datos de otros sitios por ti.')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Importar tus datos' })).toBeVisible();
+  await expect(page.getByText('No nos conectamos a tu cuenta de LinkedIn ni extraemos datos de otros sitios.')).toBeVisible();
   for (const kind of ['Experiencia', 'Educación', 'Proyectos', 'Habilidades', 'Idiomas', 'Certificaciones', 'Logros', 'Reconocimientos', 'Publicaciones', 'Voluntariado', 'Enlaces']) {
     await expect(page.getByRole('heading', { level: 3, name: kind })).toBeVisible();
   }
@@ -76,7 +76,7 @@ test('a fresh person: honest empty state, why a rich profile matters, name from 
   expect(stored).toMatchObject({ displayName: FRESH.name, headline: 'Diseñadora de servicios', contact: { email: 'fer@example.test', links: [{ label: 'Sitio', url: 'https://example.test/fer' }] } });
   await page.goto(url('app', '/en/perfil'));
   await expect(page.getByRole('heading', { name: 'Your career' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: /Import \(coming soon\)/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Import your data' })).toBeVisible();
   await expect(page.getByLabel('Headline')).toHaveValue('Diseñadora de servicios');
   expect(violations).toEqual([]);
 });
@@ -136,7 +136,7 @@ test('A edits, is refused an invalid URL in place, reorders from the keyboard, d
   const vol = section(page, 'volunteering').getByTestId('profile-item');
   await expect(vol.filter({ hasText: 'Primero' })).toHaveCount(1);
   const order = async () => (await vol.locator('p:first-child').allTextContents()).map((t) => t.split(' · ')[0]).filter((t) => ['Primero', 'Segundo', 'Tercero'].includes(t ?? ''));
-  expect(await order()).toEqual(['Primero', 'Segundo', 'Tercero']);
+  await expect.poll(order).toEqual(['Primero', 'Segundo', 'Tercero']);
 
   // Keyboard reorder: focus «Subir «Tercero»» and press Enter until it is first (the 11-kinds test left «Mentora»
   // above it); the focus stays on the moved item, and moves to «Bajar» once «Subir» no longer applies.
@@ -151,7 +151,7 @@ test('A edits, is refused an invalid URL in place, reorders from the keyboard, d
   await expect(up).toHaveAttribute('aria-disabled', 'true');
   await expect(page.getByRole('button', { name: 'Bajar «Tercero»' })).toBeFocused();
   await page.reload();
-  expect(await order()).toEqual(['Tercero', 'Primero', 'Segundo']);
+  await expect.poll(order, { message: 'the order survives a reload (polled: the list renders after the profile loads)' }).toEqual(['Tercero', 'Primero', 'Segundo']);
   await expect(vol.first()).toContainText('Tercero');
 
   // A refused reorder rolls back.

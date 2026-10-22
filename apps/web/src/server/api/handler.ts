@@ -23,6 +23,8 @@ import {
   type Repository,
 } from '../db/repository.ts';
 import { ARTIFACT_KINDS } from '../db/schema.ts';
+import { createDataRights } from '../db/data-rights.ts';
+import { EXPORT_FORMATS, exportFilename, fullExport, toJsonResume, type ExportFormat } from './portability.ts';
 import { authFailureResponse, authenticate } from '../janua.ts';
 import { UUID, matchRoute } from '../../lib/api-routes.ts';
 import { MAX_BODY_BYTES, OWNER_QUOTAS, type OwnerQuotas } from './limits.ts';
@@ -39,6 +41,8 @@ import {
   jobCreateBody,
   jobPatchBody,
   profileBody,
+  itemBatchBody,
+  deleteMeBody,
   publishBody,
   type ArtifactContent,
 } from './validation.ts';
@@ -134,12 +138,14 @@ export async function handleApi(request: Request, segments: readonly string[], d
   if (!route.methods.includes(method)) return json(405, { error: 'method_not_allowed' }, { Allow: route.methods.join(', ') });
   const verifier = verifierConfig(deps.env);
   if (!verifier) return notConfigured();
-  const handle = route.name === 'me' ? null : deps.getDb();
-  if (route.name !== 'me' && !handle) return notConfigured();
+  // `GET /me` answers from the token alone; every other route (including `DELETE /me`) needs the database.
+  const tokenOnly = route.name === 'me' && method === 'GET';
+  const handle = tokenOnly ? null : deps.getDb();
+  if (!tokenOnly && !handle) return notConfigured();
 
   const auth = await authenticate(request.headers.get('authorization'), verifier);
   if (!auth.ok) return authFailureResponse(auth);
-  if (route.name === 'me') return json(200, { sub: auth.sub });
+  if (tokenOnly) return json(200, { sub: auth.sub });
 
   try {
     const nameHint = typeof auth.claims.name === 'string' ? auth.claims.name.slice(0, 200) : undefined;
@@ -148,6 +154,7 @@ export async function handleApi(request: Request, segments: readonly string[], d
       const limit = quotas[table];
       if ((await ownerRowCount(handle!.db, auth.sub, table)) + adding > limit) throw new HttpError(429, { error: 'quota_exceeded', resource: table, limit });
     };
+    if (route.name === 'items-batch' || route.name === 'me' || route.name === 'me-export') return await dataRights(handle!.db, quota, auth.sub, nameHint, route.name, request);
     return await dispatch(createRepository(handle!.db), quota, auth.sub, nameHint, route.name, route.ids, method, request);
   } catch (err) {
     if (err instanceof HttpError) return json(err.status, err.body);
@@ -261,4 +268,49 @@ async function dispatch(repo: Repository, quota: QuotaCheck, sub: string, nameHi
     }
   }
   return notFound();
+}
+
+/**
+ * W4-I: the import batch, the export and the deletion (server/db/data-rights.ts), owner-scoped like everything else.
+ * - `POST /profile/items/batch`: every item validated against its kind before anything is written; then the owner's
+ *   item ceiling (429 `quota_exceeded`); then one transaction (all or none). 201 with the created items and the profile.
+ * - `GET /me/export[?format=full|json-resume]`: a download (`Content-Disposition: attachment`), never cached.
+ * - `DELETE /me` with `{"confirm":"delete-all-my-data"}`: every row of the owner, in one transaction; 200 with counts.
+ */
+async function dataRights(db: Parameters<typeof createDataRights>[0], quota: QuotaCheck, sub: string, nameHint: string | undefined, name: string, request: Request): Promise<Response> {
+  const rights = createDataRights(db);
+  if (name === 'items-batch') {
+    const body = parse(itemBatchBody, await readJson(request));
+    const items = body.items.map((it, i) => {
+      const r = ITEM_CONTENT[it.kind].safeParse(it.content);
+      if (!r.success) {
+        throw new HttpError(400, { error: 'invalid_body', issues: r.error.issues.map((x) => ({ path: ['items', i, 'content', ...x.path].join('.'), message: x.message })) });
+      }
+      return { kind: it.kind, content: r.data, tags: it.tags };
+    });
+    // W4-S ceiling: an import never takes the owner past OWNER_QUOTAS.items (429 quota_exceeded, nothing written).
+    await quota('items', items.length);
+    const { profile, items: rows } = await rights.importItems(sub, { items, profile: body.profile }, nameHint);
+    return json(201, { profile: view(profile), items: rows.map(view) });
+  }
+  if (name === 'me-export') {
+    const raw = new URL(request.url).searchParams.get('format') ?? 'full';
+    if (!(EXPORT_FORMATS as readonly string[]).includes(raw)) return json(400, { error: 'invalid_query', field: 'format' });
+    const format = raw as ExportFormat;
+    const now = new Date();
+    const data = await rights.exportAll(sub);
+    const doc = format === 'json-resume' ? toJsonResume(data, now) : fullExport(data, now);
+    return new Response(JSON.stringify(doc, null, 2), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 'no-store',
+        'Content-Disposition': `attachment; filename="${exportFilename(format, now)}"`,
+        'X-Content-Type-Options': 'nosniff',
+      },
+    });
+  }
+  // DELETE /me
+  parse(deleteMeBody, await readJson(request));
+  return json(200, { deleted: await rights.deleteAll(sub) });
 }
