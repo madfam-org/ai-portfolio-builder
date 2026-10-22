@@ -138,8 +138,8 @@ edited. **Nothing is stored before «Guardar vacante»** (`POST /api/v1/jobs`, t
   line that is only a work mode («Remoto», «Home office», «Híbrido», «Presencial»), the first line as a title
   suggestion; a pasted page's HTML or JSON-LD is read as a page.
 - **File**, read in the browser: PDF text layer (pdf.js, `pdfjs-dist`, Apache-2.0, loaded only when a PDF is picked,
-  main-thread, no eval, no network), DOCX (`word/document.xml` only, with the W4-I ZIP reader), TXT, HTML (DOMParser,
-  inert). Only the resulting text is sent. Scanned PDFs and images: «Aún no leemos imágenes» (OCR belongs to tlacuilo,
+  main-thread, no eval, no network), DOCX (`word/document.xml` only, with the W4-I ZIP reader), TXT, HTML (cv's own
+  tolerant parser, nothing executed). Only the resulting text is sent. Scanned PDFs and images: «Aún no leemos imágenes» (OCR belongs to tlacuilo,
   not available to cv yet; typed seam in `ingest/seams.ts`).
 - **«Capturar desde tu navegador»**: a bookmark (generated and served by cv-app itself) that, on the job page the
   person has open, reads that page's JobPosting JSON-LD, og:/description meta, JobPosting microdata and visible text,

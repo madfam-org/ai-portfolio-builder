@@ -25,7 +25,7 @@ export function parseJsonLoose(text: string): unknown {
   } catch {
     const fixed = text
       .replace(/^\s*(<!--|\/\/\s*<!\[CDATA\[|<!\[CDATA\[)/, '')
-      .replace(/(-->|\/\/\s*\]\]>|\]\]>)\s*$/, '')
+      .replace(/(--!?>|\/\/\s*\]\]>|\]\]>)\s*$/, '')
       .replace(/,\s*([}\]])/g, '$1')
       .replace(/[\u0000-\u001f]+/g, ' ');
     try {

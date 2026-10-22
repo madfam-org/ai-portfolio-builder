@@ -57,7 +57,7 @@ export function parseHtml(html: string): El {
   const top = () => stack[stack.length - 1]!;
   // Linear by construction (no nested quantifiers): a start tag's attribute text is at most 4 000 characters and may not
   // contain `<` or `>` (an attribute value holding `>` degrades to less structure). Pages are hostile input.
-  const TAG = /<!--[\s\S]*?(?:-->|$)|<![^<>]*>|<\?[^<>]*>|<\/([a-zA-Z][\w:-]*)\s*>|<([a-zA-Z][\w:-]*)([^<>]{0,4000})>/g;
+  const TAG = /<!--[\s\S]*?(?:--!?>|$)|<![^<>]*>|<\?[^<>]*>|<\/([a-zA-Z][\w:-]*)\s*>|<([a-zA-Z][\w:-]*)([^<>]{0,4000})>/g;
   let last = 0;
   let m: RegExpExecArray | null;
   while ((m = TAG.exec(html))) {
@@ -212,4 +212,21 @@ export function microdataObject(root: El): Record<string, unknown> {
   };
   visit(root);
   return obj;
+}
+
+const escapeText = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const escapeAttr = (s: string) => escapeText(s).replace(/"/g, '&quot;');
+
+/**
+ * An element back to (normalised, escaped) HTML: the browser sends a saved page's JobPosting microdata this way, read
+ * with THIS parser (no DOMParser, no live DOM). Raw-text children (script, style) are dropped.
+ */
+export function serialize(el: El): string {
+  const attrs = Object.entries(el.attrs)
+    .filter(([k]) => /^[a-z][a-z0-9:_-]*$/.test(k) && !k.startsWith('on'))
+    .map(([k, v]) => ` ${k}="${escapeAttr(v)}"`)
+    .join('');
+  if (VOID.has(el.tag)) return `<${el.tag}${attrs}>`;
+  const inner = RAW.has(el.tag) ? '' : el.children.map((c) => (typeof c === 'string' ? escapeText(c) : serialize(c))).join('');
+  return `<${el.tag}${attrs}>${inner}</${el.tag}>`;
 }

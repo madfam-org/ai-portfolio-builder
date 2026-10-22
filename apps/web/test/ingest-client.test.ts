@@ -12,7 +12,9 @@ import { bookmarkletCode, bookmarkletHref } from '../src/components/jobs/intake/
 import { CaptureError, decodeFragment, encodeFragment, fitCapture, type CapturePayload } from '../src/components/jobs/intake/capture.ts';
 import { jobFromPreview, previewFromDraft } from '../src/components/jobs/intake/client.ts';
 import { docxXmlToText, readDocxText, NotDocxError } from '../src/components/jobs/intake/docx.ts';
-import { decodeTextFile, fileKind } from '../src/components/jobs/intake/files.ts';
+import { decodeTextFile, fileKind, htmlFileToInput } from '../src/components/jobs/intake/files.ts';
+import { draftFromCapture } from '../src/server/ingest/extract.ts';
+import { parseHtml, serialize } from '../src/server/ingest/html.ts';
 import { buildZip } from './import-zip-helper.ts';
 import { buildPdf } from './ingest-pdf-helper.ts';
 
@@ -175,4 +177,16 @@ test('preview → job body: strings to typed fields, empty to null, codes upper-
       validThrough: null,
     },
   );
+});
+
+test('a saved .html page becomes a capture with cv\'s own parser (no DOMParser); microdata survives the round trip', () => {
+  const input = htmlFileToInput(readFileSync(join(import.meta.dirname, 'fixtures', 'ingest', 'microdata.html'), 'utf8'));
+  assert.equal(input.source, 'capture');
+  if (input.source !== 'capture') return;
+  assert.match(input.capture.microdata ?? '', /itemtype="https:\/\/schema.org\/JobPosting"/);
+  const d = draftFromCapture({ url: null, canonical: null, title: '', jsonLd: [], meta: {}, microdata: '', text: '', ...input.capture }, 'file')!;
+  assert.equal(d.fields.company!.value, 'Servicios Ejemplo del Bajío');
+  assert.equal(d.fields.stateCode!.value, 'MX-GUA');
+  assert.equal(serialize(parseHtml('<p onclick="x()" title="a&quot;b">1 &lt; 2<script>alert(1)</script></p>').children[0] as never), '<p title="a&quot;b">1 &lt; 2<script></script></p>');
+  assert.equal(parseHtml('<!-- a --!><p>visible</p>').children.length, 1, '--!> ends a comment');
 });

@@ -4,7 +4,8 @@
  * is sent, and only to cv's own same-origin API, to build the preview.
  */
 import type { IntakeInput } from '../../../lib/client/types.ts';
-import { captureFromDocument, fitCapture } from './capture.ts';
+import { pageParts, serialize } from '../../../server/ingest/html.ts';
+import { fitCapture, type CapturePayload } from './capture.ts';
 
 export type FileKind = 'pdf' | 'docx' | 'text' | 'html' | 'image' | 'unsupported';
 
@@ -41,15 +42,28 @@ export function decodeTextFile(bytes: Uint8Array): string {
   }
 }
 
-/** A saved job page (.html) → the same capture the bookmarklet makes (DOMParser: inert, no script runs). */
+/**
+ * A saved job page (.html) → the same capture the bookmarklet makes, read with cv's own tolerant parser
+ * (server/ingest/html.ts: pure functions, no DOMParser, nothing executed or loaded).
+ */
 export function htmlFileToInput(html: string): IntakeInput {
-  const doc = new DOMParser().parseFromString(html, 'text/html');
-  const base = doc.querySelector('link[rel="canonical"]')?.getAttribute('href') ?? doc.querySelector('meta[property="og:url"]')?.getAttribute('content') ?? null;
+  const parts = pageParts(html);
+  const base = parts.canonical ?? parts.meta['og:url'] ?? null;
   let url: string | null = null;
   try {
     url = base && /^https?:/i.test(base) ? new URL(base).toString() : null;
   } catch {
     url = null;
   }
-  return { source: 'capture', kind: 'file', capture: fitCapture(captureFromDocument(doc, url)) };
+  const capture: CapturePayload = {
+    v: 1,
+    url,
+    canonical: parts.canonical,
+    title: parts.title ?? '',
+    jsonLd: parts.jsonLd.filter((t) => /JobPosting/.test(t)).slice(0, 5),
+    meta: parts.meta,
+    microdata: parts.microdataRoot ? serialize(parts.microdataRoot).slice(0, 150_000) : '',
+    text: parts.text.slice(0, 60_000),
+  };
+  return { source: 'capture', kind: 'file', capture: fitCapture(capture) };
 }
