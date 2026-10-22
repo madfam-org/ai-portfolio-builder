@@ -8,9 +8,9 @@ Please report vulnerabilities through GitHub's **private vulnerability reporting
 
 ## Scope
 
-The live surfaces are `cv.madfam.io` (landing), `cv-app.madfam.io` (pre-launch app shell) and
+The live surfaces are `cv.madfam.io` (landing), `cv-app.madfam.io` (the app, with Janua sign-in) and
 `cv-api.madfam.io` (API: `/health`, `/ready`, `/api/v1/...`), all served by the code on `main`.
-Sign-in and the database are built but dormant until provisioned. The highest-severity findings are:
+Sign-in and the database are live since 2026-10-22. The highest-severity findings are:
 
 - **Script execution** on any of the three hosts, or anything that needs the Content-Security-Policy
   relaxed (the HTML hosts use a per-request nonce with `'strict-dynamic'` and no `'unsafe-inline'` or

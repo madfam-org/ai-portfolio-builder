@@ -10,7 +10,7 @@ be fed a range of jobs, and produce a matching range of tailored CVs, portfolios
 Model: profiles (one per Janua sub) → profile_items (experience, education, skills, projects, ...) → jobs
 (pasted postings) → artifacts (cv | portfolio | presentation | cover_letter, general or per job; private, link or
 public). A deterministic, AI-free GET /api/v1/jobs/:id/match scores items against a posting. Status:
-incubating, pre-launch; sign-in and data are built but dormant until provisioned. The brand is not ruled;
+incubating, pre-launch; Janua sign-in and the owner-scoped data are live since 2026-10-22. The brand is not ruled;
 "MADFAM CV" is a working label rendered from one constant.
 
 ## What runs today (wave 1, the fresh baseline)
@@ -79,6 +79,6 @@ Plausible (analytics, later), Angelia (messaging, later), PhyndCRM (consent/attr
 - Legal entity line: Innovaciones MADFAM S.A.S. de C.V. · Cuernavaca, Morelos, México.
 - Mailboxes: hola@, privacy@, legal@, security@, support@madfam.io only. madfam.io is the only MADFAM
   domain; the .com of the same name belongs to a third party.
-- Licence: code AGPL-3.0-only (owner confirms at merge of the baseline), docs MIT.
+- Licence: code AGPL-3.0-only (ruled by the owner 2026-10-22), docs MIT.
 - The old implementation (git tag legacy-2025-09) is reference only; nothing is ported without being
   rebuilt to this tree's standard.
