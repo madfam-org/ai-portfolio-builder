@@ -1,0 +1,213 @@
+/*
+ * The profile editor (W3-2). Classes only (the nonce CSP blocks style attributes); colours from the tokens in
+ * app/globals.css, so light and dark both work.
+ */
+
+.editor {
+  display: grid;
+  gap: 2rem;
+}
+
+.panel {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 1.25rem;
+}
+.panel > h2 {
+  margin: 0 0 0.35rem;
+}
+.panel > p {
+  margin: 0 0 1rem;
+  color: var(--muted);
+}
+
+.form {
+  display: grid;
+  gap: 1rem;
+}
+.formTitle {
+  margin: 0;
+  font-size: 1.15rem;
+}
+.formTitle:focus {
+  outline: none;
+}
+.grid2 {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+}
+
+.fieldset {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.75rem 1rem 1rem;
+  margin: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+.fieldset legend {
+  font-weight: 600;
+  padding: 0 0.3rem;
+}
+.hint {
+  color: var(--muted);
+  font-size: 0.92rem;
+  margin: 0;
+}
+.error {
+  color: #a1291c;
+  font-size: 0.92rem;
+  margin: 0;
+}
+.linkRow {
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: minmax(8rem, 1fr) minmax(12rem, 2fr) auto;
+  align-items: end;
+}
+@media (max-width: 40rem) {
+  .linkRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 999px;
+  padding: 0.1rem 0.25rem 0.1rem 0.65rem;
+  background: var(--tag-bg);
+  font-size: 0.9rem;
+}
+.chipStatic {
+  padding-right: 0.65rem;
+}
+.chipRemove {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  line-height: 1;
+  padding: 0.25rem 0.4rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.chipRemove:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 1px;
+}
+.tagEntry {
+  display: flex;
+  gap: 0.5rem;
+  align-items: end;
+}
+.tagEntry > :first-child {
+  flex: 1 1 auto;
+}
+
+.toc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.75rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.toc a {
+  color: var(--ink);
+}
+.count {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.section {
+  display: grid;
+  gap: 0.75rem;
+  scroll-margin-top: 1rem;
+}
+.sectionHead {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+.sectionHead h3 {
+  margin: 0;
+}
+.sectionHint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+.row {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.75rem 0.9rem;
+  display: grid;
+  gap: 0.5rem;
+}
+.rowPending {
+  opacity: 0.7;
+}
+.rowTitle {
+  margin: 0;
+  font-weight: 650;
+}
+.rowMeta {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+.rowActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.saveLine {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+.saveLine p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.points {
+  margin: 0.5rem 0 0;
+  padding-left: 1.2rem;
+  text-align: left;
+}
+
+@media (prefers-color-scheme: dark) {
+  .error {
+    color: #ff9c8f;
+  }
+}
+
+.wide {
+  grid-column: 1 / -1;
+}
