@@ -40,6 +40,9 @@ repo-boundary contract (docs/REPO_BOUNDARY.md).
 - `Dockerfile`, `infra/k8s/production/`, `enclii.yaml`, `.github/workflows/build-deploy.yml`: the one image, its kustomize base, the Enclii manifest, the dispatch-only build caller
 - `apps/web/src/server/`: Janua token verification, the Drizzle schema and owner-scoped repository, the API handler
 - `apps/web/src/server/metrics*.ts`: observability; `/metrics` on the internal port 9090 only (never a public host), route-template labels, JSON request logs without PII
+- `apps/web/src/lib/templates.ts`, `src/components/render/`: the template registry (the API allowlist, renderers and pickers) and the print-safe, one-column CV templates
+- `apps/web/src/components/import/`, `src/server/db/data-rights.ts`, `src/server/api/portability.ts`: in-browser import of the person's own LinkedIn export / JSON Resume (no AI), download and delete of their data
+- `apps/web/src/server/api/limits.ts`: the body cap and the per-person storage ceilings
 - `apps/web/drizzle/`: committed SQL migrations; `apps/web/test-pg/`: the real-Postgres cross-owner suite
 - `janua.client.yaml`: Janua registrations (names only)
 - `apps/web/src/components/ui/`, `src/components/app/`, `src/lib/client/`, `src/lib/copy/`: UI primitives, the app frame, the typed data layer, per-surface copy

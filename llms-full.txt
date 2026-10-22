@@ -79,6 +79,6 @@ Plausible (analytics, later), Angelia (messaging, later), PhyndCRM (consent/attr
 - Legal entity line: Innovaciones MADFAM S.A.S. de C.V. · Cuernavaca, Morelos, México.
 - Mailboxes: hola@, privacy@, legal@, security@, support@madfam.io only. madfam.io is the only MADFAM
   domain; the .com of the same name belongs to a third party.
-- Licence: code AGPL-3.0-only (owner confirms at merge of the baseline), docs MIT.
+- Licence: code AGPL-3.0-only (ruled by the owner 2026-10-22), docs MIT.
 - The old implementation (git tag legacy-2025-09) is reference only; nothing is ported without being
   rebuilt to this tree's standard.

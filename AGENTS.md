@@ -151,16 +151,17 @@ hosts. `build-deploy.yml` is **dispatch-only** (Enclii's reusable build-publish 
 ## Licences
 
 Platform code AGPL-3.0-only; documentation MIT; licence holder Innovaciones MADFAM S.A.S. de C.V.
-(R72). AGPL is the recorded recommendation (audit decision D4) applied as the default for a new
-MADFAM platform repo; **the owner confirms it at merge of the baseline pull request.**
+(R72). **Ruled by the owner on 2026-10-22** (audit decision D4; internal-devops
+`decisions/2026-10-22-cv-licence.md`).
 
 ## Pending rulings
 
-- **Brand / product name** (D2): working label only; naming sweep through LexiDrop. `noindex` stays
-  on until ruled.
-- **Licence confirmation** (D4): AGPL-3.0-only applied as the default.
+- **Brand / product name** (D2): on hold (owner, 2026-10-22); working label only; naming sweep through
+  LexiDrop. `noindex` stays on until ruled.
 - **Product scope** (D1): recommended standalone, one core journey (sign in → create → edit →
-  publish); CV import decided with the AI wave.
+  publish). Import is **ruled** (owner, 2026-10-22; internal-devops `decisions/2026-10-22-cv-import.md`): the
+  no-AI import of the person's own LinkedIn export / JSON Resume ships (W4-I); AI parsing of other CV files
+  waits for the AI wave (Selva).
 - **Repository `homepage`**: set by the coordinator after go-live.
 - **Pages host label** (lane X §3): working label `cv-p.madfam.io`; inert until named. Abuse mailbox `legal@madfam.io`
   (recommended over `support@`; owner to confirm).
@@ -170,7 +171,7 @@ MADFAM platform repo; **the owner confirms it at merge of the baseline pull requ
 Every app page is declared once in `apps/web/src/lib/app-routes.ts` (English under `/en/...`; `:id` is a UUID):
 `/` · `/perfil` · `/empleos` · `/empleos/:id` · `/empleos/:id/adaptar` · `/documentos` · `/documentos/:id` ·
 `/documentos/:id/vista-previa` · `/documentos/:id/imprimir` · `/ajustes`. Each renders inside `AppFrame` and shows an
-honest «En construcción» until its PR lands. The pages host serves `/<slug>` and `/l/<token>`.
+honest «En construcción» until its PR lands (every page has landed: W3, and W4 for `/ajustes`). The pages host serves `/<slug>` and `/l/<token>`.
 
 After W3-1 (foundation) merges, three PRs run in parallel on disjoint directories:
 

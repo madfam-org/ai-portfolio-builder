@@ -53,7 +53,7 @@ names it. The host is read from configuration, never hard-coded.
 | `/empleos/:id/adaptar` | tailoring workspace: keyword match (no AI), selection, overrides, «Crear CV, portafolio y presentación» | W3-3 |
 | `/documentos`, `/documentos/:id` | artifacts, the editor and the publish dialog | W3-4 |
 | `/documentos/:id/vista-previa`, `/documentos/:id/imprimir` | preview (same renderer as the pages host), print view | W3-4 |
-| `/ajustes` | account and data settings | later |
+| `/ajustes` | account and data settings: download my data (cv JSON or JSON Resume), delete my data | W4-I |
 
 ### Documents: renderers, preview, print and publish (W3-4)
 
