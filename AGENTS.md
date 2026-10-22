@@ -141,7 +141,7 @@ Public repository: every job runs on **GitHub-hosted** runners (R116). Top-level
 `|| true` masks. `ci.yml`: `agent-docs` (required files and markers), `web` (frozen install, lint,
 typecheck, unit tests, build, standalone smoke), `pg` (the real-Postgres suite on a `postgres:16-alpine`
 service container, as the `cv_app` role; fails on fewer than 29 passing tests), `e2e` (Playwright on GitHub-hosted runners:
-`npx playwright install --with-deps chromium`, the built server, its own Postgres service; fails on fewer than 57
+`npx playwright install --with-deps chromium`, the built server, its own Postgres service; fails on fewer than 61
 passing specs or any failed, flaky or skipped), `guards` (file size, forbidden-domain grep),
 `secrets` (gitleaks over every commit after the legacy base `7959f356`, plus the checked-out tree;
 the legacy history was scanned in full by the 2026-10-22 audit). `image.yml` builds the Dockerfile on

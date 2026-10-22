@@ -160,6 +160,7 @@ test('files are read in the browser: DOCX and a text PDF preview; a scanned PDF 
   await expect(preview.getByLabel('Puesto')).toHaveValue('Recepcionista bilingue');
   await expect(preview.getByLabel('Estado')).toHaveValue('MX-ROO');
   expect(JSON.parse(intakeCalls[1]!)).toMatchObject({ source: 'text', kind: 'pdf' });
+  expect(violations, 'pdf.js under cv-app\'s CSP: no violation on PDF pick').toEqual([]);
   await shot(page, 'es-6-pdf');
   await preview.getByRole('button', { name: 'Descartar' }).click();
 

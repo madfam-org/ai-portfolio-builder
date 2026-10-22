@@ -6,6 +6,10 @@
  * eval is needed and cv-app's CSP stays as it is), with no font loading, no WebAssembly and no network (no CMap,
  * font or wasm URL is given; `useWorkerFetch: false`). A PDF with (almost) no text is reported as scanned: OCR
  * belongs to tlacuilo and is not available yet (server/ingest/seams.ts).
+ *
+ * `isEvalSupported` is deliberately absent: pdf.js 6 removed that option together with its eval-compiled font path
+ * (the 6.4.299 build has no `eval` or `new Function`; test/ingest-client.test.ts guards it, and the e2e asserts no CSP
+ * violation on a PDF pick). Passing it is a type error in pdfjs-dist 6.
  */
 
 export interface PdfText {

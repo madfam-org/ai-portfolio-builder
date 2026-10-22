@@ -190,3 +190,16 @@ test('a saved .html page becomes a capture with cv\'s own parser (no DOMParser);
   assert.equal(serialize(parseHtml('<p onclick="x()" title="a&quot;b">1 &lt; 2<script>alert(1)</script></p>').children[0] as never), '<p title="a&quot;b">1 &lt; 2<script></script></p>');
   assert.equal(parseHtml('<!-- a --!><p>visible</p>').children.length, 1, '--!> ends a comment');
 });
+
+test('pdf.js (pinned pdfjs-dist) contains no eval and no new Function, so cv-app\'s CSP (no unsafe-eval) is never probed', () => {
+  // pdf.js 6 removed the `isEvalSupported` option and the eval-compiled font path: there is nothing to turn off.
+  // This guard fails if an upgrade brings either back (then pass `isEvalSupported: false` again in pdf.ts).
+  const dir = join(import.meta.dirname, '..', 'node_modules', 'pdfjs-dist', 'build');
+  for (const file of ['pdf.min.mjs', 'pdf.worker.min.mjs', 'pdf.mjs', 'pdf.worker.mjs']) {
+    const src = readFileSync(join(dir, file), 'utf8');
+    assert.ok(src.length > 100_000, `read ${file}`);
+    assert.doesNotMatch(src, /new Function\s*\(/, `${file}: new Function`);
+    assert.doesNotMatch(src, /(^|[^.\w$])eval\s*\(/, `${file}: eval`);
+    assert.doesNotMatch(src, /isEvalSupported/, `${file}: isEvalSupported is back; set it to false in pdf.ts`);
+  }
+});
