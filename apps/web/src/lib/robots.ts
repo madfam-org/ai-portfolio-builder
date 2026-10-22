@@ -40,6 +40,17 @@ export function robotsTxt(role: Role, config: Config): string {
     if (config.indexable) parts.push(`Sitemap: https://${config.hosts.landing}/sitemap.xml\n`);
     return parts.join('\n');
   }
+  if (role === 'pages') {
+    // Crawling is allowed so a crawler sees each page's own X-Robots-Tag: every page is noindex (and noai) unless
+    // its owner chose to be indexed, which only a public page can be. No sitemap: listing people's pages is a
+    // later, opt-in decision (lane X §3.3).
+    return [
+      '# User pages host: public and link-shared pages that people publish (MADFAM estate policy R40).',
+      '# Every page is noindex, nofollow, noai, noimageai unless its owner chose to be indexed.',
+      group(R40_AI_CRAWLERS, 'Allow: /'),
+      group(['*'], 'Allow: /'),
+    ].join('\n');
+  }
   return [
     `# ${role === 'app' ? 'Application' : 'API'} host: nothing here is for crawlers (MADFAM estate policy R40).`,
     group(R40_AI_CRAWLERS, 'Disallow: /'),

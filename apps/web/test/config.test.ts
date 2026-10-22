@@ -4,9 +4,10 @@ import { test } from 'node:test';
 import { APP_VERSION } from '../src/lib/brand.ts';
 import { ConfigError, HOST_TABLE, loadConfig } from '../src/lib/config.ts';
 
-test('defaults are the three owner-named hosts, noindex, no revision', () => {
+test('defaults are the three owner-named hosts, noindex, no revision; the pages host is inert', () => {
   const c = loadConfig({});
-  assert.deepEqual(c.hosts, { landing: 'cv.madfam.io', app: 'cv-app.madfam.io', api: 'cv-api.madfam.io' });
+  assert.deepEqual(c.hosts, { landing: 'cv.madfam.io', app: 'cv-app.madfam.io', api: 'cv-api.madfam.io', pages: null });
+  assert.equal(c.byHost.get('cv-p.madfam.io'), undefined, 'the proposed label is never served by default');
   assert.equal(c.byHost.get('cv.madfam.io'), 'landing');
   assert.equal(c.byHost.get('cv-app.madfam.io'), 'app');
   assert.equal(c.byHost.get('cv-api.madfam.io'), 'api');
@@ -18,7 +19,11 @@ test('defaults are the three owner-named hosts, noindex, no revision', () => {
 test('the host table is the single source: one row per role, only the landing is index-eligible', () => {
   assert.deepEqual(
     HOST_TABLE.map((r) => r.role),
-    ['landing', 'app', 'api'],
+    ['landing', 'app', 'api', 'pages'],
+  );
+  assert.deepEqual(
+    HOST_TABLE.filter((r) => r.inertUntilSet).map((r) => [r.role, r.env, r.fallback]),
+    [['pages', 'CV_HOST_PAGES', 'cv-p.madfam.io']],
   );
   assert.deepEqual(
     HOST_TABLE.filter((r) => r.indexEligible).map((r) => r.role),
@@ -39,6 +44,17 @@ test('malformed hosts fail loudly', () => {
 
 test('a host repeated across roles fails', () => {
   assert.throws(() => loadConfig({ CV_HOST_APP: 'cv.madfam.io' }), /repeats host/);
+  assert.throws(() => loadConfig({ CV_HOST_PAGES: 'cv-app.madfam.io' }), /CV_HOST_PAGES repeats host/);
+});
+
+test('CV_HOST_PAGES turns the pages host on, validated like every host', () => {
+  const c = loadConfig({ CV_HOST_PAGES: 'cv-p.madfam.io' });
+  assert.equal(c.hosts.pages, 'cv-p.madfam.io');
+  assert.equal(c.byHost.get('cv-p.madfam.io'), 'pages');
+  assert.equal(c.byHost.size, 4);
+  for (const bad of ['CV-P.madfam.io', 'cv-p.madfam.io:443', 'cv-p', 'https://cv-p.madfam.io']) {
+    assert.throws(() => loadConfig({ CV_HOST_PAGES: bad }), ConfigError, bad);
+  }
 });
 
 test('CV_INDEXABLE accepts only true/false/unset', () => {

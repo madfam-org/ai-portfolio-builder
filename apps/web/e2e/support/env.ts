@@ -1,0 +1,20 @@
+/**
+ * The e2e run's fixed coordinates (shared by playwright.config.ts, the server launcher and the specs). Hosts are
+ * `*.localhost`: browsers resolve them to loopback, and Auth.js keeps plain (non-__Secure-) cookie names for them.
+ */
+export const E2E_PORT = Number(process.env.CV_E2E_PORT ?? 3311);
+/** The launcher's test-only token minting endpoint (never part of the product). */
+export const E2E_MINT_PORT = Number(process.env.CV_E2E_MINT_PORT ?? 3312);
+
+export const HOSTS = {
+  landing: 'cv.localhost',
+  app: 'cv-app.localhost',
+  api: 'cv-api.localhost',
+  pages: 'cv-p.localhost',
+} as const;
+
+export const url = (host: keyof typeof HOSTS, path = '/') => `http://${HOSTS[host]}:${E2E_PORT}${path}`;
+
+/** Two owners in every suite. */
+export const OWNER_A = { sub: 'janua|e2e-owner-a', name: 'Ana Prueba', email: 'ana@example.test' };
+export const OWNER_B = { sub: 'janua|e2e-owner-b', name: 'Beto Prueba', email: 'beto@example.test' };

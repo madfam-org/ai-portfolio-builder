@@ -31,6 +31,7 @@ Two replicas, surge rollout (`maxUnavailable: 0`), a PodDisruptionBudget
 | `cv.madfam.io` | landing: es-MX `/`, en `/en` | `X-Robots-Tag: noindex, nofollow` while `CV_INDEXABLE` is not `true` | allows the R40 AI crawlers and everyone (so crawlers can see the noindex); `Sitemap:` and `/sitemap.xml` only when indexable |
 | `cv-app.madfam.io` | app shell `/`, `/en`; Auth.js `/api/auth/*`; `POST /auth/entrar`, `POST /auth/salir`; the same-origin API proxy `/api/v1/*` | always noindex | disallow all, AI crawlers named |
 | `cv-api.madfam.io` | `/api/v1/meta`; the owner-scoped API (docs/PRODUCT.md); JSON 404 elsewhere | always noindex | disallow all, AI crawlers named |
+| pages host (label pending; working label `cv-p.madfam.io`; set by `CV_HOST_PAGES`) | `/<slug>` (public artifact), `/l/<token>` (link-shared); the proxy looks each up first (published, unsuspended), anything else is the HTML 404 | per page: `index, follow` only for a public artifact whose owner chose `indexable`; otherwise `noindex, nofollow, noai, noimageai`; `/l/*` also `Cache-Control: private, no-store` and `Referrer-Policy: no-referrer`; public pages `no-store` | allows everyone and names the R40 AI crawlers (so the per-page header is seen); no sitemap |
 | any other Host | `/health`, `/ready` only | — | 404 |
 
 Tunnel routes: each domain in `enclii.yaml` pins `port: 80`; the Service `cv` publishes 80 → the
@@ -44,7 +45,8 @@ COOP.
 | Variable | Production value | Meaning |
 |---|---|---|
 | `CV_HOST_LANDING`, `CV_HOST_APP`, `CV_HOST_API` | `cv.madfam.io`, `cv-app.madfam.io`, `cv-api.madfam.io` | the host table; exact lowercase hostnames, distinct; invalid values stop the server at boot |
-| `CV_INDEXABLE` | `false` | the one indexing flag; only `true` lifts noindex on the landing |
+| `CV_HOST_PAGES` | unset (inert) | the user-pages host; until the owner names the label (working label `cv-p.madfam.io`) it stays unset and the host is not served. Setting it also needs the domain in `enclii.yaml` (`port: 80`), domains reconcile and the tunnel apply (coordinator) |
+| `CV_INDEXABLE` | `false` | the one indexing flag; only `true` lifts noindex on the landing (never on user pages) |
 | `CV_REVISION` | set by the image build arg | the commit reported by `/health` and `/api/v1/meta` |
 | `HOSTNAME` | `0.0.0.0` | bind address; also keeps the proxy's rewrites internal (a loopback name would not) |
 
@@ -123,7 +125,9 @@ update artifacts set suspended_at = now(), suspended_reason = '<reason>' where i
 update artifacts set suspended_at = null, suspended_reason = null where id = '<artifact id>';
 ```
 
-A suspended artifact is never served by the public reads, and its owner's publish answers 409 `suspended`.
+A suspended artifact is never served by the public reads or the pages host (404 at once: user pages are `no-store`),
+and its owner's publish answers 409 `suspended`. Publishing is also rate-limited to 20 artifacts per owner per 24 hours
+(429 `publish_limit`). Abuse reports arrive at `legal@madfam.io` from the link on every user page.
 
 ## Network
 

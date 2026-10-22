@@ -12,6 +12,7 @@ import type { DbHandle } from '../db/client.ts';
 import {
   ForeignItemsError,
   JobHasArtifactsError,
+  PublishLimitError,
   SlugTakenError,
   SuspendedError,
   createRepository,
@@ -28,8 +29,10 @@ import {
   ITEM_CONTENT,
   artifactCreateBody,
   artifactPatchBody,
+  artifactSetBody,
   itemCreateBody,
   itemPatchBody,
+  itemReorderBody,
   jobCreateBody,
   jobPatchBody,
   profileBody,
@@ -141,6 +144,7 @@ export async function handleApi(request: Request, segments: readonly string[], d
     if (err instanceof SlugTakenError) return json(409, { error: 'slug_taken' });
     if (err instanceof SuspendedError) return json(409, { error: 'suspended' });
     if (err instanceof JobHasArtifactsError) return json(409, { error: 'job_has_artifacts' });
+    if (err instanceof PublishLimitError) return json(429, { error: 'publish_limit' }, { 'Retry-After': '3600' });
     return dbFailure(err);
   }
 }
@@ -167,6 +171,10 @@ async function dispatch(repo: Repository, sub: string, nameHint: string | undefi
       const body = parse(itemCreateBody, await readJson(request));
       const content = parse(ITEM_CONTENT[body.kind], body.content);
       return json(201, { item: view(await repo.createItem(sub, { ...body, content }, nameHint)) });
+    }
+    case 'items-reorder': {
+      const body = parse(itemReorderBody, await readJson(request));
+      return json(200, { items: (await repo.reorderItems(sub, body.itemIds)).map(view) });
     }
     case 'item': {
       const existing = await repo.getItem(sub, id);
@@ -209,6 +217,12 @@ async function dispatch(repo: Repository, sub: string, nameHint: string | undefi
       const row = await repo.createArtifact(sub, { ...body, content: artifactContent(body.kind, body.content) });
       // A job id that is absent or another person's: the same 404 as any other foreign id.
       return row ? json(201, { artifact: view(row) }) : notFound();
+    }
+    case 'artifacts-batch': {
+      const body = parse(artifactSetBody, await readJson(request));
+      const items = body.artifacts.map((a) => ({ kind: a.kind, title: a.title, content: artifactContent(a.kind, a.content) }));
+      const rows = await repo.createArtifactSet(sub, { jobId: body.jobId, locale: body.locale, template: body.template, artifacts: items });
+      return rows ? json(201, { artifacts: rows.map(view) }) : notFound();
     }
     case 'artifact': {
       const existing = await repo.getArtifact(sub, id);

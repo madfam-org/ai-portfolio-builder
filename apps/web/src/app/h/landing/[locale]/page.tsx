@@ -4,7 +4,7 @@ import { HeroArt } from '@/components/HeroArt';
 import { LangSwitch, SiteFooter, waitlistHref } from '@/components/SiteFooter';
 import { PRODUCT_LABEL, SOURCE_URL } from '@/lib/brand';
 import { getConfig } from '@/lib/config';
-import { COPY, fill, isLocale } from '@/lib/copy';
+import { COPY, fill, isLocale } from '@/lib/copy/landing';
 
 type Props = { params: Promise<{ locale: string }> };
 

@@ -14,6 +14,8 @@ export const SLUG = /^[a-z0-9](?:[a-z0-9-]{1,62}[a-z0-9])$/;
 export const RESERVED_SLUGS: ReadonlySet<string> = new Set([
   'health', 'ready', 'l', 'api', 'app', 'admin', 'auth', 'p', 's', 'robots.txt', 'sitemap.xml', 'favicon.ico',
   '_next', 'static', 'assets', 'www', 'madfam', 'legal', 'privacy', 'terms',
+  // W3 (lane X §0.2): Spanish words the public-pages host or its footer may route later.
+  'entrar', 'salir', 'reportar', 'privacidad', 'terminos', 'soporte',
 ]);
 
 /** A slug an owner may claim: the pattern, not reserved, never starting with `_` or `.`. */
@@ -43,6 +45,7 @@ export function matchRoute(segments: readonly string[]): Route | null {
   if (a === 'profile') {
     if (n === 1) return authed('profile', ['GET', 'PUT']);
     if (b === 'items' && n === 2) return authed('items', ['GET', 'POST']);
+    if (b === 'items' && n === 3 && c === 'reorder') return authed('items-reorder', ['POST']);
     if (b === 'items' && n === 3 && isId(c)) return authed('item', ['GET', 'PATCH', 'DELETE'], [c]);
     return null;
   }
@@ -54,6 +57,7 @@ export function matchRoute(segments: readonly string[]): Route | null {
   }
   if (a === 'artifacts') {
     if (n === 1) return authed('artifacts', ['GET', 'POST']);
+    if (n === 2 && b === 'batch') return authed('artifacts-batch', ['POST']);
     if (n === 2 && isId(b)) return authed('artifact', ['GET', 'PATCH', 'DELETE'], [b]);
     if (n === 3 && isId(b) && (c === 'publish' || c === 'unpublish')) return authed(`artifact-${c}`, ['POST'], [b]);
     return null;

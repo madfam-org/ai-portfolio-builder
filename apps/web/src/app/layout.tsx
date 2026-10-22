@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { headers } from 'next/headers';
 import type { ReactNode } from 'react';
-import { COPY } from '@/lib/copy';
+import { COPY } from '@/lib/copy/landing';
 import './globals.css';
 
 // Every page renders per request: the CSP nonce is per request (R77), so nothing is prerendered.

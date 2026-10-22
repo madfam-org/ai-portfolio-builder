@@ -395,3 +395,54 @@ p {
   background: var(--surface);
   color: var(--ink);
 }
+
+/* App frame (W3-1): the section nav sits in the top bar; the account row opens every signed-in page. */
+.topbar-inner nav {
+  flex: 1 1 auto;
+}
+.account {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+.account p {
+  margin: 0;
+}
+.account .actions {
+  margin: 0;
+}
+.account .button {
+  min-height: 2.25rem;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.95rem;
+}
+
+/* User pages (W3-1 minimal renderer; W3-4 owns the templates). */
+.doc h1 {
+  margin-bottom: 0.25rem;
+}
+.doc section {
+  margin-top: 1.75rem;
+}
+.doc-items {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 1rem;
+}
+.doc-items h3 {
+  margin: 0;
+}
+@media print {
+  .topbar,
+  .footer,
+  .account,
+  .skip {
+    display: none;
+  }
+}

@@ -12,3 +12,5 @@ scripts
 infra
 *.md
 .env*
+apps/web/e2e
+apps/web/playwright.config.ts

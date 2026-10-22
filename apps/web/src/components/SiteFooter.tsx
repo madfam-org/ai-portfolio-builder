@@ -1,5 +1,5 @@
 import { CONTACT_MAILBOX, LEGAL_ENTITY, MADFAM_SITE, PRODUCT_LABEL, SOURCE_URL } from '@/lib/brand';
-import { COPY } from '@/lib/copy';
+import { COPY } from '@/lib/copy/landing';
 import type { Locale } from '@/lib/routing';
 
 /**

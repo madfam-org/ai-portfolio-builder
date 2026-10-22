@@ -170,3 +170,25 @@ test('dormant W2: sign-in and data answer 503 not_configured on their own host, 
   const ready = JSON.parse((await get('10.0.0.1', '/ready')).body) as { checks: unknown };
   assert.deepEqual(ready.checks, { config: 'ok', signIn: 'not_configured', database: 'not_configured' });
 });
+
+test('W3-1 dormant: every app route renders the pre-launch shell; bad ids are the HTML 404; the pages host is unknown', async () => {
+  const id = '0b6f3c1e-8a4d-4f7e-9c2a-1d5e6f7a8b9c';
+  for (const path of ['/perfil', '/empleos', `/empleos/${id}`, `/empleos/${id}/adaptar`, '/documentos', `/documentos/${id}`, `/documentos/${id}/vista-previa`, `/documentos/${id}/imprimir`, '/ajustes', '/en/perfil']) {
+    const r = await get('cv-app.madfam.io', path);
+    assert.equal(r.status, 200, path);
+    assert.match(r.body, /aún no está disponible|not available yet/, path);
+    assert.equal(r.headers['x-robots-tag'], 'noindex, nofollow', path);
+    assert.doesNotMatch(r.body, /\sstyle\s*=/i, path);
+  }
+  for (const path of ['/empleos/123', '/perfil/x', '/es/perfil']) {
+    const r = await get('cv-app.madfam.io', path);
+    assert.equal(r.status, 404, path);
+    assert.match(String(r.headers['content-type']), /text\/html/, path);
+  }
+  // CV_HOST_PAGES is unset: its proposed label is just an unknown host.
+  for (const path of ['/', '/ana-cv', '/robots.txt']) {
+    const r = await get('cv-p.madfam.io', path);
+    assert.equal(r.status, 404, path);
+    assert.match(String(r.headers['content-type']), /text\/plain/, path);
+  }
+});

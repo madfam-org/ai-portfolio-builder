@@ -126,8 +126,66 @@ jobs:
           if [ "$status" != 0 ]; then echo "pg: FAIL exit=$status"; exit "$status"; fi
           pass=$(grep -E ' pass [0-9]+$' "$out" | awk '{print $NF}')
           fail=$(grep -E ' fail [0-9]+$' "$out" | awk '{print $NF}')
-          if [ -z "$pass" ] || [ "$pass" -lt 8 ] || [ "$fail" != 0 ]; then echo "pg: tests pass=${pass:-none} fail=${fail:-none} FAIL (expected >= 8 passing)"; exit 1; fi
+          if [ -z "$pass" ] || [ "$pass" -lt 12 ] || [ "$fail" != 0 ]; then echo "pg: tests pass=${pass:-none} fail=${fail:-none} FAIL (expected >= 12 passing)"; exit 1; fi
           echo "pg: tests pass=$pass fail=$fail OK"
+
+  e2e:
+    name: e2e (Playwright, Chromium, on the built standalone server with a real Postgres)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    services:
+      postgres:
+        # Same throwaway service as the pg job (pinned by digest, trust auth, no secret).
+        image: postgres:16-alpine@sha256:deb28ee471183cb0c303113dac9b2433c51eeeeb678def7af9a9ec5820367815
+        env:
+          POSTGRES_USER: cv_owner
+          POSTGRES_DB: cv_test
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cv_owner -d cv_test"
+          --health-interval 2s --health-timeout 5s --health-retries 30
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      CV_TEST_OWNER_URL: postgres://cv_owner@127.0.0.1:5432/cv_test
+      CV_TEST_APP_URL: postgres://cv_app@127.0.0.1:5432/cv_test
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+      - name: pnpm from corepack
+        run: |
+          set -euo pipefail
+          corepack enable
+          pnpm --version
+      - name: Install (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+      - name: The runtime role, as Enclii onboarding creates it
+        run: |
+          set -euo pipefail
+          psql "$CV_TEST_OWNER_URL" -v ON_ERROR_STOP=1 \
+            -c "create role cv_app login nosuperuser nobypassrls noinherit connection limit 8" \
+            -c "grant connect on database cv_test to cv_app"
+      - name: Next.js production build (standalone output)
+        run: pnpm build
+      - name: Chromium for Playwright (the version @playwright/test pins)
+        working-directory: apps/web
+        run: npx playwright install --with-deps chromium
+      - name: e2e specs (fail closed; read-proof)
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/e2e.log"
+          status=0
+          pnpm test:e2e > "$out" 2>&1 || status=$?
+          cat "$out"
+          if [ "$status" != 0 ]; then echo "e2e: FAIL exit=$status"; exit "$status"; fi
+          passed=$(grep -Eo '^ *[0-9]+ passed' "$out" | grep -Eo '[0-9]+' | tail -1)
+          if grep -Eq '^ *[0-9]+ (failed|flaky|skipped)' "$out" || [ -z "$passed" ] || [ "$passed" -lt 9 ]; then echo "e2e: passed=${passed:-none} FAIL (expected >= 9 passing, none failed, flaky or skipped)"; exit 1; fi
+          echo "e2e: passed=$passed OK"
 
   guards:
     name: Guards (file size, forbidden domain)

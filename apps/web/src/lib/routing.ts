@@ -8,7 +8,8 @@
  *   3. Each role exposes an explicit allowlist of public paths, rewritten to internal routes under /h/.
  *      Internal paths are never public: a direct request for /h/... is not in any allowlist, so it 404s.
  */
-import { isApiV1Path } from './api-routes.ts';
+import { SHARE_TOKEN, isAllowedSlug, isApiV1Path } from './api-routes.ts';
+import { matchAppPath } from './app-routes.ts';
 import type { Config, Role } from './config.ts';
 
 export type Locale = 'es' | 'en';
@@ -22,6 +23,12 @@ export type Decision =
   | { kind: 'asset'; role: Role }
   /** Rewrite to an internal route. `html` pages get a nonce CSP; `locale` sets <html lang>. */
   | { kind: 'rewrite'; role: Role; to: string; html: boolean; locale: Locale | null }
+  /**
+   * A user page on the pages host: `/<slug>` (share 'public') or `/l/<token>` (share 'link'). The proxy looks the
+   * artifact up first (published and unsuspended only), so a miss is the HTML 404 and the response headers (indexing,
+   * caching, referrer) follow the artifact; `to` is the internal route that renders it.
+   */
+  | { kind: 'user-page'; role: 'pages'; to: string; share: 'public' | 'link'; key: string }
   /** 404. `format` follows the host: plain text for unknown hosts, JSON on the API, a page on HTML hosts. */
   | { kind: 'not-found'; role: Role | null; format: 'text' | 'json' | 'html' };
 
@@ -55,8 +62,25 @@ function normalisePath(path: string): string {
 }
 
 function htmlPages(role: 'landing' | 'app', path: string): Decision | null {
+  if (role === 'app') {
+    // Every page of the core journey (lib/app-routes.ts), declared once; `/` and `/en` are its home.
+    const m = matchAppPath(path);
+    return m ? { kind: 'rewrite', role, to: m.internal, html: true, locale: m.locale } : null;
+  }
   if (path === '/') return { kind: 'rewrite', role, to: `/h/${role}/es`, html: true, locale: 'es' };
   if (path === '/en') return { kind: 'rewrite', role, to: `/h/${role}/en`, html: true, locale: 'en' };
+  return null;
+}
+
+/** The pages host: `/<slug>` and `/l/<token>` only. Reserved slugs (health, ready, l, ...) never match. */
+function userPage(path: string): Decision | null {
+  const parts = path.split('/').slice(1);
+  if (parts.length === 1 && isAllowedSlug(parts[0]!)) {
+    return { kind: 'user-page', role: 'pages', to: `/h/pages/s/${parts[0]}`, share: 'public', key: parts[0]! };
+  }
+  if (parts.length === 2 && parts[0] === 'l' && SHARE_TOKEN.test(parts[1]!)) {
+    return { kind: 'user-page', role: 'pages', to: `/h/pages/l/${parts[1]}`, share: 'link', key: parts[1]! };
+  }
   return null;
 }
 
@@ -97,6 +121,12 @@ export function decide(hostHeader: string | null | undefined, rawPath: string, c
       if (isAsset(rawPath)) return { kind: 'asset', role };
       if (path === '/robots.txt') return robots;
       return { kind: 'not-found', role, format: 'html' };
+    }
+    case 'pages': {
+      if (path === '/robots.txt') return robots;
+      if (isAsset(rawPath)) return { kind: 'asset', role };
+      // Only the two shapes above: everything else (/, /en, /h/..., uppercase or reserved slugs) is the HTML 404.
+      return userPage(path) ?? { kind: 'not-found', role, format: 'html' };
     }
     case 'api': {
       if (path === '/api/v1/meta') return { kind: 'rewrite', role, to: '/h/api/v1/meta', html: false, locale: null };
