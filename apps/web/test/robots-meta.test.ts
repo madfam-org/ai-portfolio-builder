@@ -89,7 +89,8 @@ test('readiness: unconfigured dependencies do not block; a configured database t
     },
   });
   assert.equal(down.status, 503);
-  assert.match(JSON.stringify(down.body), /did not answer/);
+  assert.equal((down.body.checks as { database: unknown }).database, 'unavailable');
+  assert.doesNotMatch(JSON.stringify(down.body), /did not answer/, 'the reason goes to the log, never the public body (W4-S)');
   const partial = await readiness(() => cfg(), { env: { AUTH_JANUA_ISSUER: 'https://auth.madfam.io' }, pingDatabase: null });
   assert.equal(partial.status, 200);
   assert.deepEqual((partial.body.checks as { signIn: unknown }).signIn, { incomplete: ['AUTH_SECRET', 'AUTH_JANUA_CLIENT_ID', 'AUTH_JANUA_CLIENT_SECRET'] });

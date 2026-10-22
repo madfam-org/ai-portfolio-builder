@@ -394,3 +394,16 @@ export async function sharedPageGate(db: Db, share: 'public' | 'link', key: stri
   const [row] = await db.select({ indexable: artifacts.indexable, locale: artifacts.locale }).from(artifacts).where(sharedWhere(share, key));
   return row ? { indexable: share === 'public' && row.indexable, locale: row.locale } : null;
 }
+
+/** The tables an owner's quota counts (server/api/limits.ts). */
+export type OwnedTable = 'items' | 'jobs' | 'artifacts';
+
+/**
+ * OWNER-SCOPED count of one person's rows in one table, for the per-owner quotas (W4-S). Indexed by `owner_sub`
+ * (profile_items_owner_profile_idx, jobs_owner_sub_idx, artifacts_owner_job_idx all lead with it).
+ */
+export async function ownerRowCount(db: Db, ownerSub: string, table: OwnedTable): Promise<number> {
+  const t = table === 'items' ? profileItems : table === 'jobs' ? jobs : artifacts;
+  const [row] = await db.select({ n: sql<number>`count(*)::int` }).from(t).where(eq(t.ownerSub, ownerSub));
+  return row?.n ?? 0;
+}

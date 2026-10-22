@@ -12,6 +12,13 @@ const nextConfig: NextConfig = {
   // proxy.ts sees the raw path; routing.ts tolerates one trailing slash itself, so no 308 hop happens before
   // the Host is checked (an unknown Host gets its 404 directly).
   skipTrailingSlashRedirect: true,
+  experimental: {
+    // Security (W4-S): with a proxy present, Next.js buffers a copy of EVERY request body (any Host, any path, before
+    // the proxy decides) up to this size, 10 MB by default; 40 unauthenticated 10 MB POSTs to the landing took one
+    // pod from 88 to 659 MiB RSS (limit 512Mi). The largest body cv accepts is the API's 256 KiB
+    // (server/api/handler.ts MAX_BODY_BYTES); a longer body is truncated here, so it is still over that cap (413).
+    proxyClientMaxBodySize: '512kb',
+  },
 };
 
 export default nextConfig;
