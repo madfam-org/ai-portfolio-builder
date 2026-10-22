@@ -1,0 +1,33 @@
+# MADFAM CV (working label) — ai-portfolio-builder
+
+> An AI-assisted portfolio / CV builder from Innovaciones MADFAM, incubating and pre-launch. One
+> container serves three hosts routed by Host: cv.madfam.io (landing, es-MX and en; noindex until the
+> brand is ruled), cv-app.madfam.io (pre-launch app shell; Janua sign-in next wave) and
+> cv-api.madfam.io (/api/v1/meta). /health and /ready answer on any Host. Rebuilt from scratch on
+> 2026-10-22; the old code is preserved at the git tag legacy-2025-09. No accounts, data, AI or prices yet.
+
+Boundary: public repository. Operational detail lives in MADFAM's private ops repository under the
+repo-boundary contract (docs/REPO_BOUNDARY.md).
+
+## Invariants
+
+- One Enclii project and one Service, both `cv`; container port 3000, Service port 80, every domain `port: 80`.
+- The host table is data (apps/web/src/lib/config.ts); exact Host matches; unknown Host is a 404.
+- Identity is Janua, money is Dhanam, LLMs only through Selva, deploy is Enclii, analytics self-hosted Plausible only.
+- No invented proof, no prices, no secrets in the tree; madfam.io is the only MADFAM domain.
+- Public repo CI runs on GitHub-hosted runners; every action is SHA-pinned; Build & Deploy is dispatch-only.
+
+## Docs
+
+- [AGENTS.md](https://github.com/madfam-org/ai-portfolio-builder/blob/main/AGENTS.md): canonical instructions, topology, doctrine, layout, CI lanes, pending rulings
+- [README.md](https://github.com/madfam-org/ai-portfolio-builder/blob/main/README.md): what is live today and what comes next
+- [docs/DEPLOYMENT.md](https://github.com/madfam-org/ai-portfolio-builder/blob/main/docs/DEPLOYMENT.md): runtime contract, hosts, configuration, first-deploy steps
+- [ECOSYSTEM.md](https://github.com/madfam-org/ai-portfolio-builder/blob/main/ECOSYSTEM.md): which MADFAM platform owns which capability
+- [SECURITY.md](https://github.com/madfam-org/ai-portfolio-builder/blob/main/SECURITY.md): reporting and scope
+- [llms-full.txt](https://github.com/madfam-org/ai-portfolio-builder/blob/main/llms-full.txt): the longer version of this file
+
+## Code
+
+- `apps/web/`: @cv/web, Next.js 16 App Router; `src/proxy.ts` routes by Host; `src/lib/` holds the pure routing, header, robots and config logic
+- `Dockerfile`, `infra/k8s/production/`, `enclii.yaml`, `.github/workflows/build-deploy.yml`: the one image, its kustomize base, the Enclii manifest, the dispatch-only build caller
+- `janua.client.yaml`: Janua registrations for the next wave (names only)

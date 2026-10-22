@@ -1,0 +1,106 @@
+# Image: build the production Dockerfile on every pull request that can change the image, and boot it once.
+#
+# build-deploy.yml is dispatch-only, so without this a Dockerfile that no longer builds or boots would be found
+# by a production dispatch. This builds the root Dockerfile with buildx, loads it into the runner's Docker
+# WITHOUT pushing, runs it the way production does (read-only root, uid 1001, writable /tmp and
+# /app/.next/cache only, no capabilities) and checks every host, with the Host header the edge would send.
+#
+# PUBLIC repository: GitHub-hosted runner (R116). Every action is pinned to a full commit SHA (tag in the
+# comment); permissions are read-only. Nothing is pushed, signed or deployed.
+
+name: Image
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - package.json
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+      - apps/**
+      - .github/workflows/image.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: image-${{ github.ref }}
+  cancel-in-progress: true
+
+# docker/build-push-action uploads a build record as an Actions artifact; the org's artifact quota is
+# exhausted and nothing reads the record, so both are off.
+env:
+  DOCKER_BUILD_RECORD_UPLOAD: "false"
+  DOCKER_BUILD_SUMMARY: "false"
+
+jobs:
+  build:
+    name: Docker image (build, no push) and read-only smoke per Host
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Build (no push; loaded into the runner's Docker for the smoke)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: Dockerfile
+          push: false
+          load: true
+          tags: cv:ci
+          build-args: |
+            CV_REVISION=${{ github.sha }}
+      - name: Smoke (read-only root, uid 1001; probes on any Host, three hosts, unknown Host 404)
+        env:
+          WANT_REVISION: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          docker image inspect cv:ci --format 'image: {{.Id}} size={{.Size}}'
+          docker run -d --name cv --read-only --tmpfs /tmp \
+            --tmpfs /app/.next/cache:uid=1001,gid=1001 -u 1001:1001 \
+            --cap-drop ALL --security-opt no-new-privileges \
+            -p 127.0.0.1:3000:3000 cv:ci
+          ok=0
+          for _ in $(seq 1 60); do
+            if curl -fsS -o /dev/null http://127.0.0.1:3000/health; then ok=1; break; fi
+            sleep 2
+          done
+          if [ "$ok" != 1 ]; then echo "smoke: FAIL /health never answered 200 within 120 s"; exit 1; fi
+          problems=0
+          check() { # host path want_code [grep-in-headers-or-body]
+            local host="$1" path="$2" want="$3" pattern="${4:-}" out code
+            out="$RUNNER_TEMP/smoke-$(echo "$host$path" | tr -c 'a-z0-9' '_')"
+            code=$(curl -sS -D "$out.h" -o "$out.b" -w '%{http_code}' -H "Host: $host" "http://127.0.0.1:3000$path")
+            echo "GET $host$path -> $code"
+            if [ "$code" != "$want" ]; then echo "smoke: FAIL $host$path want $want"; problems=$((problems+1)); return; fi
+            if [ -n "$pattern" ] && ! grep -Eqi -- "$pattern" "$out.h" "$out.b"; then
+              echo "smoke: FAIL $host$path lacks /$pattern/"; problems=$((problems+1))
+            fi
+          }
+          for host in cv.madfam.io cv-app.madfam.io cv-api.madfam.io 10.0.0.1 unknown.example; do
+            check "$host" /health 200 "\"revision\":\"${WANT_REVISION}\""
+            check "$host" /ready 200 '"status":"ok"'
+          done
+          check cv.madfam.io / 200 "content-security-policy: .*'nonce-"
+          check cv.madfam.io / 200 'x-robots-tag: noindex'
+          check cv.madfam.io /en 200 '<html lang="en"'
+          check cv.madfam.io /robots.txt 200 'User-agent: ClaudeBot'
+          check cv.madfam.io /sitemap.xml 404
+          check cv-app.madfam.io / 200 'Janua'
+          check cv-app.madfam.io /robots.txt 200 'Disallow: /'
+          check cv-api.madfam.io /api/v1/meta 200 "\"revision\":\"${WANT_REVISION}\""
+          check cv-api.madfam.io / 404 '"error":"not_found"'
+          check 10.0.0.1 / 404
+          check unknown.example /robots.txt 404
+          echo "smoke: checks=21 problems=$problems $([ "$problems" = 0 ] && echo OK || echo FAIL)"
+          [ "$problems" = 0 ]
+      - name: Container log
+        if: always()
+        # The default shell has no pipefail, so a missing container (a failed build) only prints the error.
+        run: docker logs cv 2>&1 | tail -50

@@ -1,0 +1,67 @@
+name: Build & Deploy
+
+# Caller for Enclii's shared reusable workflow (one service: cv): buildx, push to GHCR as :${SHA}, keyless cosign
+# sign and verify, then the kustomize digest pin committed to main, which the GitOps sync picks up, and the
+# lifecycle callback that registers the Enclii Release.
+#
+# Image name is the contract: image_prefix ghcr.io/madfam-org plus the service name gives ghcr.io/madfam-org/cv,
+# the exact `images:` entry in infra/k8s/production/kustomization.yaml. Enclii resolves the service from the
+# image's last path segment (cv, the Service document in enclii.yaml).
+#
+# The ref is the full commit SHA on enclii `main` that fulcra pins (build-publish.yml byte-identical to the
+# 2026-10-10 pin pliego uses; the pin job accepts a SHA caller's signer identity when the SHA is on enclii main).
+# To bump: confirm the SHA is on main, read the diff of .github/workflows/build-publish.yml from the current SHA
+# to the new one, re-check the inputs and named secrets below against its `on.workflow_call`, then change the
+# SHA and its comment together.
+#
+# PUBLIC repository: `build_runner` routes the build to GitHub-hosted runners (the reusable workflow's default
+# is MADFAM's self-hosted pool, which public repositories never use; R116). DISPATCH ONLY until the project is
+# onboarded to Enclii; push-on-main is a separate, reviewed decision in its own pull request (docs/DEPLOYMENT.md).
+on:
+  workflow_dispatch:
+    inputs:
+      # The reusable workflow reads this from the dispatch event and builds exactly these services, skipping
+      # change detection (a dispatch has no push "before" SHA, so detection could silently build nothing).
+      services:
+        description: Comma-separated services to build
+        required: false
+        default: cv
+
+concurrency:
+  group: cv-production-kustomization
+  cancel-in-progress: false
+
+# Read-only unless a job widens it; only the build-publish call does.
+permissions:
+  contents: read
+
+jobs:
+  build-publish:
+    uses: madfam-org/enclii/.github/workflows/build-publish.yml@33e2dc67e11e83cb674553a439be56c6f1fdba12 # enclii main 2026-10-21 (the fulcra pin; build-publish.yml byte-identical to the 2026-10-10 pin, last changed by enclii#714)
+    with:
+      image_prefix: ghcr.io/madfam-org
+      kustomization_path: infra/k8s/production
+      # Public repository: GitHub-hosted builders only.
+      build_runner: ubuntu-24.04
+      # `paths` are directories (prefix match) plus exact files, and mirror the root Dockerfile's COPY sources.
+      # `build_args` bakes the built commit into the image (Dockerfile ARG CV_REVISION -> /health `revision`).
+      services: |
+        [
+          {"name":"cv", "dockerfile":"Dockerfile", "paths":"Dockerfile .dockerignore package.json pnpm-lock.yaml pnpm-workspace.yaml apps/web", "build_args":"CV_REVISION=${{ github.sha }}"}
+        ]
+    # Named secrets only, never `inherit`: the reusable workflow sees exactly what is listed here. A public
+    # repository sees only the org secrets DOCKER_USERNAME and DOCKER_TOKEN plus its own repository secrets.
+    #   DOCKER_USERNAME, DOCKER_TOKEN  org secrets; Docker Hub login only lifts anonymous pull rate limits for the
+    #       base image; soft-fails when absent.
+    #   ENCLII_CALLBACK_TOKEN  a REPOSITORY secret the operator sets at onboarding through the intake. Without it
+    #       the step warns and skips, and no Enclii Release is registered.
+    secrets:
+      DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+      DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
+      ENCLII_CALLBACK_TOKEN: ${{ secrets.ENCLII_CALLBACK_TOKEN }}
+    # `contents: write` for the digest-pin commit to main, `packages: write` to push to GHCR, `id-token: write` for
+    # keyless cosign signing and for the pin job to read its own job_workflow_ref claim.
+    permissions:
+      contents: write
+      packages: write
+      id-token: write

@@ -1,0 +1,128 @@
+# cv: one pod serves the landing (cv.madfam.io), the app shell (cv-app.madfam.io) and the API (cv-api.madfam.io),
+# routed by the Host header, behind the Cloudflare tunnel (enclii.yaml; no Ingress object). The tunnel reaches
+# Service cv on port 80, i.e. this pod's port 3000 (NetworkPolicy allow-tunnel-ingress). The process is the
+# image's own command (node apps/web/server.js, the Next.js standalone server; root Dockerfile).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cv
+  labels:
+    app.kubernetes.io/name: cv
+    app.kubernetes.io/component: app
+    # Required for the platform's NetworkPolicy admission.
+    app.kubernetes.io/part-of: madfam-platform
+  annotations:
+    # A Secret change (intake or rotation, from the next wave) does not restart pods on its own.
+    reloader.stakater.com/auto: "true"
+spec:
+  # Two pods, so a rollout or a node drain never empties the Service (PodDisruptionBudget cv keeps one).
+  # ENCLII TRAP: Enclii's Argo Application ignores a Deployment's spec.replicas (RespectIgnoreDifferences), so
+  # this value does NOT reach the live object on sync; the owner scales once. Keep it equal to runtime.replicas
+  # in enclii.yaml.
+  replicas: 2
+  revisionHistoryLimit: 3
+  # Surge, never unavailable: the new pod must pass /ready before an old one stops.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cv
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cv
+        app.kubernetes.io/component: app
+        app.kubernetes.io/part-of: madfam-platform
+        # Enclii convention labels (the platform selects the service's pods by these).
+        app: cv
+        enclii.dev/service: cv
+    spec:
+      automountServiceAccountToken: false
+      # Soft spread across nodes: a preference, so a one-node pool still schedules both pods.
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                topologyKey: kubernetes.io/hostname
+                labelSelector:
+                  matchLabels:
+                    app.kubernetes.io/name: cv
+      # Kubernetes injects <SERVICE>_PORT=tcp://<ip>:<port> for every Service in the namespace unless this is
+      # false; the Service `cv` would produce CV_PORT, CV_SERVICE_HOST and friends in the app's own CV_*
+      # configuration namespace (the Pliego first-deploy crash loop, 2026-10-10).
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+        seccompProfile:
+          type: RuntimeDefault
+      imagePullSecrets:
+        - name: ghcr-credentials
+      containers:
+        - name: cv
+          # DECOY: the real pin is the images: block in kustomization.yaml.
+          image: ghcr.io/madfam-org/cv:latest
+          securityContext:
+            privileged: false
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+            capabilities:
+              drop: [ALL]
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: PORT
+              value: "3000"
+            # 0.0.0.0, not a loopback name: Next.js keeps the proxy's Host rewrites internal only on its own origin.
+            - name: HOSTNAME
+              value: 0.0.0.0
+            # The host table (apps/web/src/lib/config.ts). Exact matches; any other Host gets a 404, except
+            # /health and /ready, which answer on any Host (the kubelet probes with the pod IP).
+            - name: CV_HOST_LANDING
+              value: cv.madfam.io
+            - name: CV_HOST_APP
+              value: cv-app.madfam.io
+            - name: CV_HOST_API
+              value: cv-api.madfam.io
+            # The brand is not ruled: the landing answers noindex until this is "true" (one flag, one place).
+            - name: CV_INDEXABLE
+              value: "false"
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: next-cache
+              mountPath: /app/.next/cache
+          resources:
+            requests: { cpu: 50m, memory: 160Mi }
+            limits: { cpu: 500m, memory: 512Mi }
+          # Liveness is a static 200 with no dependency checks.
+          livenessProbe:
+            httpGet: { path: /health, port: http }
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            timeoutSeconds: 3
+            failureThreshold: 3
+          # Readiness: 200 while the configuration is valid (wave 1 has no dependency), else 503 with the reason.
+          readinessProbe:
+            httpGet: { path: /ready, port: http }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+      volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 64Mi
+        - name: next-cache
+          emptyDir:
+            sizeLimit: 128Mi

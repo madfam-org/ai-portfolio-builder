@@ -1,0 +1,58 @@
+# Default-deny for every pod in the cv namespace, then explicit allows (mirrors enclii.yaml `network`, which
+# `enclii onboard ensure` renders; keep the two in step or ensure rewrites these policies).
+#
+# Ingress: the app (3000) from the Cloudflare tunnel ONLY.
+# Egress: DNS only. Wave 1 calls nothing outside the pod. The next wave (Janua sign-in) adds TCP 443 to public
+# addresses; the data wave adds Postgres through the platform pooler.
+#
+# One selector per peer entry (an entry combining a namespaceSelector AND a podSelector has rendered as
+# deny-everything on this estate's policy controller).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-tunnel-ingress
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: cv
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: cloudflare-tunnel
+      ports:
+        - protocol: TCP
+          port: 3000
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-egress
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: cv
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53

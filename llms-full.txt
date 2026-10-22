@@ -1,0 +1,64 @@
+# MADFAM CV (working label) — ai-portfolio-builder, full context
+
+> Last Updated: 2026-10-22. Canonical instructions: AGENTS.md. This file summarises it for LLM readers.
+
+## Product
+
+An AI-assisted portfolio / CV builder from Innovaciones MADFAM S.A.S. de C.V. (Cuernavaca, Morelos,
+México). Planned journey: import a CV, LinkedIn or GitHub profile; get assisted writing that the person
+reviews; publish a portfolio site; keep control of the data (edit, export, delete). Status: incubating,
+pre-launch. None of the journey is built yet. The brand is not ruled; "MADFAM CV" is a working label
+rendered from one constant.
+
+## What runs today (wave 1, the fresh baseline)
+
+- cv.madfam.io: landing, es-MX at /, en at /en. Waitlist CTA is a mailto to hola@madfam.io (no form,
+  cookie or analytics). noindex while CV_INDEXABLE is not "true". robots.txt allows the R40 AI crawlers
+  (ClaudeBot, anthropic-ai, GPTBot, OAI-SearchBot, ChatGPT-User, PerplexityBot, Google-Extended, CCBot,
+  Applebot-Extended) and everyone else, so crawlers can see the noindex; the sitemap exists only when
+  indexable.
+- cv-app.madfam.io: a pre-launch notice. noindex; robots disallow all.
+- cv-api.madfam.io: GET /api/v1/meta -> {name, service, version, revision, api}. JSON 404 elsewhere.
+  noindex; robots disallow all.
+- Any Host: GET /health (liveness, static) and GET /ready (readiness: valid configuration; no
+  dependency in wave 1). Any other path on an unknown Host: plain 404.
+- Headers: per-request nonce CSP with 'strict-dynamic' on HTML (no 'unsafe-inline' or 'unsafe-eval'
+  for scripts), locked CSP elsewhere, HSTS, nosniff, X-Frame-Options DENY, Referrer-Policy,
+  Permissions-Policy, COOP.
+
+## Architecture
+
+- pnpm workspace (pnpm 9.15.0 via corepack, lockfile v9), one app: apps/web (Next.js 16.4.2, React
+  19.3.1, TypeScript 5.9.3, output standalone).
+- src/proxy.ts (Next 16 Proxy, Node runtime) applies pure decisions from src/lib/routing.ts: probes
+  first, then an exact Host match against the host table, then a per-role path allowlist rewritten to
+  internal routes under /h/ (never public).
+- src/instrumentation.ts validates the environment at boot and exits non-zero on a defect.
+- Tests: node:test over TypeScript (Node type stripping) in apps/web/test; a smoke test over the built
+  standalone server in apps/web/test-server.
+
+## Deployment
+
+Enclii project and Service `cv`, namespace `cv`. Root Dockerfile (node:22-alpine by digest, uid 1001,
+read-only root). infra/k8s/production: Deployment (2 replicas, probes, enableServiceLinks false),
+Service 80 -> 3000, PodDisruptionBudget, NetworkPolicies (tunnel ingress, DNS egress only),
+kustomization with an all-zero digest placeholder that the first Build & Deploy run replaces.
+Build & Deploy is dispatch-only and calls Enclii's reusable build-publish pinned by SHA on
+GitHub-hosted runners. Not onboarded yet; steps in docs/DEPLOYMENT.md.
+
+## Ecosystem
+
+Consumes, never rebuilds: Janua (identity, next wave; janua.client.yaml: resource server cv-api,
+confidential client cv-web with callback https://cv-app.madfam.io/api/auth/callback/janua), Enclii
+(deploy, domains, secrets intake), Dhanam (money, later), Selva (LLM gateway, later), self-hosted
+Plausible (analytics, later), Angelia (messaging, later), PhyndCRM (consent/attribution, later).
+
+## Rules
+
+- No invented users, metrics, logos or testimonials. Anything not built says "próximamente".
+- Legal entity line: Innovaciones MADFAM S.A.S. de C.V. · Cuernavaca, Morelos, México.
+- Mailboxes: hola@, privacy@, legal@, security@, support@madfam.io only. madfam.io is the only MADFAM
+  domain; the .com of the same name belongs to a third party.
+- Licence: code AGPL-3.0-only (owner confirms at merge of the baseline), docs MIT.
+- The old implementation (git tag legacy-2025-09) is reference only; nothing is ported without being
+  rebuilt to this tree's standard.
