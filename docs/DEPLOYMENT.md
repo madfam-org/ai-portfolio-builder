@@ -79,6 +79,9 @@ Nothing reads these at import or build time; nothing throws at boot. The boot lo
 | `DATABASE_URL` | onboarding Secret `cv-secrets` (the database OWNER) | migrations only (the PreSync Job). The runtime falls back to it only when `NODE_ENV` is development or test |
 | `DIRECT_DATABASE_URL` | onboarding, if provided | migrations, preferred over `DATABASE_URL` |
 | `DATABASE_POOL_MAX` | plain env, default 3 | pool per pod (2 replicas × 3 inside the role's limit of 8) |
+| `HCM_API_URL` = `https://hcm-api.madfam.io` | plain env (W5-H) | the job page's market range (Symbiosis HCM); https only (loopback http for local tests) |
+| `HCM_CLIENT_ID`, `HCM_CLIENT_SECRET` | Vault `secret/cv` `hcm_client_id` / `hcm_client_secret` (`enclii secrets provision oidc --platform cv-hcm-benchmarks`) → ExternalSecret `cv-hcm-client`, read `optional: true` | Janua client credentials for HCM (scope `hcm-benchmarks:read`); absent = benchmark dormant |
+| `HCM_TOKEN_URL`, `HCM_TIMEOUT_MS` | plain env, optional | token endpoint (default `${AUTH_JANUA_ISSUER}/api/v1/oauth/token`); per-call budget (default 3000 ms, 200-10000) |
 
 ### Sign-in shape
 
@@ -251,3 +254,20 @@ build register an Enclii Release; without it the build warns and GitOps deploys 
 
 Push-on-main for Build & Deploy is a separate, reviewed decision in its own pull request. Lifting
 noindex is `CV_INDEXABLE=true` in `deployment.yaml`, after the brand ruling.
+
+## Market range from Symbiosis HCM (W5-H)
+
+`GET /api/v1/jobs/:id/benchmark` (owner-scoped) asks Symbiosis HCM's `GET /api/v1/market-benchmarks/` with the job
+title and ISO state only (`apps/web/src/server/hcm/`). The call goes to HCM's public host over the existing HTTPS
+egress to public addresses, the same path cv uses for Janua: no new NetworkPolicy in `cv` or in `symbiosis-hcm`.
+Never part of `/ready`: a broken HCM leaves the panel saying so and nothing else.
+
+Activation (coordinator, in this order; each apply only after reading its own dry run):
+
+1. symbiosis-hcm: the market-benchmarks PR (endpoint dormant: empty client allowlist).
+2. enclii: the `cv-hcm-benchmarks` platform and the `cv/hcm-client` intake target; deploy switchyard-api.
+3. `enclii --profile admin secrets provision oidc --platform cv-hcm-benchmarks --intake-profile default ...` (dry run
+   first, as its own step). Pin the printed client id in both enclii registry copies.
+4. symbiosis-hcm: set `MARKET_BENCHMARK_CLIENT_IDS` to that client id (`api-deployment.yaml`).
+5. This repo: merge the W5-H PR (ExternalSecret `cv-hcm-client`, `HCM_API_URL`). Probe: a signed-in job page shows
+   «Datos de la ENOE (INEGI), <quarter>, n = …»; `/ready` is unchanged.

@@ -59,6 +59,8 @@ export function matchRoute(segments: readonly string[]): Route | null {
     if (n === 2 && b === 'intake') return authed('job-intake', ['POST']);
     if (n === 2 && isId(b)) return authed('job', ['GET', 'PATCH', 'DELETE'], [b]);
     if (n === 3 && isId(b) && c === 'match') return authed('job-match', ['GET'], [b]);
+    // W5-H: the job's market range from Symbiosis HCM (public INEGI ENOE aggregates; server/hcm/route.ts).
+    if (n === 3 && isId(b) && c === 'benchmark') return authed('job-benchmark', ['GET'], [b]);
     return null;
   }
   if (a === 'artifacts') {

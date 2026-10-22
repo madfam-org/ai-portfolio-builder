@@ -17,7 +17,8 @@ import { join } from 'node:path';
 import { encode } from 'next-auth/jwt';
 import { resetAndMigrate, testUrls } from '../../test-pg/harness.ts';
 import { startTestIssuer } from '../../test-support/janua-tokens.ts';
-import { E2E_METRICS_PORT, E2E_MINT_PORT, E2E_PORT, HOSTS } from './env.ts';
+import { startFakeHcm } from '../../test-support/hcm-fake.ts';
+import { E2E_HCM_PORT, E2E_METRICS_PORT, E2E_MINT_PORT, E2E_PORT, HOSTS } from './env.ts';
 
 const web = join(import.meta.dirname, '..', '..');
 const standalone = join(web, '.next', 'standalone');
@@ -53,6 +54,8 @@ const mint = createServer((req, res) => {
   })().catch(() => res.writeHead(500).end());
 });
 await new Promise<void>((resolve) => mint.listen(E2E_MINT_PORT, '127.0.0.1', resolve));
+// W5-H: a SYNTHETIC Symbiosis HCM (token endpoint + market benchmarks) so /empleos/:id can show its panel.
+const hcm = await startFakeHcm(E2E_HCM_PORT);
 
 const child = spawn(process.execPath, [server], {
   stdio: 'inherit',
@@ -71,6 +74,7 @@ const child = spawn(process.execPath, [server], {
     ...issuer.env,
     APP_DATABASE_URL: app,
     CV_METRICS_PORT: String(E2E_METRICS_PORT),
+    ...hcm.env,
   },
 });
 
@@ -78,11 +82,13 @@ const stop = () => {
   child.kill('SIGTERM');
   mint.close();
   void issuer.close();
+  void hcm.close();
 };
 process.on('SIGTERM', stop);
 process.on('SIGINT', stop);
 child.on('exit', (code) => {
   mint.close();
   void issuer.close();
+  void hcm.close();
   process.exit(code ?? 1);
 });

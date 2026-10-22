@@ -135,10 +135,20 @@ spec:
               value: cv-api
             - name: CV_JANUA_JWKS_URL
               value: https://auth.madfam.io/.well-known/jwks.json
+            # W5-H: Symbiosis HCM's public host for the job page's market range (INEGI ENOE aggregates). Reached over
+            # the existing HTTPS egress to public addresses, like Janua; the token comes from AUTH_JANUA_ISSUER's
+            # /api/v1/oauth/token. Dormant (503 not_configured) until HCM_CLIENT_ID/SECRET exist (cv-hcm-client).
+            - name: HCM_API_URL
+              value: https://hcm-api.madfam.io
           # AUTH_SECRET, AUTH_JANUA_CLIENT_ID, AUTH_JANUA_CLIENT_SECRET (ExternalSecret cv-web-auth, Vault secret/cv).
           envFrom:
             - secretRef:
                 name: cv-web-auth
+            # W5-H: HCM_CLIENT_ID, HCM_CLIENT_SECRET (ExternalSecret cv-hcm-client, Vault secret/cv). Optional: a
+            # missing pair leaves the benchmark dormant and never stops the pods.
+            - secretRef:
+                name: cv-hcm-client
+                optional: true
           volumeMounts:
             - name: tmp
               mountPath: /tmp

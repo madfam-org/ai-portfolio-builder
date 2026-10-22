@@ -1,0 +1,80 @@
+/* Market-range panel (W5-H). Tokens from globals.css; no inline styles anywhere (the CSP forbids them). */
+
+.figures {
+  display: grid;
+  gap: 0.4rem 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  margin: 0;
+}
+
+.figures div {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.figures dt {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.figures dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.chart {
+  width: 100%;
+  max-width: 40rem;
+  height: auto;
+  display: block;
+}
+
+.axis {
+  stroke: var(--line);
+  stroke-width: 2;
+}
+
+.whisker {
+  stroke: var(--muted);
+  stroke-width: 3;
+}
+
+.box {
+  fill: var(--live-bg);
+  stroke: var(--brand);
+  stroke-width: 2;
+}
+
+.median {
+  stroke: var(--brand);
+  stroke-width: 4;
+}
+
+.tick {
+  fill: var(--muted);
+  font-size: 13px;
+}
+
+.tickStrong {
+  fill: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.posting {
+  fill: var(--accent);
+  stroke: var(--ink);
+  stroke-width: 1;
+}
+
+.source {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.list {
+  margin: 0;
+  padding-left: 1.2rem;
+}

@@ -30,6 +30,8 @@ import { UUID, matchRoute } from '../../lib/api-routes.ts';
 import { MAX_BODY_BYTES, OWNER_QUOTAS, type OwnerQuotas } from './limits.ts';
 import { matchItems } from './match.ts';
 import { intakeResponse, type IntakeDeps } from '../ingest/intake.ts';
+import type { HcmBenchmarkPort } from '../hcm/client.ts';
+import { jobBenchmark } from '../hcm/route.ts';
 import {
   ARTIFACT_CONTENT,
   ITEM_CONTENT,
@@ -59,6 +61,8 @@ export interface ApiDeps {
   quotas?: Partial<OwnerQuotas>;
   /** W5-J job intake: injected resolver, transport and limiters (tests); production uses the real ones. */
   intake?: IntakeDeps;
+  /** W5-H: the Symbiosis HCM benchmark client; tests inject a fake. Unset: built from env (server/hcm/config.ts). */
+  hcm?: HcmBenchmarkPort;
 }
 
 /** Throws 429 `quota_exceeded` when creating `adding` more rows would take the owner past the table's ceiling. */
@@ -166,6 +170,8 @@ export async function handleApi(request: Request, segments: readonly string[], d
       await quota('jobs', 1);
       return await intakeResponse(auth.sub, input, deps.intake);
     }
+    // W5-H: owner-scoped read of the job, then Symbiosis HCM with the title and state only (server/hcm/route.ts).
+    if (route.name === 'job-benchmark') return await jobBenchmark(createRepository(handle!.db), auth.sub, route.ids[0] ?? '', deps.env, deps.hcm);
     return await dispatch(createRepository(handle!.db), quota, auth.sub, nameHint, route.name, route.ids, method, request);
   } catch (err) {
     if (err instanceof HttpError) return json(err.status, err.body);

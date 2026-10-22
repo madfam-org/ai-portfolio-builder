@@ -13,6 +13,7 @@ import type { JobDto, JobStatus } from '@/lib/client/types';
 import { APP_COPY } from '@/lib/copy/app';
 import { fmt, JOBS_COPY } from '@/lib/copy/jobs';
 import type { Locale } from '@/lib/routing';
+import { BenchmarkPanel } from './benchmark/BenchmarkPanel';
 import { JobDocuments } from './JobDocuments';
 import { JobForm, type JobFormOutcome } from './JobForm';
 import { MatchPanel } from './MatchPanel';
@@ -141,6 +142,8 @@ export function JobDetail({ locale, jobId }: { locale: Locale; jobId: string }) 
       </section>
 
       <MatchPanel locale={locale} match={match} items={items} headingId="job-match-heading" />
+
+      <BenchmarkPanel locale={locale} jobId={job.id} location={job.location} headingId="job-benchmark-heading" />
 
       <JobDocuments locale={locale} artifacts={artifacts} headingId="job-docs-heading">
         <a href={appPath.jobTailor(locale, job.id)}>{t.docs.tailorCta}</a>

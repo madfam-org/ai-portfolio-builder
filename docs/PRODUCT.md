@@ -193,6 +193,7 @@ do not serve), OCR in cv, AI parsing (Selva's restricted tier answers 503; typed
 | `POST /api/v1/profile/items/reorder` `{itemIds}` | «Subir» / «Bajar»: positions 0..n-1 in one transaction; any foreign id refuses all (422) |
 | `GET`, `POST /api/v1/jobs`; `GET`, `PATCH`, `DELETE /api/v1/jobs/:id` | jobs (deleting a job that still has artifacts is a 409); W5-J typed posting fields optional (see "Job intake") |
 | `GET /api/v1/jobs/:id/match` | the deterministic match |
+| `GET /api/v1/jobs/:id/benchmark` | W5-H: the job's market income range from Symbiosis HCM (INEGI ENOE); 503 `not_configured` while dormant, 503 `benchmark_unavailable` when HCM cannot answer |
 | `GET /api/v1/artifacts?job_id=&kind=`, `POST /api/v1/artifacts`; `GET`, `PATCH`, `DELETE /api/v1/artifacts/:id` | artifacts |
 | `POST /api/v1/artifacts/batch` `{jobId?, locale?, template?, artifacts: [{kind, title, content, template?}] (1-4)}` (templates: the registry allowlist per kind) | several artifacts for one job in ONE transaction: all or none |
 | `POST /api/v1/artifacts/:id/publish` `{visibility:'link'}` or `{visibility:'public', slug, indexable?}`; `POST /api/v1/artifacts/:id/unpublish` | sharing (publishing: at most 20 per owner per 24 h, then 429 `publish_limit`) |
@@ -210,3 +211,27 @@ person holds at most 500 profile items, 500 jobs and 1 000 artifacts (creating p
 Bodies are validated with zod and strict: an unknown field is a 400, so `owner_sub`, ids, status, tokens and
 timestamps can never be set from a body. The app (`cv-app.madfam.io`) reaches the same handlers through its
 same-origin proxy `/api/v1/*`, which adds the signed-in person's access token on the server.
+
+## Market income range (W5-H)
+
+The job page (`/empleos/:id`) shows «Rango de ingreso en el mercado»: what salaried people in the job's occupation
+declare they earn per month, from INEGI's Encuesta Nacional de Ocupación y Empleo (ENOE), as computed and served by
+Symbiosis HCM (`GET /api/v1/market-benchmarks/` there). It is official public statistics, not a MADFAM survey, not an
+offer and not a prediction. cv is never the data owner: it holds no figure and caches answers only in memory.
+
+- **What leaves cv**: the job title (cleaned, at most 120 characters) and the state as ISO 3166-2:MX, nothing else.
+  Never the person's identity, profile or CV. The browser never calls HCM; cv's server does, with its own Janua
+  client-credentials token (scope `hcm-benchmarks:read`).
+- **State**: the job's structured state field when it has one (lane W5-J), else the location text when it names
+  exactly one state («Ciudad de México», «Monterrey, Nuevo León»); otherwise the national figure. The page says which.
+- **What is shown, always with its source**: the median, P25-P75 and, when HCM publishes them, P10-P90 (MXN per
+  month), n, the quarter and «Datos de la ENOE (INEGI)», the occupation (SINCO) with how the title was classified and
+  its confidence, the share of people who declared an amount (as «de cada 100»), and the methodology notes.
+- **Withheld, never estimated**: below n = 30 HCM publishes nothing and the page says «sin datos suficientes» with
+  n; P10/P90 need n = 100. A title HCM cannot classify, or that fits several occupations, shows no numbers.
+- **The posting's salary**: when the job states a monthly MXN salary, the page says between which published
+  percentiles it falls (the midpoint of a range), with the caveat that postings are usually gross and the ENOE
+  records declared amounts. Any other period or currency is shown as not comparable.
+- **Dormant by default**: without `HCM_API_URL`, `HCM_CLIENT_ID` and `HCM_CLIENT_SECRET` the route answers 503
+  `not_configured` and the panel says the comparison is not available yet. HCM down or slow (3 s budget, circuit
+  breaker after 3 failures for 30 s): 503 `benchmark_unavailable`; the rest of the page is unaffected.

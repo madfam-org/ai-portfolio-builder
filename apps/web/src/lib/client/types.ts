@@ -22,6 +22,7 @@ import type { ArtifactKind, ArtifactStatus, ItemKind, JobStatus } from '../copy/
 import type { EmploymentType, Provenance, SalaryPeriod, SourceKind, WorkMode } from '../../server/ingest/vocab.ts';
 import type { DraftField, DraftFields, IntakeDraft, IntakeFailure, IntakeNote } from '../../server/ingest/types.ts';
 import type { IntakeBody } from '../../server/ingest/intake.ts';
+import type { BenchmarkView } from '../../server/hcm/route.ts';
 
 export type { ArtifactContent, ArtifactKind, ArtifactStatus, ItemKind, JobStatus };
 export type ContentLocale = 'es-MX' | 'en';
@@ -128,3 +129,8 @@ export type ItemBatchInput = z.input<typeof itemBatchBody>;
 // W5-J job intake (POST /api/v1/jobs/intake): the preview and the request body, types only.
 export type { DraftField, DraftFields, EmploymentType, IntakeDraft, IntakeFailure, IntakeNote, Provenance, SalaryPeriod, SourceKind, WorkMode };
 export type IntakeInput = IntakeBody;
+/**
+ * W5-H: `GET /api/v1/jobs/:id/benchmark` — Symbiosis HCM's public INEGI ENOE income range for the job's occupation
+ * and state, plus where the posting's own stated monthly MXN salary falls (server/hcm/route.ts BenchmarkView).
+ */
+export type BenchmarkDto = BenchmarkView;
