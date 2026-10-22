@@ -1,0 +1,272 @@
+{
+ "edges_assignment": [
+  "B",
+  "B",
+  "B",
+  "B"
+ ],
+ "edges_foldAngle": [
+  0,
+  0,
+  0,
+  0
+ ],
+ "edges_vertices": [
+  [
+   0,
+   1
+  ],
+  [
+   0,
+   2
+  ],
+  [
+   1,
+   3
+  ],
+  [
+   2,
+   3
+  ]
+ ],
+ "faces_vertices": [
+  [
+   0,
+   2,
+   3,
+   1
+  ]
+ ],
+ "file_classes": [
+  "singleModel"
+ ],
+ "file_creator": "pliego-kernel 0.3.0",
+ "file_frames": [
+  {
+   "frame_attributes": [
+    "3D"
+   ],
+   "frame_classes": [
+    "foldedForm"
+   ],
+   "frame_inherit": true,
+   "frame_parent": 0,
+   "frame_title": "initial",
+   "vertices_coords": [
+    [
+     0,
+     0,
+     0
+    ],
+    [
+     0,
+     0,
+     -168.75
+    ],
+    [
+     300,
+     0,
+     0
+    ],
+    [
+     300,
+     0,
+     -168.75
+    ]
+   ]
+  }
+ ],
+ "file_spec": 1.2,
+ "file_title": "Page turn",
+ "frame_attributes": [
+  "2D",
+  "noCuts",
+  "joins"
+ ],
+ "frame_classes": [
+  "creasePattern"
+ ],
+ "frame_unit": "mm",
+ "pliego:controls": [
+  {
+   "default": 0,
+   "id": "turn",
+   "kind": "angle",
+   "label": {
+    "en": "Turn the page",
+    "es": "Pasar la página",
+    "fr": "Tourner la page",
+    "pt": "Virar a página"
+   },
+   "max": 180,
+   "min": 0,
+   "unit": "deg"
+  }
+ ],
+ "pliego:edges_sheet": [
+  0,
+  0,
+  0,
+  0
+ ],
+ "pliego:edges_treatment": [
+  "none",
+  "none",
+  "none",
+  "none"
+ ],
+ "pliego:faces_sheet": [
+  0
+ ],
+ "pliego:joins": [
+  {
+   "a": {
+    "along": [
+     [
+      0,
+      0
+     ],
+     [
+      0,
+      168.75
+     ]
+    ],
+    "sheet": "leaf"
+   },
+   "id": "leaf-spine",
+   "type": "pin",
+   "world": null
+  }
+ ],
+ "pliego:mechanisms": [
+  {
+   "control": "turn",
+   "id": "leaf-turn",
+   "sheet": "leaf",
+   "spine": [
+    [
+     0,
+     0
+    ],
+    [
+     0,
+     168.75
+    ]
+   ],
+   "type": "leaf"
+  }
+ ],
+ "pliego:meta": {
+  "cartridge": "page-turn",
+  "digest": "sha256:ef5e0bf3763b07cb336fa602f9cf6f1c754fccad8f99117e39238dfe6fd6f676",
+  "kernel": "pliego-kernel 0.3.0",
+  "mode": "default",
+  "params": {
+   "height": 168.75,
+   "stock": "copy-80",
+   "width": 300
+  }
+ },
+ "pliego:sheets": [
+  {
+   "back": {
+    "art": null,
+    "color": "#f7f7f2"
+   },
+   "front": {
+    "art": null,
+    "color": "#f7f7f2"
+   },
+   "grain_deg": 90,
+   "id": "leaf",
+   "kinematic": null,
+   "label": {
+    "en": "Leaf",
+    "es": "Hoja",
+    "fr": "Feuillet",
+    "pt": "Folha"
+   },
+   "offset": [
+    0,
+    0
+   ],
+   "placement": {
+    "origin": [
+     0,
+     0,
+     0
+    ],
+    "rotation": [
+     0,
+     0,
+     0,
+     1
+    ]
+   },
+   "stock": "copy-80"
+  }
+ ],
+ "pliego:stocks": {
+  "copy-80": {
+   "appearance": {
+    "back": "#f7f7f2",
+    "front": "#f7f7f2"
+   },
+   "caliper_mm": 0.1,
+   "derived": {
+    "D_cd": 227898,
+    "D_md": 501376,
+    "E_cd": 2500000000,
+    "E_md": 5500000000,
+    "G12": 1435030000,
+    "areal_density": 8e-05,
+    "collision_thickness": 0.1,
+    "crease_k": 16901.4,
+    "crease_set_rate": 0.5,
+    "crease_yield_deg": 35,
+    "friction": 0.4,
+    "nu": 0.293,
+    "perf_bridge_mm": 1,
+    "perf_cut_mm": 3,
+    "perf_factor": 0.25,
+    "score_factor": 0.35,
+    "score_yield_deg": 12.25,
+    "tear_strain": 0.02,
+    "thickness": 0.1
+   },
+   "derived_basis": "pliego.stock.derive v1",
+   "gsm": 80,
+   "name": {
+    "en": "Copy paper 80 g/m²",
+    "es": "Papel bond 80 g/m²",
+    "fr": "Papier ramette 80 g/m²",
+    "pt": "Papel sulfite 80 g/m²"
+   }
+  }
+ },
+ "pliego:version": 1,
+ "pliego:vertices_sheet": [
+  0,
+  0,
+  0,
+  0
+ ],
+ "vertices_coords": [
+  [
+   0,
+   0
+  ],
+  [
+   0,
+   168.75
+  ],
+  [
+   300,
+   0
+  ],
+  [
+   300,
+   168.75
+  ]
+ ]
+}

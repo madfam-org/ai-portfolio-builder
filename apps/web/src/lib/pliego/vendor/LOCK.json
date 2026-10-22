@@ -3,7 +3,7 @@
   "licence": "CERN-OHL-W-2.0",
   "pliego": {
     "repo": "https://github.com/madfam-org/pliego",
-    "commit": "db78ca6790c3c42cffee04f4aa547917360e7602"
+    "commit": "b3e10ee689395ad779b6bba9a9c19c410091cef2"
   },
   "commons": {
     "repo": "https://github.com/madfam-org/sheet-hyperobjects",
@@ -32,6 +32,21 @@
       },
       "kernel": "pliego-kernel 0.3.0",
       "sha256": "cdad6b5d5c0ec1e75f9342a4ed8e2e6c19b063c18342899b64e96442d2b92fc1"
+    },
+    {
+      "path": "page-turn-deck.fold.json",
+      "cartridge": "page-turn",
+      "cartridge_git_blobs": {
+        "main.py": "1e3e8d45759ca603c131574c170d00909a1aee3e",
+        "project.json": "4f99f41298b4dcdcf5cdb12fc30da208e0bcbe07"
+      },
+      "kernel": "pliego-kernel 0.3.0",
+      "params": {
+        "width": 300.0,
+        "height": 168.75,
+        "stock": "copy-80"
+      },
+      "sha256": "6f4c015ce2c60956c8dcb872889e96aa8363067eea317e6ccd2df53827894318"
     }
   ]
 }

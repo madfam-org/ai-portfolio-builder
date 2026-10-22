@@ -10,6 +10,9 @@ print-folds cartridge of its commons (github.com/madfam-org/sheet-hyperobjects, 
 * `print-folds-letter.json` — the letter fold (tri-fold, rolled in) of a Carta and an A4 sheet
   for each stock, extracted from the documents Pliego's own kernel generates by running the
   commons cartridge `print-folds` (style `letter`, presets `us-letter` and `a4`);
+* `page-turn-deck.fold.json` — the sheet document Pliego's kernel generates for the commons cartridge
+  `page-turn` (one leaf hinged at its spine, bond 80) at the deck's 16:9 proportion, 300 × 168.75 mm (the
+  cartridge's widest leaf), byte for byte; cv's page-turn viewer bakes its motion from it with `@pliego/engine`;
 * `LOCK.json` — the Pliego commit, the commons commit it pins, the git blob of every copy and of
   the cartridge sources, and the sha256 of the generated file.
 
@@ -39,6 +42,10 @@ STOCKS = ("copy-80", "cardstock-160")
 PAPERS = {"letter": "us-letter", "a4": "a4"}
 CARTRIDGE = "print-folds"
 GENERATED = "print-folds-letter.json"
+PAGE_TURN = "page-turn"
+PAGE_TURN_FILE = "page-turn-deck.fold.json"
+# The deck's 16:9 proportion at the cartridge's widest leaf (width 60–300 mm), in the stock cv shows (bond 80).
+PAGE_TURN_PARAMS = {"width": 300.0, "height": 168.75, "stock": "copy-80"}
 
 
 def git(repo: Path, *args: str) -> str:
@@ -115,6 +122,23 @@ def generate(pliego: Path, commons: Path) -> list[dict]:
     return cases
 
 
+def page_turn_document(pliego: Path, commons: Path) -> bytes:
+    """The kernel's document for one leaf at the deck's proportion (the cartridge's own output, unmodified)."""
+    env = {**os.environ, "PYTHONPATH": str(pliego / "packages" / "kernel" / "src")}
+    with tempfile.TemporaryDirectory(prefix="cv-pliego-turn-") as tmp:
+        run = subprocess.run([sys.executable, "-m", "pliego.cartridge", str(commons / PAGE_TURN),
+                              "--mode", "default", "--params", json.dumps(PAGE_TURN_PARAMS),
+                              "--out", tmp], env=env, capture_output=True, text=True)
+        if run.returncode != 0:
+            sys.stderr.write(run.stdout + run.stderr)
+            raise SystemExit("pliego-sync: the page-turn cartridge failed")
+        data = (Path(tmp) / f"{PAGE_TURN}.default.fold").read_bytes()
+    doc = json.loads(data)
+    if doc["pliego:meta"]["params"] != PAGE_TURN_PARAMS or len(doc["pliego:sheets"]) != 1:
+        raise SystemExit("pliego-sync: unexpected page-turn document")
+    return data
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--pliego", required=True, help="a Pliego checkout (projects/ populated)")
@@ -154,8 +178,11 @@ def main() -> int:
         "cases": cases,
     }
     files[GENERATED] = dump(generated)
+    files[PAGE_TURN_FILE] = page_turn_document(pliego, commons)
     sources = {name: git(commons, "rev-parse", f"HEAD:{CARTRIDGE}/{name}")
                for name in ("main.py", "project.json")}
+    turn_sources = {name: git(commons, "rev-parse", f"HEAD:{PAGE_TURN}/{name}")
+                    for name in ("main.py", "project.json")}
     new_lock = {
         "_provenance": "Pins of the Pliego data vendored here; written by "
                        "scripts/pliego/sync_pliego_data.py. Do not edit by hand.",
@@ -166,7 +193,11 @@ def main() -> int:
         "copies": copies,
         "generated": [{"path": GENERATED, "cartridge": CARTRIDGE, "cartridge_git_blobs": sources,
                        "kernel": cases[0]["kernel"],
-                       "sha256": hashlib.sha256(files[GENERATED]).hexdigest()}],
+                       "sha256": hashlib.sha256(files[GENERATED]).hexdigest()},
+                      {"path": PAGE_TURN_FILE, "cartridge": PAGE_TURN, "cartridge_git_blobs": turn_sources,
+                       "kernel": json.loads(files[PAGE_TURN_FILE])["pliego:meta"]["kernel"],
+                       "params": PAGE_TURN_PARAMS,
+                       "sha256": hashlib.sha256(files[PAGE_TURN_FILE]).hexdigest()}],
     }
     files["LOCK.json"] = dump(new_lock)
 
@@ -176,7 +207,7 @@ def main() -> int:
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(data)
         print(f"pliego-sync: wrote pliego={head[:12]} commons={pinned_commons[:12]} "
-              f"copies={len(copies)} cases={len(cases)}")
+              f"copies={len(copies)} cases={len(cases)} page_turn=1")
         return 0
     drift = [rel for rel, data in files.items()
              if not (VENDOR / rel).exists() or (VENDOR / rel).read_bytes() != data]
@@ -188,7 +219,7 @@ def main() -> int:
         print(f"pliego-sync: check FAIL: drift in {', '.join(drift)}")
         return 1
     print(f"pliego-sync: check pliego={head[:12]} commons={pinned_commons[:12]} files={compared} "
-          f"copies={len(copies)} cases={len(cases)} OK")
+          f"copies={len(copies)} cases={len(cases)} page_turn=1 OK")
     return 0
 
 

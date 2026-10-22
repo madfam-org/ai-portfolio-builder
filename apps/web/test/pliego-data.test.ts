@@ -45,11 +45,14 @@ test('every stock card is an untouched copy of the pinned Pliego blob', () => {
   }
 });
 
-test('the generated letter folds are the bytes the sync script wrote', () => {
-  assert.equal(lock.generated.length, 1);
-  const g = lock.generated[0]!;
-  assert.equal(g.cartridge, 'print-folds');
-  assert.equal(createHash('sha256').update(read(g.path)).digest('hex'), g.sha256, `${g.path} was edited by hand: refresh it with the sync script`);
+test('the generated files (letter folds, page-turn leaf) are the bytes the sync script wrote', () => {
+  assert.deepEqual(lock.generated.map((g) => g.cartridge), ['print-folds', 'page-turn']);
+  for (const g of lock.generated) {
+    assert.equal(createHash('sha256').update(read(g.path)).digest('hex'), g.sha256, `${g.path} was edited by hand: refresh it with the sync script`);
+  }
+  const turn = JSON.parse(read('page-turn-deck.fold.json').toString('utf8')) as { 'pliego:meta': { cartridge: string; params: Record<string, unknown> } };
+  assert.equal(turn['pliego:meta'].cartridge, 'page-turn');
+  assert.deepEqual(turn['pliego:meta'].params, { height: 168.75, stock: 'copy-80', width: 300 });
 });
 
 test('the folds were generated with the vendored cards (the two Pliego sources agree)', () => {

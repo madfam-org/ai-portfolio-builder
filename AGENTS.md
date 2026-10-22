@@ -213,3 +213,13 @@ seams.
 Rules: paper effects never reach `@media print` or the PDF text layer (`e2e/documents-paper.spec.ts` proves the same
 pages, sizes and text with every stock); refresh the data only with the script; a new stock or fold needs Pliego to
 publish it first.
+
+## Page turn (W5-P phase 3, 2026-10-22)
+
+The presentation deck turns its slides like paper. The motion is Pliego's: `@pliego/engine@0.1.0` (exact pin, a dev
+dependency from `npm.madfam.io` through the root `.npmrc`, no token) turns the kernel's `page-turn` leaf at build time,
+and `apps/web/scripts/pliego-page-turn.ts` keeps its mid-height cross-section per 60 Hz frame in
+`src/lib/pliego/generated/page-turn-deck.json` (`--check` verifies it; `test/page-turn.test.ts` re-runs the engine).
+`src/components/render/page-turn/turn.ts` plays it, loaded lazily by `SlideDeck` only for a deck of two or more slides
+when reduced motion is off: an inert, `aria-hidden` copy of the slide in CSS-3D strips over the new slide for 0.8 s,
+then only real text. Never in print (`e2e/documents-page-turn.spec.ts` compares the PDFs with and without it).

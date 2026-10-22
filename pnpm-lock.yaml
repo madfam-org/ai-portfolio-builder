@@ -44,6 +44,9 @@ importers:
       '@playwright/test':
         specifier: 1.64.0
         version: 1.64.0
+      '@pliego/engine':
+        specifier: 0.1.0
+        version: 0.1.0
       '@types/node':
         specifier: 22.20.5
         version: 22.20.5
@@ -864,6 +867,10 @@ packages:
     resolution: {integrity: sha512-oTN9FNYuN6bqQMwiho6jJKLCG2/QOYCixGXuCjRmzOq23eODeukuY2XiAVoVpAECbuezMt1MHQjAiQxK8F+Y+g==}
     engines: {node: '>=20'}
     hasBin: true
+
+  '@pliego/engine@0.1.0':
+    resolution: {integrity: sha512-TzWEz1N1Ho4/151oVI5osJbWwIVWcY5qGZAWpHU4rkqcEOB2zTU0gCN6oJITBViWQ8/rfmubkJ27vsCqTzjlOA==}
+    engines: {node: '>=20'}
 
   '@rtsao/scc@1.1.0':
     resolution: {integrity: sha512-zt6OdqaDoOnJ1ZYsCYGt9YmWzDXl4vQdKTyJev62gFhRGKdx7mcT54V9KIjg+d2wi9EXsPvAPKe7i7WjfVWB8g==}
@@ -2997,6 +3004,8 @@ snapshots:
   '@playwright/test@1.64.0':
     dependencies:
       playwright: 1.64.0
+
+  '@pliego/engine@0.1.0': {}
 
   '@rtsao/scc@1.1.0': {}
 

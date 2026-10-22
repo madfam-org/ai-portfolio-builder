@@ -47,7 +47,7 @@ jobs:
       # `build_args` bakes the built commit into the image (Dockerfile ARG CV_REVISION -> /health `revision`).
       services: |
         [
-          {"name":"cv", "dockerfile":"Dockerfile", "paths":"Dockerfile .dockerignore package.json pnpm-lock.yaml pnpm-workspace.yaml apps/web", "build_args":"CV_REVISION=${{ github.sha }}"}
+          {"name":"cv", "dockerfile":"Dockerfile", "paths":"Dockerfile .dockerignore package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc apps/web", "build_args":"CV_REVISION=${{ github.sha }}"}
         ]
     # Named secrets only, never `inherit`: the reusable workflow sees exactly what is listed here. A public
     # repository sees only the org secrets DOCKER_USERNAME and DOCKER_TOKEN plus its own repository secrets.

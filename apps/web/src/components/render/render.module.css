@@ -156,6 +156,8 @@
 
 /* presentation */
 .deck {
+  /* The page-turn layer (page-turn/page-turn.module.css) is placed over the shown slide inside the deck. */
+  position: relative;
   display: grid;
   gap: 1rem;
 }
