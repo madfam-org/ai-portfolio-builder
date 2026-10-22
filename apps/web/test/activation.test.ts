@@ -67,7 +67,7 @@ test('reader copy: es and en have the same shape; no invented claims about other
 
 test('the sitemap lists the reader page with its alternates (only while the landing is indexable)', () => {
   const xml = sitemapXml(cfg({ CV_INDEXABLE: 'true' }));
-  for (const loc of ['/', '/en', '/lector', '/en/lector']) assert.match(xml, new RegExp(`<loc>https://cv\\.madfam\\.io${loc.replace(/\//g, '\\/')}</loc>`));
+  for (const loc of ['/', '/en', '/lector', '/en/lector']) assert.ok(xml.includes(`<loc>https://cv.madfam.io${loc}</loc>`), loc);
   assert.match(xml, /hreflang="en" href="https:\/\/cv\.madfam\.io\/en\/lector"/);
   assert.equal(decide('cv.madfam.io', '/sitemap.xml', cfg()).kind, 'not-found', 'no sitemap while noindex');
   assert.doesNotMatch(robotsTxt('landing', cfg()), /Disallow/, 'the landing stays crawlable (noindex rides the header)');
