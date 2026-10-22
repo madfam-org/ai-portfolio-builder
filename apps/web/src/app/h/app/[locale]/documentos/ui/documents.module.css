@@ -1,0 +1,156 @@
+/* The documents surface of the app (W3-4): list, detail, publish panel, preview and print frames. */
+
+.filters {
+  display: grid;
+  gap: 0 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  margin: 1rem 0;
+}
+
+.rows {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 2rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.row {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 0.9rem 1rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.rowTitle {
+  font-size: 1.1rem;
+  font-weight: 650;
+}
+
+.rowMeta,
+.rowLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+  align-items: center;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.panel {
+  border-top: 1px solid var(--line);
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+}
+
+.choices {
+  border: 0;
+  padding: 0;
+  margin: 0 0 1rem;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.choices legend {
+  font-weight: 650;
+  margin-bottom: 0.5rem;
+}
+
+.choice {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0 0.6rem;
+  align-items: start;
+}
+
+.choice input {
+  margin-top: 0.35rem;
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
+.choiceHint {
+  grid-column: 2;
+  color: var(--muted);
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.share {
+  display: grid;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.frame {
+  background: var(--bg);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  padding: clamp(0.75rem, 3vw, 1.5rem);
+}
+
+.printHelp {
+  margin-bottom: 1.5rem;
+}
+
+.paper {
+  border: 0;
+  padding: 0;
+  margin: 0 0 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+}
+
+.paper legend {
+  font-weight: 650;
+  margin-bottom: 0.4rem;
+  flex-basis: 100%;
+}
+
+.sheet {
+  /* A sheet of paper in both themes: the document's own colour tokens are the light ones. */
+  --ink: #17201b;
+  --muted: #4c5a52;
+  --line: #d9dccf;
+  --surface: #ffffff;
+  --brand: #1f5c45;
+  background: #fff;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  padding: clamp(1rem, 4vw, 2.5rem);
+}
+
+@media print {
+  .noPrint {
+    display: none;
+  }
+
+  .sheet {
+    border: 0;
+    padding: 0;
+  }
+
+  /* The print view alone: the app frame steps aside (globals.css hides its bars) and the page is a plain block. */
+  :global(body):has(.printRoot) {
+    display: block;
+    background: #fff;
+  }
+
+  :global(.shell):has(.printRoot) {
+    max-width: none;
+    padding: 0;
+    margin: 0;
+  }
+}

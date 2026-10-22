@@ -18,3 +18,15 @@ export const url = (host: keyof typeof HOSTS, path = '/') => `http://${HOSTS[hos
 /** Two owners in every suite. */
 export const OWNER_A = { sub: 'janua|e2e-owner-a', name: 'Ana Prueba', email: 'ana@example.test' };
 export const OWNER_B = { sub: 'janua|e2e-owner-b', name: 'Beto Prueba', email: 'beto@example.test' };
+
+/**
+ * Per-suite owners. Every spec file runs against the SAME Postgres, so two specs that both write as OWNER_A see each
+ * other's profile items, jobs and documents (2026-10-22: a documents spec's items changed the jobs spec's keyword
+ * match). A spec whose assertions depend on what one owner holds signs in as its own pair; app.spec keeps OWNER_A/B.
+ */
+export function suiteOwners(suite: string): { OWNER_A: typeof OWNER_A; OWNER_B: typeof OWNER_B } {
+  return {
+    OWNER_A: { ...OWNER_A, sub: `janua|e2e-${suite}-a` },
+    OWNER_B: { ...OWNER_B, sub: `janua|e2e-${suite}-b` },
+  };
+}

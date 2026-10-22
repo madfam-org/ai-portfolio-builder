@@ -5,7 +5,9 @@
  */
 import { expect, test } from '@playwright/test';
 import { apiAs, cspViolations, signIn, type Json } from './support/fixtures.ts';
-import { OWNER_A, OWNER_B, url } from './support/env.ts';
+import { suiteOwners, url } from './support/env.ts';
+
+const { OWNER_A, OWNER_B } = suiteOwners('jobs');
 
 const POSTING = 'Buscamos desarrolladora backend con experiencia en PostgreSQL y TypeScript. Deseable: Kubernetes. Trabajo remoto desde México.';
 const SOURCE = 'https://empleos.example.test/vacante/42';

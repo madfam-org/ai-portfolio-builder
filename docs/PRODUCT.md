@@ -55,6 +55,21 @@ names it. The host is read from configuration, never hard-coded.
 | `/documentos/:id/vista-previa`, `/documentos/:id/imprimir` | preview (same renderer as the pages host), print view | W3-4 |
 | `/ajustes` | account and data settings | later |
 
+### Documents: renderers, preview, print and publish (W3-4)
+
+- **One renderer per kind** (`apps/web/src/components/render/`): `cv/base` (ATS-friendly: one column, semantic
+  headings, standard section names, real text, A4 or Carta print), `portfolio/base` (one-page site), `presentation/base`
+  (HTML slides; ←/→, Space, Home/End; print = one 13.333 × 7.5 in slide per page) and `cover_letter/base`. Each is
+  driven only by the artifact's content (ordered item ids, per-item overrides, text blocks, slides) resolved against the
+  owner's profile on the server (`model.ts`); the cv-app preview, the print view and the pages host share it. React text
+  only, no images, http(s) links with `rel="ugc nofollow noopener noreferrer"`, nothing invented.
+- **PDF = the browser's print** («Guardar como PDF» from `/documentos/:id/imprimir`), which keeps a real text layer;
+  no server-side PDF yet.
+- **Publish** from `/documentos/:id`: private, by link (`/l/<token>` on the pages host; never indexed; «Cambiar enlace»
+  rotates it) or public at a chosen address (reserved words refused; «Permitir que buscadores indexen esta página» maps
+  to `indexable`, off by default). At most 20 different documents published per 24 hours (429 `publish_limit`, stated in
+  the UI). A suspended document says so and cannot be shared. Publishing is off while the pages host is not configured.
+
 ### Tailoring before AI: `GET /api/v1/jobs/:id/match`
 
 A deterministic, AI-free score of each profile item against a job posting (`keyword-overlap-v1`, in

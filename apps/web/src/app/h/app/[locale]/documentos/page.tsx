@@ -1,25 +1,23 @@
 import type { Metadata } from 'next';
 import { AppFrame } from '@/components/app/AppFrame';
-import { UnderConstruction } from '@/components/app/UnderConstruction';
 import { appMetadata, pageLocale, type LocaleParams } from '@/components/app/page-helpers';
-import { ArtifactQuickList } from './ArtifactQuickList';
+import { PageHeader } from '@/components/ui/Layout';
+import { APP_COPY } from '@/lib/copy/app';
+import { DocumentList } from './ui/DocumentList';
 
 export function generateMetadata({ params }: LocaleParams): Promise<Metadata> {
   return appMetadata(params, 'artifacts');
 }
 
-/**
- * `/documentos`: the person's artifacts. Until W3-4 lands, the «en construcción» notice plus W2's minimal list and
- * create form (real, owner-scoped data through the client data layer; no sample rows). Owner: W3-4.
- */
+/** `/documentos`: the person's artifacts (filter by job, kind and status), each with preview and print. Owner: W3-4. */
 export default async function Page({ params }: LocaleParams) {
   const locale = await pageLocale(params);
   return (
     <AppFrame locale={locale} route="artifacts">
       {() => (
         <>
-          <UnderConstruction locale={locale} route="artifacts" />
-          <ArtifactQuickList locale={locale} />
+          <PageHeader title={APP_COPY[locale].routes.artifacts} />
+          <DocumentList locale={locale} />
         </>
       )}
     </AppFrame>

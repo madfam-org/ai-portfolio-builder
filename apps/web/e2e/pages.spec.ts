@@ -4,7 +4,9 @@
  */
 import { expect, test } from '@playwright/test';
 import { apiAs, cspViolations, raw } from './support/fixtures.ts';
-import { OWNER_A, OWNER_B, url } from './support/env.ts';
+import { suiteOwners, url } from './support/env.ts';
+
+const { OWNER_A, OWNER_B } = suiteOwners('pages');
 
 const XSS = '<img src=x onerror="window.__pwned=1">';
 const SLUG = `ana-cv-${Date.now().toString(36)}`;
