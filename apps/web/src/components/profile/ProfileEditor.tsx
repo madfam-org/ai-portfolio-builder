@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { ImportPanel } from '@/components/import/ImportPanel';
 import { ConfirmDialog } from '@/components/ui/Dialog';
 import { PageHeader } from '@/components/ui/Layout';
-import { Badge, EmptyState, ErrorState } from '@/components/ui/States';
+import { EmptyState, ErrorState } from '@/components/ui/States';
 import { useToast } from '@/components/ui/Toast';
 import { api, apiErrorMessage, type ApiError } from '@/lib/client/api';
 import type { ContentLocale, ItemKind, ProfileDto } from '@/lib/client/types';
@@ -35,7 +36,8 @@ const emptyDraft = (kind: ItemKind): ItemDraft => ({ values: contentToForm(ITEM_
  * `/perfil`: the core profile every tailored document draws from. The header (the person) and the 11 item kinds, each
  * with its own form. Changes show at once (optimistic) and are sent through the same-origin data layer; when the API
  * refuses one, the list goes back to how it was and the form reopens with what was typed and the errors.
- * Honest states: loading, «no configurado» (dormant), session ended, unavailable with «Reintentar». No AI, no import.
+ * Honest states: loading, «no configurado» (dormant), session ended, unavailable with «Reintentar». No AI. Import: the
+ * person's own LinkedIn export ZIP or a JSON Resume file, read in the browser (components/import, W4-I).
  */
 export function ProfileEditor({ locale, nameHint }: { locale: Locale; nameHint: string | null }) {
   const copy = PROFILE_COPY[locale];
@@ -49,6 +51,8 @@ export function ProfileEditor({ locale, nameHint }: { locale: Locale; nameHint: 
   const [toDelete, setToDelete] = useState<EditorItem | null>(null);
   const [reordering, setReordering] = useState(false);
   const [announcement, setAnnouncement] = useState('');
+  /** Bumped after an import changed the header: the header form remounts with the stored values. */
+  const [headerVersion, setHeaderVersion] = useState(0);
   const focusAfter = useRef<string[] | null>(null);
   const counter = useRef(1);
 
@@ -224,7 +228,7 @@ export function ProfileEditor({ locale, nameHint }: { locale: Locale; nameHint: 
           </ul>
         </EmptyState>
       ) : null}
-      <HeaderForm profile={profile} nameHint={nameHint} uiLocale={contentLocale} copy={copy} appCopy={appCopy} onSaved={setProfile} />
+      <HeaderForm key={headerVersion} profile={profile} nameHint={nameHint} uiLocale={contentLocale} copy={copy} appCopy={appCopy} onSaved={setProfile} />
       <section className={s.panel} aria-labelledby="perfil-trayectoria">
         <h2 id="perfil-trayectoria">{copy.itemsTitle}</h2>
         <p>{copy.itemsIntro}</p>
@@ -255,13 +259,16 @@ export function ProfileEditor({ locale, nameHint }: { locale: Locale; nameHint: 
           onDelete={setToDelete}
         />
       ))}
-      <section className={s.panel} aria-labelledby="perfil-importar">
-        <h2 id="perfil-importar">
-          {copy.importSeam.title} <Badge>{copy.importSeam.badge}</Badge>
-        </h2>
-        <p>{copy.importSeam.body}</p>
-        <p>{copy.importSeam.never}</p>
-      </section>
+      <ImportPanel
+        locale={locale}
+        profile={profile}
+        existing={items}
+        onImported={(saved, added, headerChanged) => {
+          setProfile(saved);
+          setItems((all) => [...all, ...added]);
+          if (headerChanged) setHeaderVersion((v) => v + 1);
+        }}
+      />
       <p className="visually-hidden" role="status" aria-live="polite" data-testid="profile-announce">
         {announcement}
       </p>

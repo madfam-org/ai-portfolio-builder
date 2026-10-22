@@ -1,7 +1,7 @@
 /**
  * Strings of the core-profile editor (`/perfil`). Owner: W3-2. Item kind section titles live in copy/app.ts
  * (`itemKinds`, shared with the renderers and the tailoring workspace); everything else the editor says is here.
- * Truth rules (R85, R32/R36): no AI promise, no import promise beyond «próximamente», never scraping.
+ * Truth rules (R85, R32/R36): no AI promise, never scraping. The import's own strings live in copy/import.ts (W4-I).
  */
 import type { ItemKind } from './app.ts';
 import type { Locale } from '../routing.ts';
@@ -88,7 +88,6 @@ export interface ProfileCopy {
     server: string;
     form: string;
   };
-  importSeam: { title: string; badge: string; body: string; never: string };
 }
 
 export const PROFILE_COPY: Record<Locale, ProfileCopy> = {
@@ -243,12 +242,6 @@ export const PROFILE_COPY: Record<Locale, ProfileCopy> = {
       server: 'El servidor rechazó este valor.',
       form: 'Revisa los campos marcados.',
     },
-    importSeam: {
-      title: 'Importar (próximamente)',
-      badge: 'Próximamente',
-      body: 'Más adelante podrás subir el archivo de exportación de tus propios datos (por ejemplo, el que LinkedIn te deja descargar desde tu cuenta) y revisar cada elemento antes de guardarlo. Por ahora, captura tu perfil aquí.',
-      never: 'Nunca extraeremos datos de otros sitios por ti.',
-    },
   },
   en: {
     intro: 'Your core profile: enter it once and reuse it in every application.',
@@ -400,12 +393,6 @@ export const PROFILE_COPY: Record<Locale, ProfileCopy> = {
       row: (row) => `Link ${row}: `,
       server: 'The server rejected this value.',
       form: 'Check the highlighted fields.',
-    },
-    importSeam: {
-      title: 'Import (coming soon)',
-      badge: 'Coming soon',
-      body: 'Later you will be able to upload the export file of your own data (for example, the one LinkedIn lets you download from your account) and review each item before saving it. For now, enter your profile here.',
-      never: 'We will never scrape other sites on your behalf.',
     },
   },
 };

@@ -5,7 +5,7 @@ import { OWNER_A, OWNER_B, url } from './support/env.ts';
 
 const ID = '0b6f3c1e-8a4d-4f7e-9c2a-1d5e6f7a8b9c';
 // Built pages no longer show the placeholder: /empleos (W3-3, e2e/jobs.spec.ts), /documentos (W3-4, e2e/documents*.spec.ts)
-// and /perfil (W3-2, e2e/profile.spec.ts). Only /ajustes is still «En construcción».
+// /perfil (W3-2, e2e/profile.spec.ts) and /ajustes (W4-I, e2e/data-rights.spec.ts). No route is «En construcción».
 const ROUTES = ['/ajustes'];
 
 test('signed out: every route offers sign-in and returns to the same page afterwards; no nav', async ({ page }) => {
@@ -19,7 +19,7 @@ test('signed out: every route offers sign-in and returns to the same page afterw
   }
 });
 
-test('signed in as A: the nav, the account controls and an honest placeholder on every route', async ({ page, context }) => {
+test('signed in as A: the nav, the account controls, and no placeholder left on any route', async ({ page, context }) => {
   const violations = cspViolations(page);
   await signIn(context, OWNER_A);
   await page.goto(url('app', '/'));
@@ -30,7 +30,8 @@ test('signed in as A: the nav, the account controls and an honest placeholder on
   for (const path of ROUTES) {
     const res = await page.goto(url('app', path));
     expect(res?.status(), path).toBe(200);
-    await expect(page.getByText('En construcción').first(), path).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1 }), path).toBeVisible();
+    await expect(page.getByText('En construcción'), path).toHaveCount(0);
   }
   await page.goto(url('app', `/empleos/${ID}/adaptar`));
   await expect(nav.getByRole('link', { name: 'Empleos' })).toHaveAttribute('aria-current', 'page');

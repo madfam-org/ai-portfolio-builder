@@ -19,6 +19,7 @@ const call = (segments: string[], r: Request, env: Record<string, string> = {}) 
 test('dormant: no issuer or no database is 503 not_configured, before any token is read', async () => {
   for (const [segs, env] of [
     [['me'], {}],
+    [['me', 'export'], issuer.env],
     [['profile'], issuer.env],
     [['jobs'], issuer.env],
     [['artifacts'], {}],
@@ -46,15 +47,17 @@ test('unknown paths are 404, known paths with the wrong method are 405, ids must
   assert.equal((await call(['jobs', 'not-a-uuid', 'match'], req('GET'))).status, 404);
   const r = await call(['me'], req('POST'));
   assert.equal(r.status, 405);
-  assert.equal(r.headers.get('allow'), 'GET');
+  assert.equal(r.headers.get('allow'), 'GET, DELETE');
+  assert.equal((await call(['me', 'export'], req('POST'))).headers.get('allow'), 'GET');
+  assert.equal((await call(['profile', 'items', 'batch'], req('GET'))).headers.get('allow'), 'POST');
 });
 
 test('the route table is the proxy allow-list', () => {
   const id = '0b9d2c4e-6f1a-4b2c-9d3e-1f2a3b4c5d6e';
-  for (const p of ['/api/v1/me', '/api/v1/profile', '/api/v1/profile/items', `/api/v1/profile/items/${id}`, '/api/v1/jobs', `/api/v1/jobs/${id}`, `/api/v1/jobs/${id}/match`, '/api/v1/artifacts', `/api/v1/artifacts/${id}`, `/api/v1/artifacts/${id}/publish`, `/api/v1/artifacts/${id}/unpublish`, '/api/v1/public/a/mi-cv', `/api/v1/public/s/${'A'.repeat(43)}`]) {
+  for (const p of ['/api/v1/me', '/api/v1/profile', '/api/v1/profile/items', `/api/v1/profile/items/${id}`, '/api/v1/jobs', `/api/v1/jobs/${id}`, `/api/v1/jobs/${id}/match`, '/api/v1/artifacts', `/api/v1/artifacts/${id}`, `/api/v1/artifacts/${id}/publish`, `/api/v1/artifacts/${id}/unpublish`, '/api/v1/public/a/mi-cv', `/api/v1/public/s/${'A'.repeat(43)}`, '/api/v1/profile/items/batch', '/api/v1/me/export']) {
     assert.ok(isApiV1Path(p), p);
   }
-  for (const p of ['/api/v1/meta', '/api/v1', '/api/v1/', '/api/v1/jobs/x', '/api/v1/public/a/A', '/api/v1/public/s/short', '/api/v1/me/extra', '/api/v2/me']) {
+  for (const p of ['/api/v1/meta', '/api/v1', '/api/v1/', '/api/v1/jobs/x', '/api/v1/public/a/A', '/api/v1/public/s/short', '/api/v1/me/extra', '/api/v2/me', '/api/v1/me/export/x', '/api/v1/profile/batch']) {
     assert.ok(!isApiV1Path(p), p);
   }
   assert.deepEqual(matchRoute(['public', 'a', 'mi-cv']), { kind: 'public-slug', slug: 'mi-cv' });
@@ -70,4 +73,13 @@ test('public slugs: the pattern, reserved words, no leading _ or .', async () =>
     assert.ok(RESERVED_SLUGS.has(word), word);
   }
   assert.equal(matchRoute(['public', 'a', 'admin']), null);
+});
+
+test('W4-I: DELETE /me needs the database (503 not_configured without it), while GET /me answers from the token', async () => {
+  const token = bearer(await issuer.token({ sub: 'janua|a' }));
+  const del = await call(['me'], req('DELETE', token, JSON.stringify({ confirm: 'delete-all-my-data' })), issuer.env);
+  assert.equal(del.status, 503);
+  assert.deepEqual(await del.json(), { error: 'not_configured' });
+  assert.equal((await call(['me'], req('GET', token), issuer.env)).status, 200);
+  assert.equal((await call(['profile', 'items', 'batch'], req('POST', token, '{}'), issuer.env)).status, 503);
 });

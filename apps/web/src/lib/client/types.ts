@@ -8,6 +8,7 @@ import type {
   artifactCreateBody,
   artifactPatchBody,
   artifactSetBody,
+  itemBatchBody,
   itemCreateBody,
   itemPatchBody,
   itemReorderBody,
@@ -107,3 +108,4 @@ export type ArtifactCreateInput = z.input<typeof artifactCreateBody>;
 export type ArtifactSetInput = z.input<typeof artifactSetBody>;
 export type ArtifactPatchInput = z.input<typeof artifactPatchBody>;
 export type PublishInput = z.input<typeof publishBody>;
+export type ItemBatchInput = z.input<typeof itemBatchBody>;
