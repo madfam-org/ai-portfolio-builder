@@ -22,7 +22,11 @@ repo-boundary contract (docs/REPO_BOUNDARY.md).
 - A fourth host for user pages (public /<slug>, link-shared /l/<token>; working label cv-p.madfam.io) is inert until
   CV_HOST_PAGES names it; per-page indexing is the owner's choice, link pages are never indexed or cached.
 - App pages are declared once (apps/web/src/lib/app-routes.ts): /perfil, /empleos, /empleos/:id, /empleos/:id/adaptar,
-  /documentos, /documentos/:id, /documentos/:id/vista-previa, /documentos/:id/imprimir, /ajustes (en under /en).
+  /documentos, /documentos/:id, /documentos/:id/vista-previa, /documentos/:id/imprimir, /ajustes (en under /en);
+  W5-J adds /empleos/nuevo and /empleos/capturar.
+- Job intake (W5-J) never stores before the person confirms; links are fetched once, only on an explicit POST, through
+  an SSRF guard that respects robots.txt and never fetches boards whose terms forbid it (those use the person's own
+  browser capture). No crawling, no login to boards, no AI, no OCR in cv.
 
 ## Docs
 
@@ -44,3 +48,4 @@ repo-boundary contract (docs/REPO_BOUNDARY.md).
 - `janua.client.yaml`: Janua registrations (names only)
 - `apps/web/src/components/ui/`, `src/components/app/`, `src/lib/client/`, `src/lib/copy/`: UI primitives, the app frame, the typed data layer, per-surface copy
 - `apps/web/e2e/`: Playwright specs over the built server (two owners, local JWKS, throwaway Postgres)
+- `apps/web/src/server/ingest/`, `src/components/jobs/intake/`: W5-J job intake (link, ATS public APIs, paste, PDF/DOCX/HTML files, browser capture) and its typed job fields (migration 0002)
