@@ -26,9 +26,9 @@ interface Res {
   body: string;
 }
 
-function get(host: string, path: string): Promise<Res> {
+function get(host: string, path: string, method = 'GET'): Promise<Res> {
   return new Promise((resolve, reject) => {
-    const req = request({ host: 'localhost', port: PORT, path, method: 'GET', headers: { Host: host } }, (res) => {
+    const req = request({ host: 'localhost', port: PORT, path, method, headers: { Host: host } }, (res) => {
       let body = '';
       res.setEncoding('utf8');
       res.on('data', (c: string) => (body += c));
@@ -141,4 +141,31 @@ test('api host: meta, JSON 404, robots disallow, no HTML', async () => {
   }
   const robots = await get('cv-api.madfam.io', '/robots.txt');
   assert.match(robots.body, /User-agent: \*\nDisallow: \//);
+});
+
+test('dormant W2: sign-in and data answer 503 not_configured on their own host, 404 elsewhere', async () => {
+  for (const path of ['/api/auth/session', '/api/auth/signin/janua', '/api/auth/callback/janua?code=x&state=y', '/api/v1/artifacts']) {
+    const r = await get('cv-app.madfam.io', path);
+    assert.equal(r.status, 503, path);
+    assert.deepEqual(JSON.parse(r.body), { error: 'not_configured' });
+  }
+  for (const path of ['/auth/entrar', '/auth/salir']) {
+    assert.equal((await get('cv-app.madfam.io', path, 'POST')).status, 503, path);
+    assert.equal((await get('cv-app.madfam.io', path)).status, 405, path);
+  }
+  for (const path of ['/api/v1/me', '/api/v1/profile', '/api/v1/jobs', '/api/v1/artifacts', '/api/v1/public/a/ana-cv']) {
+    const r = await get('cv-api.madfam.io', path);
+    assert.equal(r.status, 503, path);
+    assert.deepEqual(JSON.parse(r.body), { error: 'not_configured' });
+  }
+  for (const path of ['/api/auth/session', '/auth/entrar']) {
+    assert.equal((await get('cv.madfam.io', path)).status, 404, `landing ${path}`);
+    assert.equal((await get('cv-api.madfam.io', path)).status, 404, `api ${path}`);
+  }
+  const shell = await get('cv-app.madfam.io', '/');
+  assert.match(shell.body, /aún no está disponible/);
+  assert.doesNotMatch(shell.body, /Iniciar sesión</);
+  assert.match(String(shell.headers['content-security-policy']), /form-action 'self'/);
+  const ready = JSON.parse((await get('10.0.0.1', '/ready')).body) as { checks: unknown };
+  assert.deepEqual(ready.checks, { config: 'ok', signIn: 'not_configured', database: 'not_configured' });
 });

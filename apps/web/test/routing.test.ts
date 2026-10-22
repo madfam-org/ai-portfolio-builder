@@ -53,11 +53,30 @@ test('the sitemap exists only while the landing is indexable', () => {
   assert.equal(decide('cv-app.madfam.io', '/sitemap.xml', cfg({ CV_INDEXABLE: 'true' })).kind, 'not-found');
 });
 
-test('app host: the pre-launch shell, robots and assets; /api/auth is not claimed yet', () => {
+test('app host: shell, robots, assets; Auth.js, the sign-in/out forms and the API proxy pass through', () => {
   assert.deepEqual(decide('cv-app.madfam.io', '/', c), { kind: 'rewrite', role: 'app', to: '/h/app/es', html: true, locale: 'es' });
   assert.equal(decide('cv-app.madfam.io', '/robots.txt', c).kind, 'rewrite');
   assert.equal(decide('cv-app.madfam.io', '/_next/static/chunks/a.js', c).kind, 'asset');
-  assert.deepEqual(decide('cv-app.madfam.io', '/api/auth/callback/janua', c), { kind: 'not-found', role: 'app', format: 'html' });
+  for (const path of ['/api/auth/callback/janua', '/api/auth/session', '/api/auth/signin/janua', '/auth/entrar', '/auth/salir', '/api/v1/artifacts', '/api/v1/me']) {
+    assert.deepEqual(decide('cv-app.madfam.io', path, c), { kind: 'pass', role: 'app' }, path);
+  }
+  for (const path of ['/api/auth', '/api/v1/meta', '/api/v1/other', '/auth', '/auth/otro', '/h/app/es']) {
+    assert.deepEqual(decide('cv-app.madfam.io', path, c), { kind: 'not-found', role: 'app', format: 'html' }, path);
+  }
+});
+
+test('sign-in and the proxy exist on the app host ONLY: 404 on the landing, API and unknown hosts', () => {
+  for (const path of ['/api/auth/callback/janua', '/api/auth/session', '/auth/entrar', '/auth/salir']) {
+    assert.equal(decide('cv.madfam.io', path, c).kind, 'not-found', `landing ${path}`);
+    assert.deepEqual(decide('cv-api.madfam.io', path, c), { kind: 'not-found', role: 'api', format: 'json' }, `api ${path}`);
+    assert.equal(decide('evil.example', path, c).kind, 'not-found');
+  }
+  assert.equal(decide('cv.madfam.io', '/api/v1/artifacts', c).kind, 'not-found');
+});
+
+test('api host: the v1 route table is rewritten to the internal handler', () => {
+  assert.deepEqual(decide('cv-api.madfam.io', '/api/v1/profile', c), { kind: 'rewrite', role: 'api', to: '/h/api/v1/profile', html: false, locale: null });
+  assert.deepEqual(decide('cv-api.madfam.io', '/api/v1/public/a/mi-cv', c), { kind: 'rewrite', role: 'api', to: '/h/api/v1/public/a/mi-cv', html: false, locale: null });
 });
 
 test('api host: meta and robots; JSON 404 elsewhere, including / and build assets', () => {

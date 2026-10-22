@@ -32,12 +32,15 @@ test('the .com domain that is not MADFAM\'s appears nowhere in the tree (madfam.
   assert.deepEqual(hits, []);
 });
 
-test('no legacy platform artefacts in the tree (Supabase, Prisma, Vercel, Railway, next-auth, Stripe, HF)', () => {
+test('no legacy platform artefacts in the tree (Supabase, Prisma, Vercel, Railway, Stripe, HF; next-auth only as the pinned Janua client)', () => {
   const files = trackedFiles();
   const banned = /(^|\/)(vercel\.json|railway\.toml|supabase|prisma|schema\.prisma|\.env\.staging)($|\/)/i;
   assert.deepEqual(files.filter((f) => banned.test(f)), []);
   const pkg = readFileSync(join(root, 'apps', 'web', 'package.json'), 'utf8');
-  for (const dep of ['@supabase', 'prisma', 'next-auth', 'stripe', '@huggingface', '@vercel', '@madfam/']) {
+  for (const dep of ['@supabase', 'prisma', 'stripe', '@huggingface', '@vercel', '@madfam/']) {
     assert.ok(!pkg.includes(`"${dep}`), dep);
   }
+  // next-auth is back for W2, as the Janua OIDC client only, pinned exactly (lane J §3.1); never the legacy major.
+  const deps = (JSON.parse(pkg) as { dependencies: Record<string, string> }).dependencies;
+  assert.equal(deps['next-auth'], '5.0.0-beta.32');
 });

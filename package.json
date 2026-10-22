@@ -16,6 +16,9 @@
     "typecheck": "pnpm --filter @cv/web run typecheck",
     "test": "pnpm --filter @cv/web run test",
     "build": "pnpm --filter @cv/web run build",
-    "test:server": "pnpm --filter @cv/web run test:server"
+    "test:server": "pnpm --filter @cv/web run test:server",
+    "test:pg": "pnpm --filter @cv/web run test:pg",
+    "db:migrate": "pnpm --filter @cv/web run db:migrate",
+    "db:generate": "pnpm --filter @cv/web run db:generate"
   }
 }

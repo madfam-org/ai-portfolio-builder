@@ -2,11 +2,16 @@
 # `enclii onboard ensure` renders; keep the two in step or ensure rewrites these policies).
 #
 # Ingress: the app (3000) from the Cloudflare tunnel ONLY.
-# Egress: DNS only. Wave 1 calls nothing outside the pod. The next wave (Janua sign-in) adds TCP 443 to public
-# addresses; the data wave adds Postgres through the platform pooler.
+# Egress (W2, declared BEFORE any `enclii onboard ensure`, the 2026-10-21 MAP outage lesson):
+#   - DNS;
+#   - TCP 443 to public addresses only (Janua: discovery, JWKS, token and logout endpoints), fulcra's
+#     allow-https-egress shape: private, CGNAT and link-local ranges are excluded;
+#   - PgBouncer (TCP 6432) in the `data` namespace, byte-for-byte the rule Enclii's netpol generator renders for
+#     `egress: [pgbouncer]` (switchyard-api internal/netpolicy/generator.go) and crea-map runs in production.
+# The code is dormant until its settings exist, so these rules only open paths; nothing calls them yet.
 #
-# One selector per peer entry (an entry combining a namespaceSelector AND a podSelector has rendered as
-# deny-everything on this estate's policy controller).
+# Selector shape: the pgbouncer rule keeps the generator's namespaceSelector AND podSelector in one peer (the shape
+# that works to `data` on this cluster, per crea-map#993); the other rules use one selector per peer.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -56,3 +61,49 @@ spec:
           port: 53
         - protocol: TCP
           port: 53
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-https-egress
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: cv
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+              - 100.64.0.0/10
+              - 169.254.0.0/16
+      ports:
+        - protocol: TCP
+          port: 443
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-pgbouncer-egress
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: cv
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: data
+          podSelector:
+            matchLabels:
+              app: pgbouncer
+      ports:
+        - protocol: TCP
+          port: 6432

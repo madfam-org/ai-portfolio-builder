@@ -5,6 +5,7 @@
  * It runs on every request (no matcher), so an unknown Host is a 404 even for /_next assets.
  */
 import { NextResponse, type NextRequest } from 'next/server';
+import { januaIssuer } from './lib/auth-env.ts';
 import { getConfig, type Config } from './lib/config.ts';
 import { BASELINE_HEADERS, LOCKED_CSP, htmlCsp, newNonce, robotsTag } from './lib/headers.ts';
 import { NOT_FOUND_ROUTE, decide, type Decision } from './lib/routing.ts';
@@ -24,8 +25,15 @@ function internal(req: NextRequest, to: string): URL {
   return url;
 }
 
+/** The app shell's forms post to itself and are redirected to Janua (sign-in, account switching, sign-out). */
+function formTargets(decision: Decision): string[] {
+  if (decision.role !== 'app') return [];
+  const issuer = januaIssuer(process.env);
+  return issuer ? ["'self'", new URL(issuer).origin] : ["'self'"];
+}
+
 function rewriteHtml(req: NextRequest, to: string, locale: string, decision: Decision, config: Config): NextResponse {
-  const csp = htmlCsp(newNonce(), config.dev);
+  const csp = htmlCsp(newNonce(), config.dev, formTargets(decision));
   const requestHeaders = new Headers(req.headers);
   // Next.js reads the nonce from the request's policy and stamps it on the scripts it renders.
   requestHeaders.set('Content-Security-Policy', csp);
@@ -55,6 +63,7 @@ export function proxy(req: NextRequest): NextResponse {
   const decision = decide(req.headers.get('host'), path, config);
   switch (decision.kind) {
     case 'probe':
+    case 'pass':
     case 'asset':
       return finish(NextResponse.next(), decision, config, LOCKED_CSP);
     case 'rewrite':

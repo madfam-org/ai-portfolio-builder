@@ -8,6 +8,7 @@
  *   3. Each role exposes an explicit allowlist of public paths, rewritten to internal routes under /h/.
  *      Internal paths are never public: a direct request for /h/... is not in any allowlist, so it 404s.
  */
+import { isApiV1Path } from './api-routes.ts';
 import type { Config, Role } from './config.ts';
 
 export type Locale = 'es' | 'en';
@@ -15,12 +16,17 @@ export type Locale = 'es' | 'en';
 export type Decision =
   /** Probe route: served as-is on any host. */
   | { kind: 'probe'; role: Role | null }
+  /** A real route served as-is, on its own host only (Auth.js, sign-in/out, the same-origin API proxy on cv-app). */
+  | { kind: 'pass'; role: Role }
   /** Next.js build assets (/_next/...) and the icon, on HTML hosts only. */
   | { kind: 'asset'; role: Role }
   /** Rewrite to an internal route. `html` pages get a nonce CSP; `locale` sets <html lang>. */
   | { kind: 'rewrite'; role: Role; to: string; html: boolean; locale: Locale | null }
   /** 404. `format` follows the host: plain text for unknown hosts, JSON on the API, a page on HTML hosts. */
   | { kind: 'not-found'; role: Role | null; format: 'text' | 'json' | 'html' };
+
+/** The sign-in (account switching) and sign-out form targets on the app host. */
+export const APP_PASS_PATHS: ReadonlySet<string> = new Set(['/auth/entrar', '/auth/salir']);
 
 export const PROBE_PATHS: ReadonlySet<string> = new Set(['/health', '/ready']);
 
@@ -82,16 +88,19 @@ export function decide(hostHeader: string | null | undefined, rawPath: string, c
       return { kind: 'not-found', role, format: 'html' };
     }
     case 'app': {
-      // /api/auth/* on this host is reserved for the next wave's Janua sign-in (Auth.js callback
-      // /api/auth/callback/janua); until then it 404s like any other unclaimed path.
       const page = htmlPages(role, path);
       if (page) return page;
+      // Sign-in lives on this host ONLY (the session cookie is host-only here): Auth.js (/api/auth/*, callback
+      // /api/auth/callback/janua), the sign-in and sign-out forms, and the same-origin API proxy. On the landing and
+      // API hosts these paths are 404s. Each route answers 503 not_configured while its settings are absent.
+      if (APP_PASS_PATHS.has(path) || rawPath.startsWith('/api/auth/') || isApiV1Path(path)) return { kind: 'pass', role };
       if (isAsset(rawPath)) return { kind: 'asset', role };
       if (path === '/robots.txt') return robots;
       return { kind: 'not-found', role, format: 'html' };
     }
     case 'api': {
       if (path === '/api/v1/meta') return { kind: 'rewrite', role, to: '/h/api/v1/meta', html: false, locale: null };
+      if (isApiV1Path(path)) return { kind: 'rewrite', role, to: `/h${path}`, html: false, locale: null };
       if (path === '/robots.txt') return robots;
       return { kind: 'not-found', role, format: 'json' };
     }

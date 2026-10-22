@@ -58,6 +58,9 @@ WORKDIR /app
 COPY --from=build /repo/apps/web/.next/standalone ./
 COPY --from=build /repo/apps/web/.next/static ./apps/web/.next/static
 COPY --from=build /repo/apps/web/public ./apps/web/public
+# The committed SQL migrations, applied by the same image in migration mode (CV_MIGRATE_AND_EXIT=true; the
+# PreSync Job). The standalone server chdirs to /app/apps/web, so they are read from ./drizzle there.
+COPY --from=build /repo/apps/web/drizzle ./apps/web/drizzle
 
 # Next.js writes its cache under the app's .next/cache; point it at the writable volume.
 RUN mkdir -p /app/.next/cache \
