@@ -20,7 +20,8 @@ function render(d: ReturnType<typeof data>, paper?: 'letter' | 'a4'): string {
 
 /** Headings in document order, as `h2:Experiencia`. */
 function headings(html: string): string[] {
-  return [...html.matchAll(/<(h[1-4])\b[^>]*>(.*?)<\/\1>/g)].map((m) => `${m[1]}:${m[2]!.replace(/<[^>]+>/g, '')}`);
+  // The heading's text nodes only (splitting on tags; a test reads markup, it never sanitises it).
+  return [...html.matchAll(/<(h[1-4])\b[^>]*>(.*?)<\/\1>/g)].map((m) => `${m[1]}:${m[2]!.split(/<[^>]*>/).join('')}`);
 }
 
 /** Every safety rule of lane X §4 on one piece of markup. */
