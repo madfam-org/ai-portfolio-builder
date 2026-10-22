@@ -97,9 +97,10 @@
   height: auto;
 }
 
+/* The drawing is a sheet of paper in both themes, so its colours are the light ones. */
 .foldPage {
   fill: #fbfaf6;
-  stroke: var(--muted);
+  stroke: #4c5a52;
   stroke-width: 1.2;
 }
 
@@ -110,8 +111,8 @@
 }
 
 .foldLine {
-  stroke: var(--focus);
-  stroke-width: 2.4;
+  stroke: #b4530a;
+  stroke-width: 3;
   stroke-dasharray: 8 6;
 }
 
