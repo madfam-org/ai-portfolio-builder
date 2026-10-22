@@ -126,7 +126,7 @@ jobs:
           if [ "$status" != 0 ]; then echo "pg: FAIL exit=$status"; exit "$status"; fi
           pass=$(grep -E ' pass [0-9]+$' "$out" | awk '{print $NF}')
           fail=$(grep -E ' fail [0-9]+$' "$out" | awk '{print $NF}')
-          if [ -z "$pass" ] || [ "$pass" -lt 29 ] || [ "$fail" != 0 ]; then echo "pg: tests pass=${pass:-none} fail=${fail:-none} FAIL (expected >= 29 passing)"; exit 1; fi
+          if [ -z "$pass" ] || [ "$pass" -lt 33 ] || [ "$fail" != 0 ]; then echo "pg: tests pass=${pass:-none} fail=${fail:-none} FAIL (expected >= 33 passing)"; exit 1; fi
           echo "pg: tests pass=$pass fail=$fail OK"
 
   e2e:
@@ -184,7 +184,7 @@ jobs:
           cat "$out"
           if [ "$status" != 0 ]; then echo "e2e: FAIL exit=$status"; exit "$status"; fi
           passed=$(grep -Eo '^ *[0-9]+ passed' "$out" | grep -Eo '[0-9]+' | tail -1)
-          if grep -Eq '^ *[0-9]+ (failed|flaky|skipped)' "$out" || [ -z "$passed" ] || [ "$passed" -lt 68 ]; then echo "e2e: passed=${passed:-none} FAIL (expected >= 68 passing, none failed, flaky or skipped)"; exit 1; fi
+          if grep -Eq '^ *[0-9]+ (failed|flaky|skipped)' "$out" || [ -z "$passed" ] || [ "$passed" -lt 76 ]; then echo "e2e: passed=${passed:-none} FAIL (expected >= 76 passing, none failed, flaky or skipped)"; exit 1; fi
           echo "e2e: passed=$passed OK"
 
   guards:

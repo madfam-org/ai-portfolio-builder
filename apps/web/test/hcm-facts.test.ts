@@ -33,8 +33,8 @@ test('structured state field wins over the location text', () => {
 
 test('salary: monthly MXN is comparable (midpoint of a range); anything else is shown but not compared', () => {
   assert.equal(jobFacts({ title: 'x', salaryMin: 20_000, salaryMax: 30_000, salaryCurrency: 'MXN', salaryPeriod: 'month' }).comparableMonthlyMxn, 25_000);
-  assert.equal(jobFacts({ title: 'x', salaryMin: '18,000', salaryPeriod: 'mensual' }).comparableMonthlyMxn, 18_000);
-  assert.equal(jobFacts({ title: 'x', salary: { min: 22_000, max: 22_000, currency: 'mxn', period: 'monthly' } }).comparableMonthlyMxn, 22_000);
+  assert.equal(jobFacts({ title: 'x', salaryMin: '18000.00', salaryPeriod: 'month' }).comparableMonthlyMxn, 18_000, 'numeric columns may arrive as strings');
+  assert.equal(jobFacts({ title: 'x', salaryMin: 22_000, salaryMax: 22_000, salaryCurrency: 'MXN', salaryPeriod: 'month' }).comparableMonthlyMxn, 22_000);
   const hourly = jobFacts({ title: 'x', salaryMin: 120, salaryPeriod: 'hour', salaryCurrency: 'MXN' });
   assert.equal(hourly.comparableMonthlyMxn, null);
   assert.equal(hourly.salary?.min, 120);

@@ -51,7 +51,7 @@ export async function jobBenchmark(repo: Repository, sub: string, jobId: string,
   const client = port ?? (config ? sharedHcmClient(config) : null);
   if (!client) return json(503, { error: 'not_configured' });
 
-  const facts = jobFacts(job as unknown as { title: string; location?: string | null } & Record<string, unknown>);
+  const facts = jobFacts(job);
   if (facts.title.length < 2) return json(422, { error: 'title_too_short' });
   const result = await client.benchmark({ title: facts.title, state: facts.state });
   if (!result.ok) return json(503, { error: 'benchmark_unavailable' }, { 'Retry-After': '60' });

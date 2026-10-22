@@ -4,7 +4,7 @@
  *
  * STRUCTURED FIELDS FIRST. Lane W5-J (migration 0002) types the job: `countryCode` (ISO 3166-1), `stateCode`
  * (ISO 3166-2, only when unambiguous) and a STATED salary (`salaryMin`/`salaryMax` in `salaryCurrency` per
- * `salaryPeriod`: hour, day, week, month or year). Rows from before W5-J have none of them: the state then comes from
+ * `salaryPeriod`: hour, day, week, month or year). These are real columns; rows from before W5-J have them null: the state then comes from
  * the free-text location when it names one state unambiguously (`Ciudad de México`, `Monterrey, Nuevo León`).
  * `stateSource` says which one was used, so the page can say so. A job outside Mexico gets the national Mexican
  * figure and the page says so. test/hcm-facts.test.ts pins the field names.
@@ -49,7 +49,7 @@ export const MX_STATES: Readonly<Record<string, { inegi: string; names: readonly
 export const STATE_FIELDS = ['stateCode'] as const;
 export const COUNTRY_FIELD = 'countryCode';
 export const SALARY_FIELDS = { min: 'salaryMin', max: 'salaryMax', currency: 'salaryCurrency', period: 'salaryPeriod' } as const;
-const MONTHLY = new Set(['month', 'monthly', 'mensual', 'mes']);
+const MONTHLY = new Set(['month']); // W5-J SALARY_PERIODS: hour, day, week, month, year
 const TITLE_MAX = 120;
 
 export interface StatedSalary {
@@ -118,14 +118,27 @@ function amount(raw: unknown): number | null {
   return Number.isFinite(n) && n > 0 && n < 100_000_000 ? n : null;
 }
 
-function salaryOf(row: Record<string, unknown>): StatedSalary | null {
-  const nested = row.salary && typeof row.salary === 'object' ? (row.salary as Record<string, unknown>) : null;
-  const pick = (flat: string, key: string) => row[flat] ?? nested?.[key];
-  const min = amount(pick(SALARY_FIELDS.min, 'min'));
-  const max = amount(pick(SALARY_FIELDS.max, 'max'));
+/**
+ * The job columns the benchmark reads: W5-J's typed fields (migration 0002, `server/db/schema.ts` `jobs`), all
+ * nullable because rows from before W5-J have none of them.
+ */
+export interface JobFactsInput {
+  title: string;
+  location?: string | null;
+  countryCode?: string | null;
+  stateCode?: string | null;
+  salaryMin?: number | string | null;
+  salaryMax?: number | string | null;
+  salaryCurrency?: string | null;
+  salaryPeriod?: string | null;
+}
+
+function salaryOf(row: JobFactsInput): StatedSalary | null {
+  const min = amount(row[SALARY_FIELDS.min]);
+  const max = amount(row[SALARY_FIELDS.max]);
   if (min === null && max === null) return null;
-  const currency = pick(SALARY_FIELDS.currency, 'currency');
-  const period = pick(SALARY_FIELDS.period, 'period');
+  const currency = row[SALARY_FIELDS.currency];
+  const period = row[SALARY_FIELDS.period];
   return {
     min,
     max,
@@ -144,7 +157,7 @@ export function sanitizeTitle(title: string): string {
     .trim();
 }
 
-export function jobFacts(row: { title: string; location?: string | null } & Record<string, unknown>): JobFacts {
+export function jobFacts(row: JobFactsInput): JobFacts {
   let state: string | null = null;
   let stateSource: JobFacts['stateSource'] = null;
   const rawCountry = row[COUNTRY_FIELD];

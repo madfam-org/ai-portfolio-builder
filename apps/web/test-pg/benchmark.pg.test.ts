@@ -70,3 +70,39 @@ test('no token: 401; wrong method: 405; dormant without HCM: 503 not_configured'
   assert.equal((await api('POST', `/api/v1/jobs/${jobId}/benchmark`, { sub: A })).status, 405);
   assert.deepEqual(await api('GET', `/api/v1/jobs/${jobId}/benchmark`, { sub: A, withHcm: false }), { status: 503, body: { error: 'not_configured' } });
 });
+
+test('W5-J typed columns drive the query: stateCode over the location text, the stated monthly MXN salary placed', async () => {
+  const job = await api('POST', '/api/v1/jobs', {
+    sub: A,
+    body: {
+      title: 'Desarrollador de software',
+      location: 'Ciudad de México',
+      countryCode: 'MX',
+      stateCode: 'MX-JAL',
+      salaryMin: 16000,
+      salaryMax: 18000,
+      salaryCurrency: 'MXN',
+      salaryPeriod: 'month',
+      sourceText: 'Vacante sintética con campos tipados.',
+    },
+  });
+  assert.equal(job.status, 201, JSON.stringify(job.body));
+  const res = await api('GET', `/api/v1/jobs/${job.body?.job.id as string}/benchmark`, { sub: A });
+  assert.equal(res.status, 200);
+  assert.deepEqual(res.body?.query, { title: 'Desarrollador de software', country: 'MX', state: 'MX-JAL', stateSource: 'job_field' });
+  assert.equal(res.body?.geography.fallback_reason, 'state_cell_below_minimum_n');
+  assert.deepEqual(res.body?.posting, {
+    salary: { min: 16000, max: 18000, currency: 'MXN', period: 'month' },
+    comparableMonthlyMxn: 17000,
+    position: 'p50_p75',
+  });
+  assert.equal(fake.requests.at(-1)?.query.state, 'MX-JAL');
+
+  const hourly = await api('POST', '/api/v1/jobs', {
+    sub: A,
+    body: { title: 'Desarrollador de software', salaryMin: 150, salaryCurrency: 'MXN', salaryPeriod: 'hour', sourceText: 'Por hora.' },
+  });
+  const notComparable = await api('GET', `/api/v1/jobs/${hourly.body?.job.id as string}/benchmark`, { sub: A });
+  assert.equal(notComparable.body?.posting.position, null);
+  assert.equal(notComparable.body?.posting.salary.period, 'hour');
+});
