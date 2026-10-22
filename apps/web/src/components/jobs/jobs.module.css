@@ -1,0 +1,257 @@
+/* Jobs pipeline, job page and tailoring workspace (W3-3). Tokens from globals.css; no inline styles anywhere. */
+
+.section {
+  display: grid;
+  gap: 0.9rem;
+  margin: 1.5rem 0;
+  padding: 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.section > h2,
+.section > h3 {
+  margin: 0;
+}
+
+.board {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  align-items: start;
+}
+
+.column {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+
+.column h3 {
+  margin: 0;
+  font-size: 1rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.card {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.8rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radius) - 4px);
+}
+
+.card h4 {
+  margin: 0;
+  font-size: 1rem;
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.mover {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: end;
+}
+
+.mover label {
+  flex-basis: 100%;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.mover select {
+  flex: 1 1 8rem;
+  min-height: 2.25rem;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  font-size: 0.9rem;
+}
+
+.counter {
+  margin: -0.35rem 0 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.counterOver {
+  color: #b42318;
+  font-weight: 600;
+}
+
+.posting {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 24rem;
+  overflow: auto;
+  margin: 0.5rem 0 0;
+  padding: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+}
+
+.chips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.chip {
+  padding: 0.1rem 0.55rem;
+  border-radius: 999px;
+  background: var(--tag-bg);
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+
+.ranked {
+  margin: 0;
+  padding-left: 1.4rem;
+  display: grid;
+  gap: 0.8rem;
+}
+
+.ranked li {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.rankHead {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: baseline;
+}
+
+.score {
+  font-weight: 600;
+  color: var(--brand);
+}
+
+.plain {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.entry {
+  display: grid;
+  gap: 0.6rem;
+  padding: 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radius) - 4px);
+  background: var(--bg);
+}
+
+.entryHead {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.5rem;
+  align-items: baseline;
+}
+
+.entryHead strong {
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.override summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.override[open] summary {
+  margin-bottom: 0.5rem;
+}
+
+.fieldset {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.75rem;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.fieldset legend {
+  font-weight: 600;
+  padding: 0 0.3rem;
+}
+
+.seam {
+  margin: 1.5rem 0;
+  padding: 1rem 1.25rem;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  color: var(--muted);
+}
+
+.seam h2 {
+  margin: 0 0 0.3rem;
+  font-size: 1.05rem;
+}
+
+.seam p {
+  margin: 0;
+}
+
+.result:focus {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+.fieldError {
+  margin: 0;
+  color: #b42318;
+  font-weight: 600;
+}
+
+@media (prefers-color-scheme: dark) {
+  .counterOver,
+  .fieldError {
+    color: #ff9b8f;
+  }
+}
