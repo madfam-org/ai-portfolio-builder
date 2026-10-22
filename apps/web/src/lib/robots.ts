@@ -60,19 +60,23 @@ export function robotsTxt(role: Role, config: Config): string {
 
 export function sitemapXml(config: Config): string {
   const base = `https://${config.hosts.landing}`;
-  const url = (loc: string) =>
+  // Each page with its es-MX and en alternates. W6-A appends the job-link reader page (/lector, /en/lector).
+  const pairs: readonly (readonly [string, string])[] = [
+    ['/', '/en'],
+    ['/lector', '/en/lector'],
+  ];
+  const url = (loc: string, es: string, en: string) =>
     [
       '  <url>',
       `    <loc>${loc}</loc>`,
-      `    <xhtml:link rel="alternate" hreflang="es-MX" href="${base}/"/>`,
-      `    <xhtml:link rel="alternate" hreflang="en" href="${base}/en"/>`,
+      `    <xhtml:link rel="alternate" hreflang="es-MX" href="${base}${es}"/>`,
+      `    <xhtml:link rel="alternate" hreflang="en" href="${base}${en}"/>`,
       '  </url>',
     ].join('\n');
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">',
-    url(`${base}/`),
-    url(`${base}/en`),
+    ...pairs.flatMap(([es, en]) => [url(`${base}${es}`, es, en), url(`${base}${en}`, es, en)]),
     '</urlset>',
     '',
   ].join('\n');

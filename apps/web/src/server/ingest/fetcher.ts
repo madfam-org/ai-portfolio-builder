@@ -22,7 +22,8 @@ import type { Readable, Transform } from 'node:stream';
 import { createBrotliDecompress, createGunzip, createInflate } from 'node:zlib';
 import { hostProblem, isPublicAddress } from './net.ts';
 
-export const INTAKE_USER_AGENT = 'MADFAM-CV-Intake/1.0 (+https://cv.madfam.io/; one fetch per person request; support@madfam.io)';
+/** W6-A: the `+URL` is the public page that explains the reader to site operators (cv.madfam.io/lector, es-MX; /en/lector). */
+export const INTAKE_USER_AGENT = 'MADFAM-CV-Intake/1.0 (+https://cv.madfam.io/lector; one fetch per person request; support@madfam.io)';
 /** The robots.txt product token (RFC 9309 §2.2.1) cv answers to. */
 export const ROBOTS_TOKEN = 'madfam-cv';
 

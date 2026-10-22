@@ -49,7 +49,21 @@ export interface Config {
   readonly revision: string | null;
   /** Development mode relaxes nothing but the CSP's eval for React's dev tooling. */
   readonly dev: boolean;
+  /**
+   * W6-A: the per-client token bucket on unauthenticated reads (the pages host and cv-api's public reads; see
+   * server/read-limit.ts). `burst` requests at once, refilled at `perMinute`. Per process: with R replicas a client
+   * gets at most R times this.
+   */
+  readonly readLimit: ReadLimit;
 }
+
+export interface ReadLimit {
+  readonly burst: number;
+  readonly perMinute: number;
+}
+
+/** Defaults: 60 at once, then one a second. A person reading pages never meets it; a scraper slows to 1/s per pod. */
+export const DEFAULT_READ_LIMIT: ReadLimit = { burst: 60, perMinute: 60 };
 
 type Env = Readonly<Record<string, string | undefined>>;
 
@@ -62,6 +76,16 @@ export class ConfigError extends Error {
     super(`cv config: ${message}`);
     this.name = 'ConfigError';
   }
+}
+
+function readCount(env: Env, name: string, fallback: number): number {
+  const raw = env[name];
+  if (raw === undefined || raw === '') return fallback;
+  const n = Number(raw);
+  if (!/^\d+$/.test(raw) || !Number.isSafeInteger(n) || n < 1 || n > 100_000) {
+    throw new ConfigError(`${name} must be a whole number from 1 to 100000 (got ${JSON.stringify(raw)})`);
+  }
+  return n;
 }
 
 function readFlag(env: Env, name: string): boolean {
@@ -99,6 +123,10 @@ export function loadConfig(env: Env): Config {
     indexable: readFlag(env, 'CV_INDEXABLE'),
     revision: rev ? rev : null,
     dev: env.NODE_ENV === 'development',
+    readLimit: {
+      burst: readCount(env, 'CV_READ_LIMIT_BURST', DEFAULT_READ_LIMIT.burst),
+      perMinute: readCount(env, 'CV_READ_LIMIT_PER_MINUTE', DEFAULT_READ_LIMIT.perMinute),
+    },
   };
 }
 

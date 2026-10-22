@@ -169,3 +169,15 @@ export function databasePoolMax(env: Env): number {
   if (!Number.isInteger(n) || n < 1 || n > 10) throw new Error(`DATABASE_POOL_MAX must be an integer 1-10 (got ${JSON.stringify(raw)})`);
   return n;
 }
+
+/**
+ * W6-A (owner directive 2026-10-22, W4-S finding): a sign-in session expires after 7 days WITHOUT USE (Auth.js's default
+ * is 30). JWT strategy: Auth.js re-signs the session token and re-sets the cookie (new `exp`, new `Expires`) on every
+ * session read (`@auth/core` lib/actions/session.js), which cv does on every app page and same-origin API call, so the
+ * 7 days are an idle window, and the JWT `exp` follows the same value (`jwt.maxAge` defaults to `session.maxAge`).
+ * `updateAge` is deliberately NOT set: it throttles database-session writes only and Auth.js ignores it for JWT
+ * sessions. A session never outlives the person's Janua refresh token either: a failed refresh signs them out
+ * (server/session-token.ts).
+ */
+export const SESSION_MAX_AGE_SECONDS = 7 * 24 * 60 * 60;
+export const SESSION_OPTIONS = { strategy: 'jwt', maxAge: SESSION_MAX_AGE_SECONDS } as const;

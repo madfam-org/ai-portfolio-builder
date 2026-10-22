@@ -18,8 +18,9 @@ export default defineConfig({
   use: {
     trace: 'retain-on-failure',
     launchOptions: {
-      // *.localhost → the server's loopback address, whichever family it bound.
-      args: ['--host-resolver-rules=MAP *.localhost localhost'],
+      // *.localhost → the server's loopback address, whichever family it bound. W6-A: the pages host runs under its
+      // production name, cv-p.madfam.io, mapped to loopback the same way (plain http here; nothing leaves the machine).
+      args: ['--host-resolver-rules=MAP *.localhost localhost, MAP cv-p.madfam.io localhost'],
     },
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],

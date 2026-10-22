@@ -14,7 +14,7 @@
  */
 import NextAuth, { type NextAuthConfig } from 'next-auth';
 import type { OIDCConfig } from 'next-auth/providers';
-import { JANUA_PROVIDER_ID, authCookies, authSecret, januaClientConfig, secureAuthCookies, verifierConfig, type JanuaClientConfig } from '@/lib/auth-env';
+import { JANUA_PROVIDER_ID, SESSION_OPTIONS, authCookies, authSecret, januaClientConfig, secureAuthCookies, verifierConfig, type JanuaClientConfig } from '@/lib/auth-env';
 import { resolvePublicOrigin } from '@/lib/public-origin';
 import { verifyAccessToken } from '@/server/janua';
 import { refreshJanuaTokens } from '@/server/janua-oidc';
@@ -61,7 +61,8 @@ export function buildAuthConfig(env: Record<string, string | undefined> = proces
     // `__Host-` session and sign-in flow cookies on https (lib/auth-env.ts authCookies): no sibling host can plant them.
     cookies: authCookies(env),
     providers: client ? [januaProvider(client)] : [],
-    session: { strategy: 'jwt' },
+    // 7 days idle (lib/auth-env.ts SESSION_OPTIONS; W6-A).
+    session: { ...SESSION_OPTIONS },
     pages: { signIn: '/', error: '/' },
     callbacks: {
       async signIn({ account }) {

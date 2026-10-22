@@ -24,6 +24,13 @@ Sign-in and the database are built but dormant until provisioned. The highest-se
   `cv-api` audience or the Janua issuer; a session cookie readable outside `cv-app.madfam.io`.
 - **Unintended publication:** a draft, private or suspended artifact readable through a public read, or a
   share link reachable by slug (or the reverse).
+- **(W6-A) The pages host `cv-p.madfam.io`** (people's published pages, once activated): script execution under its
+  stricter CSP, a cookie read or set there, a link page that leaks its token (Referer, caches, the report link), or a
+  page indexed against its owner's choice.
+- **(W6-A) Rate-limit bypass** on the unauthenticated reads (the pages host, cv-api `/api/v1/public/*`): a way to make
+  one client look like many through anything other than real distinct addresses (the limiter keys on Cloudflare's
+  `CF-Connecting-IP` only, IPv6 per /64), or a refused request that still reaches the database.
+- **(W6-A) Session lifetime:** a session that stays valid after 7 days without use, or a cookie whose expiry is longer.
 
 ## Not in scope
 
