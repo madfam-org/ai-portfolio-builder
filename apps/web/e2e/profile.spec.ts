@@ -6,7 +6,9 @@
  */
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { apiAs, cspViolations, signIn } from './support/fixtures.ts';
-import { OWNER_A, OWNER_B, url } from './support/env.ts';
+import { suiteOwners, url } from './support/env.ts';
+
+const { OWNER_A, OWNER_B } = suiteOwners('profile');
 
 const FRESH = { sub: 'janua|e2e-profile-fresh', name: 'Fernanda Nueva', email: 'fer@example.test' };
 const XSS = '<img src=x onerror="window.__pwned=1">';
