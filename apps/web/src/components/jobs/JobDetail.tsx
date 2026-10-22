@@ -19,6 +19,8 @@ import { MatchPanel } from './MatchPanel';
 import { StatusMover } from './StatusMover';
 import { NOTES_MAX, issuesToFields, jobBody, linkHost, type JobFormValues } from './pipeline';
 import { useJobBundle } from './useJobBundle';
+import { JobFacts } from './intake/JobFacts';
+import { INGEST_COPY } from '@/lib/copy/ingest';
 import s from './jobs.module.css';
 
 /** `/empleos/:id`: one job (status, reference link, posting, notes, edit, delete), its keyword match and its documents. */
@@ -115,6 +117,7 @@ export function JobDetail({ locale, jobId }: { locale: Locale; jobId: string }) 
         description={[job.company, job.location].filter(Boolean).join(' · ') || undefined}
         actions={<ButtonLink href={appPath.jobTailor(locale, job.id)}>{t.docs.tailorCta}</ButtonLink>}
       />
+      <JobFacts locale={locale} job={job} />
 
       <section className={s.section} aria-labelledby="job-status-heading">
         <h2 id="job-status-heading">{t.detail.statusHeading}</h2>
@@ -124,7 +127,7 @@ export function JobDetail({ locale, jobId }: { locale: Locale; jobId: string }) 
             <a href={job.sourceUrl!} rel="ugc nofollow noopener noreferrer" data-testid="job-source-link">
               {fmt(t.detail.sourceLink, { host })}
             </a>{' '}
-            <span className="muted">{t.detail.sourceNote}</span>
+            <span className="muted">{job.sourceKind === 'url' || job.sourceKind === 'ats' ? INGEST_COPY[locale].readOnce : t.detail.sourceNote}</span>
           </p>
         ) : (
           <p className="small muted">{t.detail.noSource}</p>

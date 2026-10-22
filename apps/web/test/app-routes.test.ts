@@ -10,7 +10,7 @@ const c = cfg();
 
 test('every declared route builds and matches back, in both locales', () => {
   const names = Object.keys(APP_ROUTE_SEGMENTS) as AppRouteName[];
-  assert.equal(names.length, 10);
+  assert.equal(names.length, 12); // W5-J added jobNew and jobCapture
   for (const name of names) {
     for (const locale of ['es', 'en'] as const) {
       const needsId = APP_ROUTE_SEGMENTS[name].includes(':id');
@@ -36,6 +36,11 @@ test('the Spanish paths are the public contract', () => {
   assert.deepEqual(APP_NAV, ['home', 'profile', 'jobs', 'artifacts', 'settings']);
   assert.equal(navSection('jobTailor'), 'jobs');
   assert.equal(navSection('artifactPreview'), 'artifacts');
+  // W5-J: fixed words under /empleos, never read as a job id.
+  assert.equal(appPath.jobNew('es'), '/empleos/nuevo');
+  assert.equal(appPath.jobCapture('en'), '/en/empleos/capturar');
+  assert.equal(matchAppPath('/empleos/nuevo')?.name, 'jobNew');
+  assert.equal(navSection('jobCapture'), 'jobs');
 });
 
 test('the app host rewrites every route to its internal page; ids must be UUIDs', () => {

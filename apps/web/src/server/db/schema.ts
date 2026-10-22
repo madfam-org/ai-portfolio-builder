@@ -14,7 +14,8 @@
  *   slug exists, and neither unless the artifact is published (CHECK constraints below).
  */
 import { sql } from 'drizzle-orm';
-import { boolean, check, foreignKey, index, integer, jsonb, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core';
+import { boolean, check, date, foreignKey, index, integer, jsonb, numeric, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core';
+import { EMPLOYMENT_TYPES, SALARY_PERIODS, SOURCE_KINDS, WORK_MODES } from '../ingest/vocab.ts';
 
 export const PROFILE_ITEM_KINDS = [
   'experience',
@@ -100,6 +101,23 @@ export const jobs = pgTable(
     parsed: jsonb('parsed'),
     status: text('status').notNull().default('saved'),
     notes: text('notes').notNull().default(''),
+    // W5-J job intake (migration 0002, additive and nullable: rows from before keep working). Typed so W5-H (HCM
+    // benchmarking) reads location, state and salary without parsing text; docs/PRODUCT.md "Job intake".
+    /** How the job arrived (ingest/vocab.ts SOURCE_KINDS); null for rows created before W5-J. */
+    sourceKind: text('source_kind'),
+    /** ISO 3166-1 alpha-2 (`MX`), only when the posting states it. */
+    countryCode: text('country_code'),
+    /** ISO 3166-2 (`MX-JAL`), only when unambiguous (ingest/mx.ts). */
+    stateCode: text('state_code'),
+    employmentType: text('employment_type'),
+    workMode: text('work_mode'),
+    /** A STATED salary only (never an estimate): amounts in `salary_currency` (ISO 4217) per `salary_period`. */
+    salaryMin: numeric('salary_min', { precision: 14, scale: 2, mode: 'number' }),
+    salaryMax: numeric('salary_max', { precision: 14, scale: 2, mode: 'number' }),
+    salaryCurrency: text('salary_currency'),
+    salaryPeriod: text('salary_period'),
+    datePosted: date('date_posted', { mode: 'string' }),
+    validThrough: date('valid_through', { mode: 'string' }),
     ...timestamps,
   },
   (t) => [
@@ -107,6 +125,15 @@ export const jobs = pgTable(
     index('jobs_owner_sub_idx').on(t.ownerSub),
     check('jobs_status_check', sql`${t.status} in (${inList(JOB_STATUSES)})`),
     check('jobs_source_text_size_check', sql`char_length(${t.sourceText}) between 1 and ${sql.raw(String(SOURCE_TEXT_MAX))}`),
+    check('jobs_source_kind_check', sql`${t.sourceKind} is null or ${t.sourceKind} in (${inList(SOURCE_KINDS)})`),
+    check('jobs_country_code_check', sql`${t.countryCode} is null or ${t.countryCode} ~ '^[A-Z]{2}$'`),
+    check('jobs_state_code_check', sql`${t.stateCode} is null or ${t.stateCode} ~ '^[A-Z]{2}-[A-Z0-9]{1,3}$'`),
+    check('jobs_employment_type_check', sql`${t.employmentType} is null or ${t.employmentType} in (${inList(EMPLOYMENT_TYPES)})`),
+    check('jobs_work_mode_check', sql`${t.workMode} is null or ${t.workMode} in (${inList(WORK_MODES)})`),
+    check('jobs_salary_currency_check', sql`${t.salaryCurrency} is null or ${t.salaryCurrency} ~ '^[A-Z]{3}$'`),
+    check('jobs_salary_period_check', sql`${t.salaryPeriod} is null or ${t.salaryPeriod} in (${inList(SALARY_PERIODS)})`),
+    check('jobs_salary_amounts_check', sql`(${t.salaryMin} is null or ${t.salaryMin} > 0) and (${t.salaryMax} is null or ${t.salaryMax} > 0) and (${t.salaryMin} is null or ${t.salaryMax} is null or ${t.salaryMin} <= ${t.salaryMax})`),
+    check('jobs_salary_unit_needs_amount_check', sql`(${t.salaryCurrency} is null and ${t.salaryPeriod} is null) or ${t.salaryMin} is not null or ${t.salaryMax} is not null`),
   ],
 );
 

@@ -19,6 +19,9 @@ import type {
   ArtifactContent,
 } from '../../server/api/validation.ts';
 import type { ArtifactKind, ArtifactStatus, ItemKind, JobStatus } from '../copy/app.ts';
+import type { EmploymentType, Provenance, SalaryPeriod, SourceKind, WorkMode } from '../../server/ingest/vocab.ts';
+import type { DraftField, DraftFields, IntakeDraft, IntakeFailure, IntakeNote } from '../../server/ingest/types.ts';
+import type { IntakeBody } from '../../server/ingest/intake.ts';
 
 export type { ArtifactContent, ArtifactKind, ArtifactStatus, ItemKind, JobStatus };
 export type ContentLocale = 'es-MX' | 'en';
@@ -64,6 +67,18 @@ export interface JobDto {
   parsed: unknown;
   status: JobStatus;
   notes: string;
+  /** W5-J typed posting fields (null when not stated, and on jobs created before W5-J). */
+  sourceKind: SourceKind | null;
+  countryCode: string | null;
+  stateCode: string | null;
+  employmentType: EmploymentType | null;
+  workMode: WorkMode | null;
+  salaryMin: number | null;
+  salaryMax: number | null;
+  salaryCurrency: string | null;
+  salaryPeriod: SalaryPeriod | null;
+  datePosted: string | null;
+  validThrough: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -109,3 +124,7 @@ export type ArtifactSetInput = z.input<typeof artifactSetBody>;
 export type ArtifactPatchInput = z.input<typeof artifactPatchBody>;
 export type PublishInput = z.input<typeof publishBody>;
 export type ItemBatchInput = z.input<typeof itemBatchBody>;
+
+// W5-J job intake (POST /api/v1/jobs/intake): the preview and the request body, types only.
+export type { DraftField, DraftFields, EmploymentType, IntakeDraft, IntakeFailure, IntakeNote, Provenance, SalaryPeriod, SourceKind, WorkMode };
+export type IntakeInput = IntakeBody;

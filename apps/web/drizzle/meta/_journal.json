@@ -15,6 +15,13 @@
       "when": 1792661182798,
       "tag": "0001_app_role_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792701074536,
+      "tag": "0002_job_intake_fields",
+      "breakpoints": true
     }
   ]
 }

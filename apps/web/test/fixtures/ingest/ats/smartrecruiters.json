@@ -1,0 +1,16 @@
+{
+  "id": "744000012345678",
+  "name": "Contador General",
+  "uuid": "00000000-0000-4000-8000-000000000001",
+  "company": { "identifier": "EjemploCorp", "name": "Ejemplo Corporativo" },
+  "releasedDate": "2026-10-02T15:00:00.000Z",
+  "location": { "city": "Puebla", "region": "Puebla", "country": "mx", "remote": false, "hybrid": false },
+  "typeOfEmployment": { "id": "permanent", "label": "Full-time" },
+  "jobAd": { "sections": {
+    "companyDescription": { "title": "Acerca de nosotros", "text": "<p>Empresa ficticia de ejemplo.</p>" },
+    "jobDescription": { "title": "Descripción", "text": "<p>Cierres contables mensuales y declaraciones.</p>" },
+    "qualifications": { "title": "Requisitos", "text": "<p>Contador público titulado.</p>" },
+    "additionalInformation": { "title": "Adicional", "text": "" }
+  } },
+  "postingUrl": "https://jobs.smartrecruiters.com/EjemploCorp/744000012345678-contador-general"
+}

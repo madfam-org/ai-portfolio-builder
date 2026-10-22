@@ -1,0 +1,10 @@
+{
+  "data": [
+    { "id": "8f9e7d6c-aaaa-4bbb-8ccc-000000000123", "title": "Enfermera de Turno Nocturno", "location": { "id": 7, "name": "Cuernavaca, Morelos" },
+      "employment_type": "full_time", "employment_type_text": "Full Time", "workplace_type": "onsite", "workplace_type_text": "On-site",
+      "compensation_visible": true, "compensation_minimum": 16000, "compensation_maximum": 19000, "compensation_currency": "MXN", "compensation_frequency": "month",
+      "description": "<p>Atención a pacientes hospitalizados.</p>", "key_responsibilities": "<ul><li>Registro clínico</li></ul>",
+      "skills_knowledge_expertise": "<p>Cédula profesional.</p>", "benefits": "<p>Prestaciones de ley.</p>",
+      "url": "https://ejemplo.pinpointhq.com/postings/8f9e7d6c-aaaa-4bbb-8ccc-000000000123" }
+  ]
+}

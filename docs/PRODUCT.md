@@ -116,6 +116,58 @@ covers. It calls no network and no model. Assisted writing through Selva arrives
 - **Export and deletion** on `/ajustes`: «Descargar mis datos» (full JSON), «Exportar como JSON Resume», «Eliminar mis
   datos» behind a typed «ELIMINAR»; the Janua account is managed in Janua (linked, never deleted from here).
 
+### Job intake (W5-J): link, ATS, paste, file, browser capture
+
+`/empleos/nuevo` brings a posting in four ways, all ending in ONE preview where every field shows where it came from
+(«de los datos estructurados (JSON-LD)», «del texto», «de la API pública del sistema de reclutamiento» …) and can be
+edited. **Nothing is stored before «Guardar vacante»** (`POST /api/v1/jobs`, the job ceiling applies); no AI is used.
+
+- **Link** (`POST /api/v1/jobs/intake {source:'url'}`), fetched by cv's server once, only on that explicit POST by the
+  signed-in owner, through an SSRF guard (`apps/web/src/server/ingest/fetcher.ts`: https and port 443 only, no userinfo,
+  DNS resolved and EVERY answer checked public, the socket pinned to the vetted address, every redirect re-checked,
+  at most 3; no cookie or credential sent; 2 MB after decompression; 8 s for the whole chain; HTML or JSON only;
+  User-Agent `MADFAM-CV-Intake/1.0 (+https://cv.madfam.io/; …)`; logs carry the host and outcome, never the URL).
+  Order: a board that forbids server reads → `capture_only` (LinkedIn, Indeed, Google, Glassdoor, Talent.com,
+  Computrabajo; `ingest/boards.ts`); a known ATS → its public, key-free API (Greenhouse, Lever, SmartRecruiters, Ashby,
+  Workable, Recruitee, Pinpoint; `ingest/ats.ts` cites the provider docs); otherwise robots.txt for the token
+  `madfam-cv` (RFC 9309: 4xx allows, 5xx or unreachable disallows), then the page, read as schema.org `JobPosting`
+  JSON-LD → microdata → Open Graph → labeled lines of the readable text. A 401/403/429 from the site is reported
+  («bloqueó la lectura automática») and never retried or evaded. Per owner: 20 link reads per 10 minutes and 100 per
+  day, 120 intake calls per 10 minutes, in memory per pod (no log of the sites a person reads is kept).
+- **Paste** (`{source:'text', kind:'paste'}`): labeled lines («Empresa:», «Ubicación:», «Sueldo:», «Job type:» …), a
+  line that is only a work mode («Remoto», «Home office», «Híbrido», «Presencial»), the first line as a title
+  suggestion; a pasted page's HTML or JSON-LD is read as a page.
+- **File**, read in the browser: PDF text layer (pdf.js, `pdfjs-dist`, Apache-2.0, loaded only when a PDF is picked,
+  main-thread, no eval, no network), DOCX (`word/document.xml` only, with the W4-I ZIP reader), TXT, HTML (cv's own
+  tolerant parser, nothing executed). Only the resulting text is sent. Scanned PDFs and images: «Aún no leemos imágenes» (OCR belongs to tlacuilo,
+  not available to cv yet; typed seam in `ingest/seams.ts`).
+- **«Capturar desde tu navegador»**: a bookmark (generated and served by cv-app itself) that, on the job page the
+  person has open, reads that page's JobPosting JSON-LD, og:/description meta, JobPosting microdata and visible text,
+  and opens `/empleos/capturar` with the data in the URL FRAGMENT (never sent to a server; cleared from the address bar
+  at once; kept in the tab's sessionStorage if sign-in comes first). cv-app's CSP, COOP and same-origin checks are
+  unchanged: the capture page posts to its own same-origin intake. Any page could open that URL with any fragment;
+  that is no more than a paste, and nothing is stored until the person saves.
+
+**Typed job fields** (migration `0002_job_intake_fields`, additive and nullable; rows from before keep working). W5-H
+(HCM benchmarking) reads them; the vocabularies live in `apps/web/src/server/ingest/vocab.ts` and are append-only:
+
+| Column (API field) | Meaning |
+|---|---|
+| `source_kind` (`sourceKind`) | how the job arrived: `paste`, `url`, `ats`, `capture`, `pdf`, `docx`, `file`; null before W5-J; set at creation only |
+| `country_code` (`countryCode`) | ISO 3166-1 alpha-2 (`MX`), only when stated |
+| `state_code` (`stateCode`) | ISO 3166-2 (`MX-JAL`), only when exactly one Mexican entity is named unambiguously (`ingest/mx.ts`) |
+| `employment_type` (`employmentType`) | `full_time`, `part_time`, `contract`, `temporary`, `internship`, `volunteer`, `per_diem`, `other` |
+| `work_mode` (`workMode`) | `onsite`, `hybrid`, `remote` |
+| `salary_min`, `salary_max` (`salaryMin`, `salaryMax`) | numeric(14,2), a STATED salary only (never `estimatedSalary`); min ≤ max |
+| `salary_currency` (`salaryCurrency`) | ISO 4217 (`MXN`), only when written («$» alone is no currency) |
+| `salary_period` (`salaryPeriod`) | `hour`, `day`, `week`, `month`, `year`; null when not written (e.g. «quincenal») |
+| `date_posted`, `valid_through` (`datePosted`, `validThrough`) | dates (`YYYY-MM-DD`) |
+
+A currency or period without an amount is refused (API 400 and a database CHECK); `title`, `company` and `location`
+keep their W2 meaning. Rejected for now, with reasons in the W5-J report: crawling or searching boards, any login to a
+board, e-mail forward-in (Angelia has no inbound mail), a PWA share target (shares a link only, which the blocked boards
+do not serve), OCR in cv, AI parsing (Selva's restricted tier answers 503; typed seam, off).
+
 ## API (cv-api.madfam.io, bearer Janua token of audience `cv-api`)
 
 | Method and path | What |
@@ -124,7 +176,7 @@ covers. It calls no network and no model. Assisted writing through Selva arrives
 | `GET`, `PUT /api/v1/profile` | the profile and its items; full replace of the editable fields |
 | `GET`, `POST /api/v1/profile/items`; `GET`, `PATCH`, `DELETE /api/v1/profile/items/:id` | profile items |
 | `POST /api/v1/profile/items/reorder` `{itemIds}` | «Subir» / «Bajar»: positions 0..n-1 in one transaction; any foreign id refuses all (422) |
-| `GET`, `POST /api/v1/jobs`; `GET`, `PATCH`, `DELETE /api/v1/jobs/:id` | jobs (deleting a job that still has artifacts is a 409) |
+| `GET`, `POST /api/v1/jobs`; `GET`, `PATCH`, `DELETE /api/v1/jobs/:id` | jobs (deleting a job that still has artifacts is a 409); W5-J typed posting fields optional (see "Job intake") |
 | `GET /api/v1/jobs/:id/match` | the deterministic match |
 | `GET /api/v1/artifacts?job_id=&kind=`, `POST /api/v1/artifacts`; `GET`, `PATCH`, `DELETE /api/v1/artifacts/:id` | artifacts |
 | `POST /api/v1/artifacts/batch` `{jobId?, locale?, template?, artifacts: [{kind, title, content, template?}] (1-4)}` (templates: the registry allowlist per kind) | several artifacts for one job in ONE transaction: all or none |
@@ -133,6 +185,7 @@ covers. It calls no network and no model. Assisted writing through Selva arrives
 | `POST /api/v1/profile/items/batch` `{items: [{kind, content, tags?}] (≤300), profile?: {displayName?, headline?, summary?, contact?}}` | W4-I import: every item validated per kind, appended after the existing ones, chosen header fields applied (contact links added by URL), ONE transaction: all or none |
 | `GET /api/v1/me/export[?format=full\|json-resume]` | W4-I «Descargar mis datos»: everything the owner holds (`schema: "madfam-cv-export"`, `version: 1`; share state included; never the owner key) or the profile as JSON Resume v1.0.0; `Content-Disposition: attachment`, `no-store` |
 | `DELETE /api/v1/me` `{confirm: "delete-all-my-data"}` | W4-I «Eliminar mis datos»: every row of the owner in ONE transaction (published pages stop at once); the Janua account is not touched |
+| `POST /api/v1/jobs/intake` `{source:"url", url}` · `{source:"text", kind?, text}` · `{source:"capture", kind?, capture}` | W5-J: a PREVIEW of a job (`{draft}`: fields with their provenance, the posting text, notes); nothing stored. 422 `intake_failed` with a `reason` (`capture_only` + `board`, `robots_disallowed`, `private_address`, `blocked_by_site` + `status`, `unreadable` …); 429 `rate_limited` (`retryAfter`) or `quota_exceeded` (checked before any fetch) |
 
 Abuse ceilings (`apps/web/src/server/api/limits.ts`; not product tiers, the owner may tune them): a request body is at
 most 256 KiB (413 `body_too_large`; the server never buffers more than 512 KiB of any body, `next.config.ts`), and one

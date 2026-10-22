@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Button } from '@/components/ui/Button';
+import { Button, ButtonLink } from '@/components/ui/Button';
 import { CheckboxField } from '@/components/ui/Field';
 import { EmptyState, ErrorState } from '@/components/ui/States';
 import { useToast } from '@/components/ui/Toast';
@@ -9,6 +9,7 @@ import { appPath } from '@/lib/app-routes';
 import { api, apiErrorMessage, type ApiError } from '@/lib/client/api';
 import type { JobDto, JobStatus } from '@/lib/client/types';
 import { APP_COPY } from '@/lib/copy/app';
+import { INGEST_COPY } from '@/lib/copy/ingest';
 import { fmt, JOBS_COPY } from '@/lib/copy/jobs';
 import type { Locale } from '@/lib/routing';
 import { JobForm, type JobFormOutcome } from './JobForm';
@@ -97,6 +98,11 @@ export function JobsBoard({ locale }: { locale: Locale }) {
     <>
       <section className={s.section} aria-labelledby="job-intake-heading">
         <h2 id="job-intake-heading">{t.intake.heading}</h2>
+        <p>
+          <ButtonLink variant="secondary" href={appPath.jobNew(locale)}>
+            {INGEST_COPY[locale].addMore}
+          </ButtonLink>
+        </p>
         <JobForm locale={locale} idPrefix="job-new" submitLabel={t.intake.submit} onSubmit={create} />
       </section>
 

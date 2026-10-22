@@ -140,6 +140,11 @@ Ingress: the app port from the Cloudflare tunnel only. Egress: DNS; TCP 443 to p
 `data` on 6432 (the rule Enclii's generator renders for `egress: [pgbouncer]`). Keep `enclii.yaml` `network` and
 `network-policy.yaml` in step: `enclii onboard ensure` renders policies from `enclii.yaml`.
 
+W5-J uses the same 443 rule, unchanged, for the job intake: one fetch of a job page (or an ATS public API, or that
+host's robots.txt) on an explicit person request. The application refuses private, loopback, link-local, CGNAT,
+multicast and ULA addresses itself before connecting (`apps/web/src/server/ingest/net.ts`), so the policy is a second
+fence, not the only one. No new egress is needed or declared.
+
 The metrics port (9090) is admitted from the `monitoring` namespace only (`allow-monitoring-ingress`, repo-managed:
 Enclii's generator has no monitoring ingress type, and `ensure` never prunes a policy it did not render). It is on no
 Service and no tunnel route, so no public host can reach it.

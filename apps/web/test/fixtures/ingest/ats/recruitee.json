@@ -1,0 +1,9 @@
+{
+  "offers": [
+    { "id": 990001, "slug": "disenadora-ux", "title": "Diseñadora UX", "company_name": "Ejemplo Estudio",
+      "location": "Oaxaca de Juárez, Oaxaca, México", "country_code": "MX", "remote": true, "hybrid": false, "on_site": false,
+      "employment_type_code": "parttime", "salary": { "min": "20000", "max": "25000", "period": "month", "currency": "MXN" },
+      "published_at": "2026-10-11 08:00:00 UTC", "description": "<p>Investigación con personas usuarias.</p>", "requirements": "<p>Portafolio.</p>",
+      "careers_url": "https://ejemplo.recruitee.com/o/disenadora-ux" }
+  ]
+}

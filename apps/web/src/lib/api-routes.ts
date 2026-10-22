@@ -55,6 +55,8 @@ export function matchRoute(segments: readonly string[]): Route | null {
   }
   if (a === 'jobs') {
     if (n === 1) return authed('jobs', ['GET', 'POST']);
+    // W5-J: a preview of a job from a link, a text or a browser capture (nothing stored).
+    if (n === 2 && b === 'intake') return authed('job-intake', ['POST']);
     if (n === 2 && isId(b)) return authed('job', ['GET', 'PATCH', 'DELETE'], [b]);
     if (n === 3 && isId(b) && c === 'match') return authed('job-match', ['GET'], [b]);
     return null;

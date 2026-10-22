@@ -15,6 +15,14 @@ import { referencedItemIds, type ArtifactContent } from '../api/validation.ts';
 export type Profile = typeof profiles.$inferSelect;
 export type ProfileItem = typeof profileItems.$inferSelect;
 export type Job = typeof jobs.$inferSelect;
+/** The job columns a person writes (create and patch); W5-J added the typed posting fields, optional here. */
+export type JobWritable = Pick<Job, 'title' | 'company' | 'location' | 'sourceUrl' | 'sourceText' | 'status' | 'notes'> &
+  Partial<
+    Pick<
+      Job,
+      'sourceKind' | 'countryCode' | 'stateCode' | 'employmentType' | 'workMode' | 'salaryMin' | 'salaryMax' | 'salaryCurrency' | 'salaryPeriod' | 'datePosted' | 'validThrough'
+    >
+  >;
 export type Artifact = typeof artifacts.$inferSelect;
 
 export class ForeignItemsError extends Error {
@@ -171,7 +179,7 @@ export function createRepository(db: Db) {
       return db.select().from(jobs).where(eq(jobs.ownerSub, ownerSub)).orderBy(desc(jobs.createdAt));
     },
 
-    async createJob(ownerSub: string, input: Pick<Job, 'title' | 'company' | 'location' | 'sourceUrl' | 'sourceText' | 'status' | 'notes'>): Promise<Job> {
+    async createJob(ownerSub: string, input: JobWritable): Promise<Job> {
       const [row] = await db.insert(jobs).values({ ...input, ownerSub }).returning();
       if (!row) throw new Error('job insert returned nothing');
       return row;
@@ -182,7 +190,7 @@ export function createRepository(db: Db) {
       return row ?? null;
     },
 
-    async updateJob(ownerSub: string, id: string, patch: Partial<Pick<Job, 'title' | 'company' | 'location' | 'sourceUrl' | 'sourceText' | 'status' | 'notes'>>): Promise<Job | null> {
+    async updateJob(ownerSub: string, id: string, patch: Partial<JobWritable>): Promise<Job | null> {
       const [row] = await db
         .update(jobs)
         .set({ ...patch, updatedAt: now })

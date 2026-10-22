@@ -97,6 +97,7 @@ Kubernetes Service publishes 80; every `enclii.yaml` domain pins `port: 80`. Fla
 | `apps/web/src/components/app/` | `AppFrame` (dormant / signed-out / signed-in states, nav, account switching), `UnderConstruction`, page param helpers |
 | `apps/web/src/components/render/`, `src/app/h/pages/` | the artifact renderers, one per kind (`model.ts` resolves the content against the owner's profile; `ArtifactView` is the (kind, template) registry), shared by the app's preview/print and the pages-host routes; `src/server/pages-gate.ts` lets the proxy 404 or set per-page headers before rendering |
 | `apps/web/src/components/import/`, `src/app/h/app/[locale]/ajustes/` | W4-I data portability: the in-browser LinkedIn-export ZIP / JSON Resume import (no dependency: `DecompressionStream`), and download / delete of everything the person holds (`server/db/data-rights.ts`, `server/api/portability.ts`) |
+| `apps/web/src/server/ingest/`, `src/components/jobs/intake/`, `src/app/h/app/[locale]/empleos/{nuevo,capturar}/` | W5-J job intake: the SSRF-guarded one-shot fetcher (`fetcher.ts`, `net.ts`, `robots.ts`), board policy, ATS public APIs, JSON-LD / microdata / text extraction, `POST /api/v1/jobs/intake` (preview only); in the browser: PDF text (pdf.js, lazy), DOCX, HTML files and the «Capturar vacante» bookmark (fragment hand-off to `/empleos/capturar`). Typed job columns: migration `0002`, vocabularies in `server/ingest/vocab.ts` ([`docs/PRODUCT.md`](docs/PRODUCT.md) "Job intake") |
 | `apps/web/src/lib/templates.ts` | the template registry (kind → templates, es/en labels, trade-off, ATS note): the API allowlist, the renderer table's keys and the pickers' source; ids append-only |
 | `apps/web/e2e/`, `playwright.config.ts` | Playwright over the built standalone server: `e2e/support/serve.ts` (throwaway DB, local JWKS, test-only token/cookie mint), one spec per surface |
 | `apps/web/src/app/h/...` | internal routes (never public: no Host allowlist names them) |
@@ -139,8 +140,8 @@ Public repository: every job runs on **GitHub-hosted** runners (R116). Top-level
 `permissions: contents: read`; every action pinned to a full commit SHA; no `secrets: inherit`; no
 `|| true` masks. `ci.yml`: `agent-docs` (required files and markers), `web` (frozen install, lint,
 typecheck, unit tests, build, standalone smoke), `pg` (the real-Postgres suite on a `postgres:16-alpine`
-service container, as the `cv_app` role; fails on fewer than 12 passing tests), `e2e` (Playwright on GitHub-hosted runners:
-`npx playwright install --with-deps chromium`, the built server, its own Postgres service; fails on fewer than 9
+service container, as the `cv_app` role; fails on fewer than 29 passing tests), `e2e` (Playwright on GitHub-hosted runners:
+`npx playwright install --with-deps chromium`, the built server, its own Postgres service; fails on fewer than 61
 passing specs or any failed, flaky or skipped), `guards` (file size, forbidden-domain grep),
 `secrets` (gitleaks over every commit after the legacy base `7959f356`, plus the checked-out tree;
 the legacy history was scanned in full by the 2026-10-22 audit). `image.yml` builds the Dockerfile on
@@ -169,7 +170,7 @@ MADFAM platform repo; **the owner confirms it at merge of the baseline pull requ
 
 Every app page is declared once in `apps/web/src/lib/app-routes.ts` (English under `/en/...`; `:id` is a UUID):
 `/` · `/perfil` · `/empleos` · `/empleos/:id` · `/empleos/:id/adaptar` · `/documentos` · `/documentos/:id` ·
-`/documentos/:id/vista-previa` · `/documentos/:id/imprimir` · `/ajustes`. Each renders inside `AppFrame` and shows an
+`/documentos/:id/vista-previa` · `/documentos/:id/imprimir` · `/ajustes`, plus `/empleos/nuevo` and `/empleos/capturar` (W5-J). Each renders inside `AppFrame` and shows an
 honest «En construcción» until its PR lands. The pages host serves `/<slug>` and `/l/<token>`.
 
 After W3-1 (foundation) merges, three PRs run in parallel on disjoint directories:

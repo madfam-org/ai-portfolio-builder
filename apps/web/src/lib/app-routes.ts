@@ -8,6 +8,8 @@
  *   /empleos               jobs (pipeline)         /en/empleos
  *   /empleos/:id           one job                 /en/empleos/:id
  *   /empleos/:id/adaptar   tailoring workspace     /en/empleos/:id/adaptar
+ *   /empleos/nuevo         job intake (W5-J)       /en/empleos/nuevo
+ *   /empleos/capturar      browser capture (W5-J)  /en/empleos/capturar
  *   /documentos            artifacts               /en/documentos
  *   /documentos/:id        one artifact (editor)   /en/documentos/:id
  *   /documentos/:id/vista-previa   preview         /en/documentos/:id/vista-previa
@@ -25,6 +27,8 @@ export type AppRouteName =
   | 'jobs'
   | 'job'
   | 'jobTailor'
+  | 'jobNew'
+  | 'jobCapture'
   | 'artifacts'
   | 'artifact'
   | 'artifactPreview'
@@ -38,6 +42,9 @@ export const APP_ROUTE_SEGMENTS: Readonly<Record<AppRouteName, readonly string[]
   jobs: ['empleos'],
   job: ['empleos', ':id'],
   jobTailor: ['empleos', ':id', 'adaptar'],
+  // W5-J: fixed words, never UUIDs, so they cannot collide with `/empleos/:id`.
+  jobNew: ['empleos', 'nuevo'],
+  jobCapture: ['empleos', 'capturar'],
   artifacts: ['documentos'],
   artifact: ['documentos', ':id'],
   artifactPreview: ['documentos', ':id', 'vista-previa'],
@@ -67,6 +74,8 @@ export const appPath = {
   jobs: (l: Locale) => build('jobs', l),
   job: (l: Locale, id: string) => build('job', l, id),
   jobTailor: (l: Locale, id: string) => build('jobTailor', l, id),
+  jobNew: (l: Locale) => build('jobNew', l),
+  jobCapture: (l: Locale) => build('jobCapture', l),
   artifacts: (l: Locale) => build('artifacts', l),
   artifact: (l: Locale, id: string) => build('artifact', l, id),
   artifactPreview: (l: Locale, id: string) => build('artifactPreview', l, id),
@@ -120,7 +129,7 @@ export const APP_NAV: readonly AppRouteWithoutId[] = ['home', 'profile', 'jobs',
 
 /** Which nav entry a route belongs to (detail pages highlight their list). */
 export function navSection(name: AppRouteName): AppRouteWithoutId {
-  if (name === 'job' || name === 'jobTailor') return 'jobs';
+  if (name === 'job' || name === 'jobTailor' || name === 'jobNew' || name === 'jobCapture') return 'jobs';
   if (name === 'artifact' || name === 'artifactPreview' || name === 'artifactPrint') return 'artifacts';
   return name;
 }

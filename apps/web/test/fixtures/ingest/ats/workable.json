@@ -1,0 +1,12 @@
+{
+  "name": "Ejemplo Logística",
+  "description": null,
+  "jobs": [
+    { "title": "Supervisor de Almacén", "shortcode": "AB12CD34EF", "code": "", "employment_type": "Full-time", "telecommuting": false,
+      "department": "Operaciones", "url": "https://apply.workable.com/j/AB12CD34EF", "shortlink": "https://apply.workable.com/j/AB12CD34EF",
+      "application_url": "https://apply.workable.com/j/AB12CD34EF/apply", "published_on": "2026-10-03", "created_at": "2026-10-01",
+      "country": "Mexico", "city": "Tlalnepantla", "state": "Estado de México", "workplace_type": "on_site",
+      "locations": [{ "country": "Mexico", "countryCode": "MX", "city": "Tlalnepantla", "region": "Estado de México", "hidden": false }],
+      "description": "<p>Control de inventarios y montacargas.</p>" }
+  ]
+}

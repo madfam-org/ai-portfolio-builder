@@ -29,6 +29,7 @@ import { authFailureResponse, authenticate } from '../janua.ts';
 import { UUID, matchRoute } from '../../lib/api-routes.ts';
 import { MAX_BODY_BYTES, OWNER_QUOTAS, type OwnerQuotas } from './limits.ts';
 import { matchItems } from './match.ts';
+import { intakeResponse, type IntakeDeps } from '../ingest/intake.ts';
 import {
   ARTIFACT_CONTENT,
   ITEM_CONTENT,
@@ -44,6 +45,7 @@ import {
   itemBatchBody,
   deleteMeBody,
   publishBody,
+  salaryIssue,
   templateIssue,
   type ArtifactContent,
 } from './validation.ts';
@@ -55,6 +57,8 @@ export interface ApiDeps {
   getDb: () => DbHandle | null;
   /** Per-owner row ceilings (limits.ts OWNER_QUOTAS); tests lower them. */
   quotas?: Partial<OwnerQuotas>;
+  /** W5-J job intake: injected resolver, transport and limiters (tests); production uses the real ones. */
+  intake?: IntakeDeps;
 }
 
 /** Throws 429 `quota_exceeded` when creating `adding` more rows would take the owner past the table's ceiling. */
@@ -156,6 +160,12 @@ export async function handleApi(request: Request, segments: readonly string[], d
       if ((await ownerRowCount(handle!.db, auth.sub, table)) + adding > limit) throw new HttpError(429, { error: 'quota_exceeded', resource: table, limit });
     };
     if (route.name === 'items-batch' || route.name === 'me' || route.name === 'me-export') return await dataRights(handle!.db, quota, auth.sub, nameHint, route.name, request);
+    if (route.name === 'job-intake') {
+      // W5-J: the job ceiling first, so nobody fetches a page they could not save; then the preview (nothing stored).
+      const input = await readJson(request);
+      await quota('jobs', 1);
+      return await intakeResponse(auth.sub, input, deps.intake);
+    }
     return await dispatch(createRepository(handle!.db), quota, auth.sub, nameHint, route.name, route.ids, method, request);
   } catch (err) {
     if (err instanceof HttpError) return json(err.status, err.body);
@@ -218,7 +228,15 @@ async function dispatch(repo: Repository, quota: QuotaCheck, sub: string, nameHi
         return row ? json(200, { job: view(row) }) : notFound();
       }
       if (method === 'DELETE') return (await repo.deleteJob(sub, id)) ? json(204, null) : notFound();
-      const row = await repo.updateJob(sub, id, parse(jobPatchBody, await readJson(request)));
+      const patch = parse(jobPatchBody, await readJson(request));
+      // W5-J: the salary rules hold for the stored row merged with the patch (same 400 shape as zod's).
+      if (['salaryMin', 'salaryMax', 'salaryCurrency', 'salaryPeriod'].some((k) => k in patch)) {
+        const existing = await repo.getJob(sub, id);
+        if (!existing) return notFound();
+        const issue = salaryIssue({ ...existing, ...patch });
+        if (issue) throw new HttpError(400, { error: 'invalid_body', issues: [issue] });
+      }
+      const row = await repo.updateJob(sub, id, patch);
       return row ? json(200, { job: view(row) }) : notFound();
     }
     case 'job-match': {

@@ -1,0 +1,16 @@
+{
+  "id": 4012345,
+  "internal_job_id": 3012345,
+  "title": "Ingeniera de Datos",
+  "updated_at": "2026-10-10T12:00:00-05:00",
+  "first_published": "2026-10-08T09:30:00-05:00",
+  "requisition_id": "REQ-77",
+  "location": { "name": "Ciudad de México, CDMX" },
+  "absolute_url": "https://job-boards.greenhouse.io/ejemplo/jobs/4012345",
+  "company_name": "Ejemplo Analítica",
+  "content": "&lt;p&gt;Construirás &lt;strong&gt;pipelines&lt;/strong&gt; de datos en Python y dbt.&lt;/p&gt;&lt;ul&gt;&lt;li&gt;SQL avanzado&lt;/li&gt;&lt;li&gt;Airflow&lt;/li&gt;&lt;/ul&gt;",
+  "metadata": null,
+  "departments": [{ "id": 1, "name": "Datos" }],
+  "offices": [{ "id": 2, "name": "CDMX", "location": "Ciudad de México" }],
+  "pay_input_ranges": [{ "min_cents": 6000000, "max_cents": 8000000, "currency_type": "MXN", "title": "Rango", "blurb": "" }]
+}

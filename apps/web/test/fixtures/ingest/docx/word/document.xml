@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>
+<w:p><w:pPr><w:pStyle w:val="Title"/></w:pPr><w:r><w:t>Auxiliar Contable</w:t></w:r></w:p>
+<w:p><w:r><w:t xml:space="preserve">Empresa: </w:t></w:r><w:r><w:rPr><w:b/></w:rPr><w:t>Contadores Ejemplo &amp; Asociados</w:t></w:r></w:p>
+<w:p><w:r><w:t>Ubicación: Mérida, Yucatán</w:t></w:r></w:p>
+<w:p><w:r><w:t>Sueldo: $14,000 mensuales</w:t></w:r></w:p>
+<w:p><w:r><w:t>Modalidad:</w:t></w:r><w:r><w:tab/></w:r><w:r><w:t>Presencial</w:t></w:r></w:p>
+<w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr></w:pPr><w:r><w:t>Registro de pólizas en CONTPAQi.</w:t></w:r></w:p>
+<w:p><w:pPr><w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr></w:pPr><w:r><w:t>Conciliaciones bancarias.</w:t></w:r><w:proofErr w:type="spellStart"/></w:p>
+<w:p><w:r><w:t>Requisitos: carrera trunca o terminada en Contaduría, manejo de Excel intermedio.</w:t></w:r><w:r><w:br/></w:r><w:r><w:t>Horario de lunes a viernes.</w:t></w:r></w:p>
+</w:body></w:document>
