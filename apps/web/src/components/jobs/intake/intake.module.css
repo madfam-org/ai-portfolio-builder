@@ -1,0 +1,118 @@
+/* Job intake (W5-J): /empleos/nuevo and /empleos/capturar. Tokens from globals.css; no inline styles anywhere. */
+
+.methods {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+  margin: 1.25rem 0;
+}
+
+.method {
+  display: grid;
+  gap: 0.75rem;
+  align-content: start;
+  padding: 1.1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.method h2,
+.preview h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.method p,
+.preview p {
+  margin: 0;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.preview {
+  display: grid;
+  gap: 1rem;
+  margin: 1.25rem 0;
+  padding: 1.25rem;
+  background: var(--surface);
+  border: 2px solid var(--brand);
+  border-radius: var(--radius);
+}
+
+.preview h2:focus {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+
+.grid {
+  display: grid;
+  gap: 0.9rem;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+}
+
+.fieldset {
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radius) - 4px);
+  padding: 0.9rem;
+  margin: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.fieldset legend {
+  font-weight: 600;
+  padding: 0 0.35rem;
+}
+
+.from {
+  margin: -0.35rem 0 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.fromEdited {
+  font-style: italic;
+}
+
+.notes {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: var(--muted);
+}
+
+.bookmarklet {
+  display: inline-block;
+  padding: 0.55rem 0.95rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: none;
+  cursor: grab;
+  border: 2px dashed var(--ink);
+}
+
+.facts {
+  display: grid;
+  gap: 0.35rem 1.25rem;
+  grid-template-columns: max-content 1fr;
+  margin: 0;
+}
+
+.facts dt {
+  color: var(--muted);
+}
+
+.facts dd {
+  margin: 0;
+}
+
+.factRow {
+  display: contents;
+}
