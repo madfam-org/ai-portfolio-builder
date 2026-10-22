@@ -3,8 +3,9 @@ kind: Kustomization
 # The namespace is created by the platform at onboarding (with its platform labels); this base never declares a
 # Namespace object or an Ingress. The three public hosts are tunnel routes Enclii writes from enclii.yaml
 # (cv.madfam.io, cv-app.madfam.io, cv-api.madfam.io -> Service cv:80), and the tunnel peer is admitted to the
-# app port (3000) only (network-policy.yaml). Wave 1 needs no Secret, so there is no ExternalSecret and no
-# secrets template yet.
+# app port (3000) only (network-policy.yaml). W2 data reads the onboarding Secret cv-secrets (database URLs,
+# written by `enclii onboard ensure --generate-db-password --app-role cv_app`); the migrate PreSync Job applies the
+# schema. Sign-in's ExternalSecret cv-web-auth lands separately, once Vault secret/cv holds its values.
 namespace: cv
 
 resources:
@@ -12,6 +13,8 @@ resources:
 - poddisruptionbudget.yaml
 - service.yaml
 - network-policy.yaml
+- network-policy-migrate.yaml
+- migrate-job.yaml
 
 # Image digest: pinned by the Build & Deploy workflow (Enclii's reusable build-publish runs
 # `kustomize edit set image <image>=<image>@sha256:...`, commits the pin to main, and the GitOps sync rolls it).
