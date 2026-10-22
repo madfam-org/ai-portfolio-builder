@@ -1,0 +1,16 @@
+# Keeps one cv pod serving through voluntary disruptions (node drains, cluster upgrades). The selector is the
+# Service's selector (service.yaml). With 2 live replicas this allows one eviction at a time; with 1 live replica
+# it allows none until the owner scales to 2 (Enclii's Argo Application ignores Deployment replicas).
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: cv
+  labels:
+    app: cv
+    app.kubernetes.io/name: cv
+    app.kubernetes.io/part-of: madfam-platform
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: cv

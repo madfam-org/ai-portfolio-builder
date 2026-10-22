@@ -1,0 +1,18 @@
+# Named after the Enclii service (enclii.yaml `cv`) on port 80: the tunnel routes for cv.madfam.io,
+# cv-app.madfam.io and cv-api.madfam.io all point at this Service on port 80 (enclii.yaml pins each domain's
+# port to 80); the pod tells the hosts apart by the Host header.
+apiVersion: v1
+kind: Service
+metadata:
+  name: cv
+  labels:
+    app: cv
+    app.kubernetes.io/name: cv
+    app.kubernetes.io/part-of: madfam-platform
+spec:
+  selector:
+    app.kubernetes.io/name: cv
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

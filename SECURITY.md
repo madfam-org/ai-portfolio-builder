@@ -1,113 +1,28 @@
-# Security Policy
+# Security
 
-## Reporting Security Vulnerabilities
+> Boundary checkpoint (2026-10-22): policy. Report privately; never post a vulnerability in an issue.
 
-MADFAM takes the security of our software seriously. If you believe you have found a security vulnerability in Portfolio Builder, please report it to us as described below.
+Please report vulnerabilities through GitHub's **private vulnerability reporting** for this repository
+(the "Report a vulnerability" button under the Security tab; it is enabled), or by email to
+**security@madfam.io**. We acknowledge reports within three business days.
 
-## Responsible Disclosure
+## Scope
 
-**Please do not report security vulnerabilities through public GitHub issues.**
+The live surfaces are `cv.madfam.io` (landing), `cv-app.madfam.io` (pre-launch app shell) and
+`cv-api.madfam.io` (API: `/health`, `/ready`, `/api/v1/meta`), all served by the code on `main`.
+Wave 1 has no accounts, no database, no uploads and no secret, so the highest-severity findings
+today are:
 
-Instead, please report them via email to: **security@madfam.io**
+- **Script execution** on any of the three hosts, or anything that needs the Content-Security-Policy
+  relaxed (the HTML hosts use a per-request nonce with `'strict-dynamic'` and no `'unsafe-inline'` or
+  `'unsafe-eval'`).
+- **Host-routing bypass:** a page or internal route (`/h/...`) reachable on a host that should not
+  serve it, or an unknown `Host` that gets anything but a 404 outside `/health` and `/ready`.
+- **Credential exposure:** any secret in a commit, log, URL or response.
 
-You should receive a response within 48 hours. If for some reason you do not, please follow up via email to ensure we received your original message.
+From the next wave (Janua sign-in, owner-scoped data): auth bypass and cross-tenant access to a
+portfolio are the top findings.
 
-Please include the following information (as much as you can provide):
+## Not in scope
 
-- Type of vulnerability (e.g., XSS, SQL injection, authentication bypass, etc.)
-- Full paths of source file(s) related to the vulnerability
-- Location of the affected source code (tag/branch/commit or direct URL)
-- Step-by-step instructions to reproduce the issue
-- Proof-of-concept or exploit code (if possible)
-- Impact of the issue, including how an attacker might exploit it
-
-## Disclosure Timeline
-
-- **Initial Report**: Send to security@madfam.io
-- **Acknowledgment**: Within 48 hours
-- **Initial Assessment**: Within 7 days
-- **Resolution Timeline**: Depends on severity
-  - Critical: 7-14 days
-  - High: 14-30 days
-  - Medium: 30-60 days
-  - Low: 60-90 days
-
-## What to Expect
-
-- **Acknowledgment**: We'll acknowledge receipt of your report
-- **Communication**: We'll keep you informed about our progress
-- **Credit**: We'll credit you for the discovery (unless you prefer to remain anonymous)
-- **Updates**: We'll notify you when the issue is fixed
-
-## Security Update Process
-
-1. We'll confirm the problem and determine affected versions
-2. We'll prepare fixes for all supported releases
-3. We'll release the fixes as soon as possible
-
-## Out of Scope
-
-The following are considered out of scope:
-
-- Denial of Service (DoS) attacks
-- Social engineering attacks
-- Attacks requiring physical access to a user's device
-- Attacks on third-party services or infrastructure
-
-## Safe Harbor
-
-Any activities conducted in a manner consistent with this policy will be considered authorized conduct and we will not initiate legal action against you. If legal action is initiated by a third party against you in connection with activities conducted under this policy, we will take steps to make it known that your actions were conducted in compliance with this policy.
-
-## Recognition
-
-We maintain a [Security Hall of Fame](./SECURITY-HALL-OF-FAME.md) to recognize security researchers who have responsibly disclosed vulnerabilities.
-
-## Current Security Measures
-
-Portfolio Builder implements the following security measures:
-
-### Authentication & Authorization
-- Supabase Auth with secure session management
-- Role-based access control (RBAC)
-- Multi-factor authentication support
-
-### Data Protection
-- Encryption at rest for sensitive data
-- Encryption in transit (HTTPS only)
-- Input validation and sanitization
-- SQL injection prevention
-
-### Infrastructure Security
-- Content Security Policy (CSP) headers
-- CORS properly configured
-- Rate limiting on API endpoints
-- Secure cookie settings
-
-### Code Security
-- Regular dependency updates
-- Automated security scanning in CI/CD
-- Code review requirements
-- No secrets in code (environment variables only)
-
-## Security Best Practices for Contributors
-
-When contributing to Portfolio Builder:
-
-1. **Never commit secrets**: Use environment variables
-2. **Validate input**: Always validate and sanitize user input
-3. **Use parameterized queries**: Prevent SQL injection
-4. **Implement proper authentication**: Check user permissions
-5. **Keep dependencies updated**: Regularly update packages
-6. **Follow OWASP guidelines**: Implement security best practices
-
-## Contact
-
-**Security Issues**: security@madfam.io  
-**General Support**: support@madfam.io  
-**Response Time**: 48 hours
-
-Thank you for helping keep Portfolio Builder and our users safe!
-
----
-
-*Last updated: March 1, 2025*
+The code preserved at the tag `legacy-2025-09` is not deployed anywhere by this repository.

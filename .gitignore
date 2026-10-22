@@ -1,95 +1,13 @@
-# Dependencies
 node_modules/
-.pnp
-.pnp.js
-
-# Testing
-coverage/
-.nyc_output
-
-# Next.js
 .next/
 out/
-build/
-dist/
-
-# Production
-*.production
-
-# Misc
+coverage/
+__pycache__/
+*.py[cod]
 .DS_Store
-*.pem
-.vscode/
-.idea/
-
-# Debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# Environment variables
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-.env.test
-.env.development
-.env.production
-
-# Vercel
-.vercel
-
-# TypeScript
-*.tsbuildinfo
-next-env.d.ts
-
-# Supabase
-supabase/.branches
-supabase/.temp
-
-# Editor directories and files
-.idea
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-# OS generated files
-Thumbs.db
-
-# Logs
-logs/
+.env.*
+!.env.example
 *.log
-
-# Cache
-.cache/
-.parcel-cache/
-
-# Temporary files
-tmp/
-temp/
-
-# Build artifacts
-*.map
-
-# Package manager locks (we use pnpm)
-package-lock.json
-yarn.lock
-
-# Local development
-.local/
-
-# Testing artifacts
-playwright-report/
-playwright/.cache/
-test-results/
-
-# Sentry
-.sentryclirc
-
-# Redis dump
-dump.rdb
-/generated/prisma
+next-env.d.ts
+*.tsbuildinfo

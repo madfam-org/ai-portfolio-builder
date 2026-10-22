@@ -1,266 +1,136 @@
-name: CI Pipeline
+# CI for ai-portfolio-builder (cv). PUBLIC repository: every job runs on GitHub-hosted runners (R116), so
+# outside code never reaches MADFAM's self-hosted pool.
+#
+# Supply chain: every action is pinned to a full commit SHA (tag in the comment), every downloaded tool to a
+# version and a checksum, top-level permissions are read-only, no job passes `secrets: inherit`.
+# No masks: no `|| true`, no `|| echo`; every step fails the job when its command fails.
+# Read-proof, fail-closed: every gate prints what it scanned and fails on an empty read.
+
+name: CI
 
 on:
-  push:
-    branches: [main, develop]
   pull_request:
-    branches: [main, develop]
+    branches: [main]
+  push:
+    branches: [main]
 
-env:
-  NODE_VERSION: '18.18.0'
-  PNPM_VERSION: '8.15.4'
-  FORCE_COLOR: 1
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  # Job 1: Lint and Type Check
-  lint-and-type-check:
-    name: Lint & Type Check
-    runs-on: ubuntu-latest
+  agent-docs:
+    name: Agent docs and required files
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-
-      - name: Verify Node.js version
+          persist-credentials: false
+      - name: Required files and markers
         run: |
-          echo "Expected Node.js version: ${{ env.NODE_VERSION }}"
-          echo "Actual Node.js version: $(node --version)"
-          node --version | grep -q "v${{ env.NODE_VERSION }}" || exit 1
+          set -euo pipefail
+          files="AGENTS.md CLAUDE.md llms.txt llms-full.txt README.md SECURITY.md ECOSYSTEM.md LICENSE NOTICE docs/DEPLOYMENT.md docs/REPO_BOUNDARY.md enclii.yaml janua.client.yaml"
+          n=0
+          for f in $files; do test -f "$f" || { echo "missing $f"; exit 1; }; n=$((n+1)); done
+          grep -q '<!-- MADFAM-AGENTS-CANONICAL v1 -->' AGENTS.md
+          head -c 2000 AGENTS.md | grep -Eq '^>[[:space:]]*Last Updated:[[:space:]]*[0-9]{4}-[0-9]{2}-[0-9]{2}[[:space:]]*$'
+          grep -q 'docs/REPO_BOUNDARY.md' AGENTS.md
+          grep -qi 'canonical agent instructions' CLAUDE.md
+          grep -q 'AGENTS.md' CLAUDE.md
+          grep -q 'GNU AFFERO GENERAL PUBLIC LICENSE' LICENSE
+          echo "agent-docs: files=$n markers=6 OK"
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Run ESLint
-        run: pnpm lint || echo "::warning::ESLint found issues - see logs for details"
-
-      - name: Run TypeScript type check
-        run: pnpm type-check
-
-      - name: Check formatting
-        run: pnpm format:check
-
-  # Job 2: Run Tests
-  test:
-    name: Test Suite
-    runs-on: ubuntu-latest
-    needs: lint-and-type-check
+  web:
+    name: web (frozen install, lint, typecheck, test, build, standalone smoke)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-
-      - name: Verify Node.js version
+          node-version-file: .nvmrc
+      - name: pnpm from corepack (the version pinned in package.json packageManager)
         run: |
-          echo "Expected Node.js version: ${{ env.NODE_VERSION }}"
-          echo "Actual Node.js version: $(node --version)"
-          node --version | grep -q "v${{ env.NODE_VERSION }}" || exit 1
-
-      - name: Install dependencies
+          set -euo pipefail
+          corepack enable
+          pnpm --version
+      - name: Install (frozen lockfile)
         run: pnpm install --frozen-lockfile
-
-      - name: Run unit tests with coverage
-        run: pnpm test:coverage || echo "::warning::Some tests failed - see logs for details"
-
-      - name: Upload coverage reports
-        uses: codecov/codecov-action@v4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./coverage/lcov.info
-          flags: unittests
-          name: codecov-umbrella
-          fail_ci_if_error: false
-
-  # Job 3: Build Check
-  build:
-    name: Build Check
-    runs-on: ubuntu-latest
-    needs: lint-and-type-check
-    strategy:
-      matrix:
-        node-version: ['18.18.0', '20.x']
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - name: Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Create .env.local for build
-        run: |
-          echo "NEXT_PUBLIC_APP_URL=http://localhost:3000" >> .env.local
-          echo "NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://example.supabase.co' }}" >> .env.local
-          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'example-anon-key' }}" >> .env.local
-
-      - name: Build application
+      - name: Lint (eslint, zero warnings)
+        run: pnpm lint
+      - name: Typecheck (tsc --noEmit, strict)
+        run: pnpm typecheck
+      - name: Unit tests (node:test)
+        run: pnpm test
+      - name: Next.js production build (standalone output)
         run: pnpm build
+      - name: Standalone server smoke (status and headers per Host)
+        run: pnpm test:server
 
-      - name: Check bundle size
-        run: |
-          echo "Checking bundle size..."
-          find .next -name "*.js" -type f -exec du -sh {} + | sort -rh | head -20
-
-  # Job 4: Security Scan
-  security:
-    name: Security Scan
-    runs-on: ubuntu-latest
+  guards:
+    name: Guards (file size, forbidden domain)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Run security audit
-        run: pnpm audit --production --audit-level=high || echo "::warning::Security audit found vulnerabilities"
-
-      - name: Check for secrets
-        uses: trufflesecurity/trufflehog@main
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          path: ./
-          base: ${{ github.event.before }}
-          head: ${{ github.event.after }}
+          persist-credentials: false
+      - name: File-size gate (warn over 600 lines, fail over 800)
+        run: python3 scripts/qa/check_file_size.py
+      - name: The .com domain that is not MADFAM's appears nowhere (madfam.io is canonical)
+        run: |
+          set -euo pipefail
+          files=$(git ls-files | wc -l)
+          if [ "$files" -lt 20 ]; then echo "domain-guard: files=$files FAIL (nothing to scan)"; exit 1; fi
+          # The pattern is written with a character class so this file does not match itself.
+          if git grep -n -I -i -E 'madfam[.]com' -- .; then echo "domain-guard: files=$files FAIL"; exit 1; fi
+          echo "domain-guard: files=$files findings=0 OK"
 
-  # Job 5: E2E Tests (Optional - runs on main branch only)
-  e2e:
-    name: E2E Tests
-    runs-on: ubuntu-latest
-    needs: [build]
-    if: github.ref == 'refs/heads/main'
+  secrets:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GITLEAKS_VERSION: 8.30.1
+      # sha256 of gitleaks_8.30.1_linux_x64.tar.gz, from the release's checksums file. The step checks the
+      # tarball against this pin AND against the checksums file it downloads.
+      GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+      # The legacy tree ends at this commit (tag legacy-2025-09). Its 480-commit history was scanned in full by
+      # the 2026-10-22 audit (no real secret; placeholders only) and is frozen; this job scans every commit
+      # after it, plus the checked-out tree.
+      LEGACY_BASE: 7959f35656e91c0b2400a1735e1aea343809f4a8
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-
-      - name: Verify Node.js version
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Install gitleaks (pinned, checksum-verified)
         run: |
-          echo "Expected Node.js version: ${{ env.NODE_VERSION }}"
-          echo "Actual Node.js version: $(node --version)"
-          node --version | grep -q "v${{ env.NODE_VERSION }}" || exit 1
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Install Playwright browsers
-        run: pnpm exec playwright install --with-deps
-
-      - name: Create .env.local for E2E
+          set -euo pipefail
+          base="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}"
+          tgz="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          work="$RUNNER_TEMP/gitleaks" && mkdir -p "$work" && cd "$work"
+          curl -fsSL -o "$tgz" "$base/$tgz"
+          curl -fsSL -o checksums.txt "$base/gitleaks_${GITLEAKS_VERSION}_checksums.txt"
+          echo "${GITLEAKS_SHA256}  $tgz" | sha256sum -c -
+          grep -F "  $tgz" checksums.txt | sha256sum -c -
+          tar -xzf "$tgz" gitleaks
+          mkdir -p "$HOME/.local/bin" && install -m 0755 gitleaks "$HOME/.local/bin/gitleaks"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Scan every commit after the legacy base (values redacted)
         run: |
-          echo "NEXT_PUBLIC_APP_URL=http://localhost:3000" >> .env.local
-          echo "NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://example.supabase.co' }}" >> .env.local
-          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'example-anon-key' }}" >> .env.local
-
-      - name: Run E2E tests
-        run: pnpm test:e2e || echo "::warning::E2E tests failed - see logs for details"
-
-      - name: Upload test results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: playwright-report
-          path: playwright-report/
-          retention-days: 30
-
-  # Job 6: Code Quality Report
-  code-quality:
-    name: Code Quality Report
-    runs-on: ubuntu-latest
-    needs: [lint-and-type-check]
-    if: github.event_name == 'pull_request'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: ${{ env.PNPM_VERSION }}
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-
-      - name: Verify Node.js version
-        run: |
-          echo "Expected Node.js version: ${{ env.NODE_VERSION }}"
-          echo "Actual Node.js version: $(node --version)"
-          node --version | grep -q "v${{ env.NODE_VERSION }}" || exit 1
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Check for unused dependencies
-        run: pnpm knip || true
-
-      - name: Generate dependency report
-        run: |
-          echo "## Dependency Report" >> $GITHUB_STEP_SUMMARY
-          echo "### Production Dependencies" >> $GITHUB_STEP_SUMMARY
-          pnpm list --prod --depth=0 >> $GITHUB_STEP_SUMMARY
-          echo "### Bundle Analysis" >> $GITHUB_STEP_SUMMARY
-          echo "Run \`pnpm build && ANALYZE=true pnpm build\` locally to analyze bundle" >> $GITHUB_STEP_SUMMARY
-
-  # Final job to ensure all checks pass
-  all-checks-pass:
-    name: All Checks Pass
-    runs-on: ubuntu-latest
-    needs: [lint-and-type-check, test, build, security]
-    if: always()
-    steps:
-      - name: Check if all jobs passed
-        run: |
-          echo "Job Results Summary:"
-          echo "- Lint & Type Check: ${{ needs.lint-and-type-check.result }}"
-          echo "- Test Suite: ${{ needs.test.result }}"
-          echo "- Build Check: ${{ needs.build.result }}"
-          echo "- Security Scan: ${{ needs.security.result }}"
-          echo ""
-
-          # Allow skipped jobs but fail on errors
-          if [[ "${{ needs.lint-and-type-check.result }}" == "failure" || 
-                "${{ needs.test.result }}" == "failure" || 
-                "${{ needs.build.result }}" == "failure" || 
-                "${{ needs.security.result }}" == "failure" ]]; then
-            echo "❌ One or more checks failed"
-            exit 1
-          fi
-          echo "✅ All required checks passed!"
+          set -euo pipefail
+          n=$(git rev-list --count "${LEGACY_BASE}..HEAD")
+          if [ "$n" -lt 1 ]; then echo "gitleaks: commits=0 FAIL (nothing to scan)"; exit 1; fi
+          echo "gitleaks: scanning commits=$n after ${LEGACY_BASE}"
+          gitleaks git --config .gitleaks.toml --redact --no-banner --log-opts="${LEGACY_BASE}..HEAD" .
+      - name: Scan the checked-out tree (values redacted)
+        run: gitleaks dir --config .gitleaks.toml --redact --no-banner .

@@ -1,0 +1,115 @@
+# Enclii manifest: cv (MADFAM CV, working label; NOT yet onboarded; autoDeploy false, builds are dispatched).
+#
+# Decided topology (owner-named hosts, 2026-10-22; the Pliego three-host pattern): ONE project and ONE service,
+# both `cv` (namespace `cv`). One container serves all three hosts, routed by the Host header
+# (apps/web/src/lib/routing.ts):
+#   cv.madfam.io      landing (es-MX default, en); noindex until the brand is ruled (CV_INDEXABLE)
+#   cv-app.madfam.io  the app (pre-launch shell now; Janua sign-in next wave); never indexed
+#   cv-api.madfam.io  API (/health, /ready, /api/v1/...); never indexed
+# Flat labels only (never api.cv.madfam.io). A later split adds services without changing hosts.
+#
+# Tunnel routes: Enclii derives each domain's route from the Service document that declares it, on the
+# domain's `port:`; the Kubernetes Service publishes 80 and the container listens on 3000, so every domain
+# pins `port: 80`. metadata.name IS the Kubernetes Service name.
+#
+# Wave 1 (this image) is stateless: no database, no object storage, no secret, no identity client. Secrets,
+# when the next wave needs them, are referenced by NAME only and reach the store only through
+# `enclii secrets intake`. Never `enclii secrets set`.
+apiVersion: enclii.dev/v1
+kind: Project
+metadata:
+  name: cv
+spec:
+  promotion:
+    pattern: manual
+    min_soak_minutes: 15
+    require_smoke_pass: true
+---
+apiVersion: enclii.dev/v1
+kind: Service
+metadata:
+  name: cv
+  project: cv
+  description: MADFAM CV (working label); landing, app shell and API from one container, routed by Host
+spec:
+  domains:
+    - name: cv.madfam.io
+      environment: production
+      port: 80
+    - name: cv-app.madfam.io
+      environment: production
+      port: 80
+    - name: cv-api.madfam.io
+      environment: production
+      port: 80
+
+  status:
+    enabled: true
+    entries:
+      - name: cv
+        url: https://cv.madfam.io/health
+        href: https://cv.madfam.io
+        group: cv
+        family: MADFAM Platform
+        description: Landing (pre-launch; noindex until the brand is ruled)
+        assertContains: '"status":"ok"'
+        assertNotContains: "localhost:"
+      - name: cv app
+        url: https://cv-app.madfam.io/health
+        href: https://cv-app.madfam.io
+        group: cv
+        family: MADFAM Platform
+        description: App shell (pre-launch; Janua sign-in arrives in the next wave)
+        assertContains: '"status":"ok"'
+        assertNotContains: "localhost:"
+      - name: cv API
+        url: https://cv-api.madfam.io/ready
+        href: https://cv-api.madfam.io/api/v1/meta
+        group: cv
+        family: MADFAM Platform
+        description: API (readiness; no dependency in wave 1)
+        assertContains: '"status":"ok"'
+        assertNotContains: "localhost:"
+
+  build:
+    type: dockerfile
+    dockerfile: Dockerfile
+    context: .
+    source:
+      git:
+        repository: https://github.com/madfam-org/ai-portfolio-builder
+        branch: main
+        autoDeploy: false
+
+  runtime:
+    port: 3000
+    replicas: 2
+    resources:
+      requests:
+        cpu: "50m"
+        memory: "160Mi"
+      limits:
+        cpu: "500m"
+        memory: "512Mi"
+    healthCheck: /health
+    healthCheckTimeoutSeconds: 3
+
+  slo:
+    availability: 99.5
+    latencyP99Ms: 2000
+
+  # Tunnel ingress on the app port (3000) only. Egress: DNS only; wave 1 calls nothing outside the pod.
+  # The next wave (Janua sign-in) adds https; the one after (data) adds postgres through the pooler.
+  network:
+    services:
+      - name: cv
+        label: app.kubernetes.io/name
+        port: 3000
+        ingress: [cloudflare-tunnel]
+        egress: [dns]
+
+  dependencies:
+    - platform: enclii
+      reason: deploy, the three domains, tunnel routes, status; secrets intake from the next wave
+    - platform: janua
+      reason: identity from the next wave (the app signs people in; the API verifies RS256 tokens of audience cv-api); janua.client.yaml holds the names

@@ -1,0 +1,46 @@
+# Dependency updates: weekly, grouped, Monday morning in Mexico City. Security updates are not grouped away:
+# GitHub opens them as soon as an advisory lands. Ecosystems: npm (the pnpm workspace's one root lockfile),
+# the Dockerfile base image digest, and the pinned actions.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: America/Mexico_City
+    open-pull-requests-limit: 5
+    groups:
+      npm-minor-patch:
+        update-types: [minor, patch]
+    ignore:
+      # @types/node tracks the runtime, Node 22 LTS (.nvmrc, the Dockerfile base); it moves with the runtime only.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+      # The MADFAM fleet stays on TypeScript 5.9; a major moves fleet-wide, never one repository first.
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: America/Mexico_City
+    ignore:
+      # The runtime stays on Node 22 LTS; digest and minor bumps of node:22-alpine still arrive.
+      - dependency-name: node
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "07:00"
+      timezone: America/Mexico_City
+    groups:
+      actions:
+        patterns: ["*"]

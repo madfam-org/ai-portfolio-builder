@@ -1,0 +1,13 @@
+ai-portfolio-builder — MADFAM CV (working label)
+Copyright (C) 2026 Innovaciones MADFAM S.A.S. de C.V., Cuernavaca, Morelos, México.
+
+Platform code (apps/, scripts/, infra/) is licensed under the GNU Affero General Public License,
+version 3 only (AGPL-3.0-only). See the LICENSE file for the full text.
+
+Documentation (docs/, README.md and the other Markdown files) is licensed under the MIT licence.
+
+If you modify this program and make it available to users over a network, the AGPL (section 13)
+requires you to offer those users the Corresponding Source of your modified version.
+
+The code that lived in this repository before 2026-10-22 is preserved at the git tag
+`legacy-2025-09`; this notice does not relicense it.

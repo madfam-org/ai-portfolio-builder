@@ -1,0 +1,32 @@
+# gitleaks configuration for ai-portfolio-builder (CI job `secrets`, with --redact so a finding never prints the
+# value). The default ruleset plus the token shapes of the MADFAM seams this service will touch. A hit means the
+# value was exposed: rotate it first, then decide whether the history needs rewriting. Never "fix" a finding by
+# widening an allowlist.
+
+title = "ai-portfolio-builder"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "janua-client-id-literal"
+description = "Janua OAuth client id literal (jnc_...)"
+regex = '''\b(jnc_[A-Za-z0-9_-]{8,})\b'''
+secretGroup = 1
+keywords = ["jnc_"]
+
+[[rules]]
+id = "janua-client-secret"
+description = "Janua OAuth client secret (AUTH_JANUA_CLIENT_SECRET)"
+regex = '''\b(jns_[A-Za-z0-9_-]{64})(?:[^A-Za-z0-9_-]|$)'''
+secretGroup = 1
+entropy = 3.5
+keywords = ["jns_"]
+
+[[rules]]
+id = "auth-secret"
+description = "Session-signing key assigned to AUTH_SECRET (next wave)"
+regex = '''(?i)\bauth_secret['"]?\s*[:=]\s*['"]?([A-Za-z0-9_\-.+/=]{16,})'''
+secretGroup = 1
+entropy = 3.0
+keywords = ["auth_secret"]

@@ -1,0 +1,24 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# The namespace is created by the platform at onboarding (with its platform labels); this base never declares a
+# Namespace object or an Ingress. The three public hosts are tunnel routes Enclii writes from enclii.yaml
+# (cv.madfam.io, cv-app.madfam.io, cv-api.madfam.io -> Service cv:80), and the tunnel peer is admitted to the
+# app port (3000) only (network-policy.yaml). Wave 1 needs no Secret, so there is no ExternalSecret and no
+# secrets template yet.
+namespace: cv
+
+resources:
+- deployment.yaml
+- poddisruptionbudget.yaml
+- service.yaml
+- network-policy.yaml
+
+# Image digest: pinned by the Build & Deploy workflow (Enclii's reusable build-publish runs
+# `kustomize edit set image <image>=<image>@sha256:...`, commits the pin to main, and the GitOps sync rolls it).
+# The all-zero digest is a PLACEHOLDER the first successful build overwrites; it never resolves, so nothing can
+# run unpinned before a real pin lands. The workload names the image with a `:latest` decoy that this block
+# rewrites to the digest (the rendered manifest carries no tag at all).
+images:
+- digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
+  name: ghcr.io/madfam-org/cv
+  newName: ghcr.io/madfam-org/cv

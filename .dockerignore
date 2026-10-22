@@ -1,92 +1,12 @@
-# Dependencies
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
-# Testing
-coverage/
-.nyc_output
-__tests__/
-e2e/
-test-results/
-playwright-report/
-
-# Next.js
-.next/
-out/
-build/
-dist/
-
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Vercel
-.vercel
-
-# TypeScript
-*.tsbuildinfo
-
-# IDEs
-.vscode/
-.idea/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-# OS generated files
-.DS_Store
-Thumbs.db
-
-# Git
-.git/
-.gitignore
-
-# Documentation
-docs/
-README.md
-CHANGELOG.md
+.git
+.github
+node_modules
+**/node_modules
+**/.next
+apps/web/test
+apps/web/test-server
+docs
+scripts
+infra
 *.md
-
-# Docker
-Dockerfile*
-docker-compose*.yml
-.dockerignore
-
-# Scripts
-scripts/
-
-# Archive
-.archive/
-
-# Husky
-.husky/
-
-# Logs
-logs/
-*.log
-
-# Cache
-.cache/
-.parcel-cache/
-
-# Temporary files
-tmp/
-temp/
-
-# Local development
-.local/
-
-# Build artifacts
-*.map
-
-# Supabase local
-supabase/.branches
-supabase/.temp
+.env*
