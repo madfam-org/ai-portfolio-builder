@@ -10,6 +10,8 @@ namespace: cv
 
 # Sign-in (2026-10-22): Vault secret/cv holds auth_janua_client_id, auth_janua_client_secret and auth_secret
 # (intakes int_1792692829253561061 and int_1792692328556323018, both ready). ESO is all-or-nothing.
+# W5-H: the Symbiosis HCM machine client (Vault secret/cv hcm_client_id / hcm_client_secret, written by
+# `enclii secrets provision oidc --platform cv-hcm-benchmarks`); read with optional: true by the Deployment.
 resources:
 - deployment.yaml
 - poddisruptionbudget.yaml
@@ -18,8 +20,6 @@ resources:
 - network-policy-migrate.yaml
 - migrate-job.yaml
 - externalsecret-web-auth.yaml
-# W5-H: the Symbiosis HCM machine client (Vault secret/cv hcm_client_id / hcm_client_secret, written by
-# `enclii secrets provision oidc --platform cv-hcm-benchmarks`); read with optional: true by the Deployment.
 - externalsecret-hcm-client.yaml
 
 # Image digest: pinned by the Build & Deploy workflow (Enclii's reusable build-publish runs
@@ -28,6 +28,6 @@ resources:
 # run unpinned before a real pin lands. The workload names the image with a `:latest` decoy that this block
 # rewrites to the digest (the rendered manifest carries no tag at all).
 images:
-- digest: sha256:4272a6819b33cc1c4b7e71b8784036f339afda198e4adcab3494c24736f8b6f0
+- digest: sha256:2732f8ebb683e6ae7739077fbfddfbeff40492c8ee4386c92dfeabc7b4d8d64d
   name: ghcr.io/madfam-org/cv
   newName: ghcr.io/madfam-org/cv
