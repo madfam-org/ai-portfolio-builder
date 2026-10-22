@@ -1,6 +1,7 @@
 import { getConfig } from '@/lib/config';
 import { readiness } from '@/lib/meta';
 import { getSharedDb, pingDb } from '@/server/db/client';
+import { getMetrics, readinessSample } from '@/server/metrics';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,5 +27,7 @@ export async function GET(): Promise<Response> {
         ? () => pingDb(handle!)
         : null,
   });
+  // cv_ready and cv_db_readiness_checks_total (server/metrics.ts), served on the internal metrics port only.
+  getMetrics().recordReadiness(readinessSample(status, body));
   return Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
 }

@@ -6,11 +6,16 @@
  * Migration mode: with CV_MIGRATE_AND_EXIT=true the same image applies the committed SQL migrations
  * (apps/web/drizzle) as the database owner and exits 0, or exits 1 with the reason. The PreSync Job runs the
  * image's own command this way, so the one image is the only artefact (server/db/migrate.ts).
+ *
+ * Observability (W4-O): request metrics, structured request logs and the internal-only `/metrics` listener on
+ * CV_METRICS_PORT (default 9090), started after validation and never in migration mode (server/metrics-server.ts).
  */
 export async function register(): Promise<void> {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
     const { migrateAndExitIfAsked, validateOrExit } = await import('./lib/boot.ts');
     await migrateAndExitIfAsked();
     validateOrExit();
+    const { startObservability } = await import('./server/metrics-server.ts');
+    startObservability(process.env);
   }
 }

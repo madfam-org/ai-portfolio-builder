@@ -16,6 +16,8 @@ export const RESERVED_SLUGS: ReadonlySet<string> = new Set([
   '_next', 'static', 'assets', 'www', 'madfam', 'legal', 'privacy', 'terms',
   // W3 (lane X §0.2): Spanish words the public-pages host or its footer may route later.
   'entrar', 'salir', 'reportar', 'privacidad', 'terminos', 'soporte',
+  // W4-O: the metrics path (served on the internal metrics port only; on the pages host it stays the HTML 404).
+  'metrics',
 ]);
 
 /** A slug an owner may claim: the pattern, not reserved, never starting with `_` or `.`. */

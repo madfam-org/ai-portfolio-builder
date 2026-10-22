@@ -39,6 +39,15 @@ spec:
         # Enclii convention labels (the platform selects the service's pods by these).
         app: cv
         enclii.dev/service: cv
+      annotations:
+        # The platform's annotation-based pod discovery scrapes the pod IP on this port and path. 9090 is the internal
+        # metrics listener (apps/web/src/server/metrics-server.ts): it serves GET /metrics only, sits on no Service
+        # and no tunnel route, and NetworkPolicy allow-monitoring-ingress admits it from the monitoring namespace
+        # only. The Service carries no prometheus.io annotation on purpose: service-level discovery would scrape the
+        # same pods a second time.
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: /metrics
     spec:
       automountServiceAccountToken: false
       # Soft spread across nodes: a preference, so a one-node pool still schedules both pods.
@@ -78,6 +87,9 @@ spec:
           ports:
             - name: http
               containerPort: 3000
+            # Internal only: never on Service `cv` (the tunnel's target), so no public host can reach it.
+            - name: metrics
+              containerPort: 9090
           env:
             - name: NODE_ENV
               value: production
@@ -105,6 +117,9 @@ spec:
                 secretKeyRef: { name: cv-secrets, key: APP_DATABASE_URL }
             - name: DATABASE_POOL_MAX
               value: "3"
+            # The internal metrics listener (the default, stated so the port above and this value move together).
+            - name: CV_METRICS_PORT
+              value: "9090"
           volumeMounts:
             - name: tmp
               mountPath: /tmp

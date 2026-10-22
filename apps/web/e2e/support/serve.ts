@@ -17,7 +17,7 @@ import { join } from 'node:path';
 import { encode } from 'next-auth/jwt';
 import { resetAndMigrate, testUrls } from '../../test-pg/harness.ts';
 import { startTestIssuer } from '../../test-support/janua-tokens.ts';
-import { E2E_MINT_PORT, E2E_PORT, HOSTS } from './env.ts';
+import { E2E_METRICS_PORT, E2E_MINT_PORT, E2E_PORT, HOSTS } from './env.ts';
 
 const web = join(import.meta.dirname, '..', '..');
 const standalone = join(web, '.next', 'standalone');
@@ -70,6 +70,7 @@ const child = spawn(process.execPath, [server], {
     AUTH_JANUA_CLIENT_SECRET: clientCredential,
     ...issuer.env,
     APP_DATABASE_URL: app,
+    CV_METRICS_PORT: String(E2E_METRICS_PORT),
   },
 });
 

@@ -102,6 +102,10 @@ spec:
   # Tunnel ingress on the app port (3000) only. Egress (W2): DNS, HTTPS (Janua discovery/JWKS/token/logout) and
   # PgBouncer in `data` (6432). Declared here AND in infra/k8s/production/network-policy.yaml, before any
   # `enclii onboard ensure` renders policies from this file (the 2026-10-21 MAP outage).
+  # The pod's internal metrics listener (9090, GET /metrics only) is NOT declared here: the generator has no
+  # monitoring ingress type (a custom ingress rule selects pods in this namespace or everything), so the
+  # monitoring-only admission is the repo-managed allow-monitoring-ingress in infra/k8s/production/network-policy.yaml,
+  # which ensure never prunes. `port` stays the app port: the tunnel reaches 3000 only.
   network:
     services:
       - name: cv
