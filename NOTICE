@@ -17,3 +17,8 @@ objects of Pliego (github.com/madfam-org/pliego), copyright Innovaciones MADFAM 
 the CERN Open Hardware Licence Version 2 - Weakly Reciprocal (CERN-OHL-W-2.0); the full text is in
 apps/web/src/lib/pliego/vendor/CERN-OHL-W-2.0.txt. They are pinned, unmodified copies or unmodified Pliego output
 (provenance in LOCK.json and README.md there) and are not relicensed by this repository.
+
+Page turn (added 2026-10-22, W5-P phase 3): apps/web/src/lib/pliego/generated/page-turn-deck.json is the motion
+of Pliego's page-turn leaf (vendor/page-turn-deck.fold.json, CERN-OHL-W-2.0) as computed by @pliego/engine
+(AGPL-3.0-only, a build-time dependency); as data derived from that commons object it is distributed under
+CERN-OHL-W-2.0 as well.

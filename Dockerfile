@@ -18,8 +18,10 @@ ENV NEXT_TELEMETRY_DISABLED=1 \
     COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 WORKDIR /repo
 
-# Workspace manifests first, so the dependency layer caches independently of source changes.
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+# Workspace manifests first, so the dependency layer caches independently of source changes. `.npmrc` maps the
+# @pliego scope to MADFAM's registry (npm.madfam.io; world-readable, no token): @pliego/engine is a dev dependency
+# the build installs (W5-P phase 3; it bakes the page turn, nothing at runtime imports it).
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 COPY apps/web/package.json apps/web/package.json
 RUN corepack enable \
  && pnpm install --frozen-lockfile --ignore-scripts

@@ -1,0 +1,64 @@
+/*
+ * The page-turn layer (W5-P phase 3): a transient, inert overlay over the destination slide while a turn plays.
+ * Positions, sizes and transforms are set through the CSSOM by turn.ts; the paper verso colour comes from Pliego's
+ * stock card. Clipped at the spine (the slide's left edge), so the leaf leaves the deck there. Screen only.
+ */
+.layer {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  perspective-origin: 50% 50%;
+  clip-path: inset(-60% -60% -60% 0);
+}
+
+.under {
+  position: absolute;
+  inset: 0;
+}
+
+.strip {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  transform-origin: 0 50%;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.front,
+.back {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  backface-visibility: hidden;
+}
+
+.back {
+  transform: rotateY(180deg);
+  background: var(--page-turn-verso, #fff);
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.06);
+}
+
+.content {
+  position: absolute;
+  top: 0;
+}
+
+.shade {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+}
+
+@media print {
+  .layer {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .layer {
+    display: none;
+  }
+}
