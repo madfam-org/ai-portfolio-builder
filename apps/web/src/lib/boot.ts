@@ -27,8 +27,13 @@ export async function migrateAndExitIfAsked(): Promise<void> {
     process.exit(1);
   }
   try {
-    const { defaultMigrationsFolder, runMigrations } = await import('../server/db/migrate.ts');
-    await runMigrations(url, defaultMigrationsFolder());
+    const { defaultMigrationsFolder, describeMigrationError, runMigrationsWithRetry } = await import('../server/db/migrate.ts');
+    try {
+      await runMigrationsWithRetry(url, defaultMigrationsFolder());
+    } catch (err) {
+      console.error(`cv migrate: failed: ${describeMigrationError(err)}`);
+      process.exit(1);
+    }
     console.warn('cv migrate: migrations applied');
     process.exit(0);
   } catch (err) {

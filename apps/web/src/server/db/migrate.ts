@@ -22,6 +22,75 @@ export async function runMigrations(url: string, migrationsFolder: string): Prom
   }
 }
 
+/** Fields of a Postgres (or socket) error that are safe to log: never a URL, password or parameter value. */
+type ErrorFields = { code?: unknown; severity?: unknown; message?: unknown; detail?: unknown; hint?: unknown; routine?: unknown; errno?: unknown };
+
+/** The innermost cause of a (drizzle-wrapped) error, following `cause` at most 5 levels. */
+function rootCause(err: unknown): ErrorFields {
+  let current: unknown = err;
+  for (let depth = 0; depth < 5; depth += 1) {
+    const next = (current as { cause?: unknown } | null)?.cause;
+    if (next === undefined || next === null) break;
+    current = next;
+  }
+  return (current ?? {}) as ErrorFields;
+}
+
+/**
+ * One log line for a failed migration: drizzle's wrapper message ("Failed query: …") plus the underlying Postgres
+ * SQLSTATE, severity, message, detail, hint and routine. The 2026-10-22 PreSync failures logged only the wrapper,
+ * which hid the cause.
+ */
+export function describeMigrationError(err: unknown): string {
+  const outer = err instanceof Error ? (err.message.split('\n')[0] ?? '') : String(err);
+  const root = rootCause(err);
+  const parts: string[] = [];
+  for (const key of ['code', 'severity', 'message', 'detail', 'hint', 'routine', 'errno'] as const) {
+    const value = root[key];
+    if (value !== undefined && value !== null && value !== '' && !(key === 'message' && root === (err as ErrorFields))) {
+      parts.push(`${key}=${JSON.stringify(String(value)).slice(0, 300)}`);
+    }
+  }
+  return parts.length > 0 ? `${outer} | cause: ${parts.join(' ')}` : outer;
+}
+
+/** SQLSTATE classes and socket codes worth one more try: connection loss, admin shutdown, too many connections,
+ * lock timeout, serialization/deadlock. Anything else (permissions, syntax, constraint) fails at once. */
+const TRANSIENT_SQLSTATE = /^(08|57P0[1-3]|53300|55P03|40001|40P01)/;
+const TRANSIENT_NODE_CODES = new Set(['ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'EPIPE', 'EAI_AGAIN', 'CONNECT_TIMEOUT', 'CONNECTION_CLOSED', 'CONNECTION_ENDED', 'CONNECTION_DESTROYED']);
+
+export function isTransientMigrationError(err: unknown): boolean {
+  const code = String(rootCause(err).code ?? '');
+  return TRANSIENT_SQLSTATE.test(code) || TRANSIENT_NODE_CODES.has(code);
+}
+
+/**
+ * Runs the migrations, retrying only transient failures (connection-class) with backoff. Each attempt opens a fresh
+ * connection, so a retry can land on a different PgBouncer replica. Drizzle records applied migrations in
+ * drizzle.__drizzle_migrations, so a retry after a partial run re-applies nothing.
+ */
+export async function runMigrationsWithRetry(
+  url: string,
+  migrationsFolder: string,
+  opts: { attempts?: number; baseDelayMs?: number; log?: (line: string) => void; run?: typeof runMigrations } = {},
+): Promise<void> {
+  const attempts = opts.attempts ?? 4;
+  const baseDelayMs = opts.baseDelayMs ?? 2000;
+  const log = opts.log ?? ((line: string) => console.error(line));
+  const run = opts.run ?? runMigrations;
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      await run(url, migrationsFolder);
+      return;
+    } catch (err) {
+      const transient = isTransientMigrationError(err);
+      log(`cv migrate: attempt ${attempt}/${attempts} failed${transient ? ' (transient)' : ''}: ${describeMigrationError(err)}`);
+      if (!transient || attempt >= attempts) throw err;
+      await new Promise((resolve) => setTimeout(resolve, baseDelayMs * 2 ** (attempt - 1)));
+    }
+  }
+}
+
 /** The committed migrations, relative to the app directory (the standalone server chdirs there). */
 export function defaultMigrationsFolder(appDir: string = process.cwd()): string {
   return join(appDir, 'drizzle');
