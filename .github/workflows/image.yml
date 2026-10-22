@@ -19,6 +19,7 @@ on:
       - package.json
       - pnpm-lock.yaml
       - pnpm-workspace.yaml
+      - .npmrc
       - apps/**
       - .github/workflows/image.yml
   workflow_dispatch:
