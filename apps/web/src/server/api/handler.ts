@@ -22,7 +22,8 @@ import {
   type OwnedTable,
   type Repository,
 } from '../db/repository.ts';
-import { ARTIFACT_KINDS } from '../db/schema.ts';
+import { ARTIFACT_KINDS, LOCALES } from '../db/schema.ts';
+import { HEADER_TEXT_FIELDS, ITEM_TEXT_FIELDS, cleanTranslations, type ContentLocale, type Translations } from '../../lib/profile-text.ts';
 import { createDataRights } from '../db/data-rights.ts';
 import { EXPORT_FORMATS, exportFilename, fullExport, toJsonResume, type ExportFormat } from './portability.ts';
 import { authFailureResponse, authenticate } from '../janua.ts';
@@ -46,6 +47,7 @@ import {
   profileBody,
   itemBatchBody,
   deleteMeBody,
+  ITEM_TRANSLATIONS,
   publishBody,
   salaryIssue,
   templateIssue,
@@ -199,14 +201,15 @@ async function dispatch(repo: Repository, quota: QuotaCheck, sub: string, nameHi
         return json(200, { profile: profile ? view(profile) : null, items: items.map(view) });
       }
       const body = parse(profileBody, await readJson(request));
-      return json(200, { profile: view(await repo.putProfile(sub, body, nameHint)) });
+      return json(200, { profile: view(await repo.putProfile(sub, { ...body, translations: profileTexts(body.translations, body.locale) }, nameHint)) });
     }
     case 'items': {
       if (method === 'GET') return json(200, { items: (await repo.listItems(sub)).map(view) });
       const body = parse(itemCreateBody, await readJson(request));
       const content = parse(ITEM_CONTENT[body.kind], body.content);
+      const translations = itemTexts(body.kind, body.translations) ?? null;
       await quota('items', 1);
-      return json(201, { item: view(await repo.createItem(sub, { ...body, content }, nameHint)) });
+      return json(201, { item: view(await repo.createItem(sub, { ...body, content, translations }, nameHint)) });
     }
     case 'items-reorder': {
       const body = parse(itemReorderBody, await readJson(request));
@@ -219,7 +222,9 @@ async function dispatch(repo: Repository, quota: QuotaCheck, sub: string, nameHi
       if (method === 'DELETE') return (await repo.deleteItem(sub, id)) ? json(204, null) : notFound();
       const patch = parse(itemPatchBody, await readJson(request));
       const content = patch.content === undefined ? undefined : parse(ITEM_CONTENT[existing.kind as keyof typeof ITEM_CONTENT], patch.content);
-      const row = await repo.updateItem(sub, id, { ...patch, ...(content === undefined ? {} : { content }) });
+      const translations = itemTexts(existing.kind as keyof typeof ITEM_CONTENT, patch.translations);
+      const { translations: _sent, ...rest } = patch;
+      const row = await repo.updateItem(sub, id, { ...rest, ...(content === undefined ? {} : { content }), ...(translations === undefined ? {} : { translations }) });
       return row ? json(200, { item: view(row) }) : notFound();
     }
     case 'jobs': {
@@ -325,15 +330,18 @@ async function dataRights(db: Parameters<typeof createDataRights>[0], quota: Quo
     const raw = new URL(request.url).searchParams.get('format') ?? 'full';
     if (!(EXPORT_FORMATS as readonly string[]).includes(raw)) return json(400, { error: 'invalid_query', field: 'format' });
     const format = raw as ExportFormat;
+    // W7 (B4): `locale` picks the language of a JSON Resume (absent: the profile's primary language).
+    const locale = new URL(request.url).searchParams.get('locale');
+    if (locale !== null && !(LOCALES as readonly string[]).includes(locale)) return json(400, { error: 'invalid_query', field: 'locale' });
     const now = new Date();
     const data = await rights.exportAll(sub);
-    const doc = format === 'json-resume' ? toJsonResume(data, now) : fullExport(data, now);
+    const doc = format === 'json-resume' ? toJsonResume(data, now, locale === null ? undefined : (locale as ContentLocale)) : fullExport(data, now);
     return new Response(JSON.stringify(doc, null, 2), {
       status: 200,
       headers: {
         'Content-Type': 'application/json; charset=utf-8',
         'Cache-Control': 'no-store',
-        'Content-Disposition': `attachment; filename="${exportFilename(format, now)}"`,
+        'Content-Disposition': `attachment; filename="${exportFilename(format, now, locale ?? undefined)}"`,
         'X-Content-Type-Options': 'nosniff',
       },
     });
@@ -341,4 +349,25 @@ async function dataRights(db: Parameters<typeof createDataRights>[0], quota: Quo
   // DELETE /me
   parse(deleteMeBody, await readJson(request));
   return json(200, { deleted: await rights.deleteAll(sub) });
+}
+
+/**
+ * W7 (B4): the header's translations as stored. Undefined (not sent) keeps the stored ones; null clears them. A
+ * translation keyed by the profile's own primary locale is refused (400): that text belongs in the fields themselves.
+ */
+function profileTexts(raw: unknown, primary: string): Translations | null | undefined {
+  if (raw === undefined) return undefined;
+  if (raw === null) return null;
+  if (raw && typeof raw === 'object' && primary in raw) {
+    throw new HttpError(400, { error: 'invalid_body', issues: [{ path: `translations.${primary}`, message: 'the primary language is written in the fields themselves' }] });
+  }
+  return cleanTranslations(raw, HEADER_TEXT_FIELDS);
+}
+
+/** W7 (B4): one item's translations, validated against its kind's word fields (`ITEM_TRANSLATIONS`), as stored. */
+function itemTexts(kind: keyof typeof ITEM_CONTENT, raw: unknown): Translations | null | undefined {
+  if (raw === undefined) return undefined;
+  const r = ITEM_TRANSLATIONS[kind].safeParse(raw);
+  if (!r.success) throw new HttpError(400, { error: 'invalid_body', issues: r.error.issues.map((x) => ({ path: ['translations', ...x.path].join('.'), message: x.message })) });
+  return r.data === null ? null : cleanTranslations(r.data, ITEM_TEXT_FIELDS[kind]);
 }

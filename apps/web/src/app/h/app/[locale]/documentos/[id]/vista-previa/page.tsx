@@ -5,6 +5,8 @@ import { appMetadata, pageLocaleAndId, type IdParams } from '@/components/app/pa
 import { PaperSheet } from '@/components/paper/PaperSheet';
 import paperCss from '@/components/paper/paper.module.css';
 import { ArtifactView } from '@/components/render/ArtifactView';
+import { localizeRenderData } from '@/components/render/localize';
+import { MissingTranslations } from '@/components/render/MissingTranslations';
 import { ButtonLink } from '@/components/ui/Button';
 import { Notice } from '@/components/ui/States';
 import { appPath } from '@/lib/app-routes';
@@ -48,6 +50,8 @@ export default async function Page({ params }: IdParams) {
               <Notice>
                 {d.previewNote} {artifact.visibility === 'private' ? d.previewPrivate : `${d.visibility[artifact.visibility]}.`}
               </Notice>
+              {/* W7 (B4): fields that fall back to the profile's primary language; on screen only, never printed. */}
+              <PreviewFlag locale={locale} data={data} />
               {artifact.kind === 'presentation' ? (
                 <div className={`${css.frame} ${css.sheet}`}>
                   <ArtifactView data={data} />
@@ -66,4 +70,9 @@ export default async function Page({ params }: IdParams) {
       )}
     </AppFrame>
   );
+}
+
+function PreviewFlag({ locale, data }: { locale: 'es' | 'en'; data: Parameters<typeof localizeRenderData>[0] }) {
+  const { missing, target, primary } = localizeRenderData(data);
+  return <MissingTranslations locale={locale} missing={missing} target={target} primary={primary} id="vista-previa-traducciones" />;
 }

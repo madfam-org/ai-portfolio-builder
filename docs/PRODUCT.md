@@ -291,3 +291,57 @@ A posting that is **no longer open** but still answers 200 (Workday `postingAvai
 - **Above the general P90 (W7)**: a neutral note says the ENOE does not separate luxury houses from other employers
   and that commission-based roles often report income differently from a posting's pay. The panel never calls an
   offer high, atypical or an outlier.
+
+
+## Bilingual profile text (W7-B4, 2026-10-22)
+
+Owner directive (2026-10-22): «add bilingual (es/en) profile text to the beta wave so English CVs are fully in English».
+
+**Model.** A profile has ONE primary language (`profiles.locale`, Spanish by default): its text stays in the header
+columns and in each item's `content`, as before. The other language is optional, field by field, in a nullable
+`translations` jsonb on `profiles` and `profile_items` (migration `0003`), keyed by content locale:
+`{ "en": { "headline": "…", "summary": "…", "location": "…" } }` on the profile, `{ "en": { "role": "…",
+"highlights": ["…"] } }` on an item. Why this shape and not per-field `_en` columns: item text already lives in a
+per-kind jsonb validated by zod, so a sibling jsonb validated by the same per-kind schemas (`ITEM_TRANSLATIONS`) adds
+two nullable columns instead of dozens; `content` keeps meaning «the primary text», so the matcher, the import, older
+clients and every document in the primary language are untouched; a third language would be a new key, not a
+migration. Null (every row before W7-B4) means no translation.
+
+**What is translated.** Words only (`lib/profile-text.ts`): headline, summary, the contact's place; per item, titles
+(role, degree, field, project, skill, certification, achievement, award and publication names, link labels),
+locations, descriptions and highlights. Proper names (the person, organisations, schools, issuers, publishers), dates,
+URLs, levels and credential ids stay single. A language item stores an ISO 639 `code` (`lib/languages.ts`); its name
+is rendered per document language from `Intl` («Inglés» / «English»), never stored text. A language item from before
+W7-B4 (name only) keeps printing its name and is flagged until the person picks it from the list; the import fills
+the code when it recognises the name.
+
+**Rendering.** A document prints the text of its own locale (CV, portfolio, presentation, cover letter; preview, print
+and the pages host). A field without that language falls back to the primary text and is listed in «Faltan N textos
+en inglés» above the preview and in the tailoring workspace, each entry linking to `/perfil#traducir-<item>`, which
+opens that item in the other language. The flag is never printed nor shown on the pages host. A document in the
+primary language never reads a translation: its markup and its print view's text are byte for byte what `main`
+produced, and its PDF is the same before and after translations exist (`test/render-bilingual.test.ts`,
+`e2e/bilingual.spec.ts`). Section titles, level words (Nativo/Native, CEFR codes)
+and dates already follow the document's locale.
+
+**Editor.** Each profile form has «Texto en: Español (principal) | English» (a radio group: one tab stop, arrow
+keys). In the other language the form shows only the word fields, labelled «Puesto en inglés», each with its Spanish
+text as the hint, and «Copiar el texto en español como punto de partida» (fills empty fields only). Each item row says
+«Faltan N textos en inglés». No machine or AI translation is offered: Selva's restricted tier is not live, and no
+seam is wired.
+
+**Per-job overrides** belong to ONE language, the language of the documents they are typed for (a document has one
+locale). Switching the tailoring workspace's language keeps the selection and its order, puts that language's
+overrides, summary, greeting and closing away, and brings back the ones typed for the other language. An override
+replaces a field for that document, so it is never reported missing.
+
+**Import and export.** The full export carries `translations` as stored. JSON Resume holds one language per document:
+`GET /me/export?format=json-resume&locale=en` (or `es-MX`) gives that language with the same fallback; without
+`locale`, the primary language (unchanged). The import always fills the primary text; the person says which language
+the file is in: the profile's own language (as before), or another one, which becomes the primary language when the
+profile is empty and is refused (with the reason) otherwise, so languages never mix in the main text.
+
+**Limits.** zod bounds every translated field with the limit of the field it translates; a CHECK bounds the whole
+value (a JSON object, at most 64 KiB); the 256 KiB body cap and the per-owner quotas (`server/api/limits.ts`) are
+unchanged. Owner-scoped like every column (cross-owner tests in `test-pg/bilingual.pg.test.ts`); the public
+projection carries only the document's own language, and the contact's place only when the contact is shown.

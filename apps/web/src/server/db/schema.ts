@@ -35,6 +35,8 @@ export const ARTIFACT_KINDS = ['cv', 'portfolio', 'presentation', 'cover_letter'
 export const ARTIFACT_STATUSES = ['draft', 'ready', 'published'] as const;
 export const VISIBILITIES = ['private', 'link', 'public'] as const;
 export const LOCALES = ['es-MX', 'en'] as const;
+/** W7 (B4): the stored translations of one profile or item, at most this many bytes of JSON (zod bounds every field). */
+export const TRANSLATIONS_MAX_BYTES = 65_536;
 /** Size cap of a pasted job posting (characters). */
 export const SOURCE_TEXT_MAX = 50_000;
 
@@ -56,12 +58,18 @@ export const profiles = pgTable(
     summary: text('summary').notNull().default(''),
     locale: text('locale').notNull().default('es-MX'),
     contact: jsonb('contact').notNull().default({}),
+    /**
+     * W7 (B4, migration 0003): the header's text in the OTHER language, `{ "en": { headline, summary, location } }`
+     * (lib/profile-text.ts). Null: none (every profile before W7-B4). `locale` above is the primary language.
+     */
+    translations: jsonb('translations'),
     ...timestamps,
   },
   (t) => [
     unique('profiles_owner_sub_unique').on(t.ownerSub),
     unique('profiles_id_owner_sub_unique').on(t.id, t.ownerSub),
     check('profiles_locale_check', sql`${t.locale} in (${inList(LOCALES)})`),
+    check('profiles_translations_check', sql`${t.translations} is null or (jsonb_typeof(${t.translations}) = 'object' and octet_length(${t.translations}::text) <= ${sql.raw(String(TRANSLATIONS_MAX_BYTES))})`),
   ],
 );
 
@@ -75,6 +83,8 @@ export const profileItems = pgTable(
     position: integer('position').notNull().default(0),
     content: jsonb('content').notNull(),
     tags: text('tags').array().notNull().default(sql`'{}'::text[]`),
+    /** W7 (B4, migration 0003): the item's word fields in the profile's other language (lib/profile-text.ts); null: none. */
+    translations: jsonb('translations'),
     ...timestamps,
   },
   (t) => [
@@ -84,6 +94,7 @@ export const profileItems = pgTable(
       'cascade',
     ),
     check('profile_items_kind_check', sql`${t.kind} in (${inList(PROFILE_ITEM_KINDS)})`),
+    check('profile_items_translations_check', sql`${t.translations} is null or (jsonb_typeof(${t.translations}) = 'object' and octet_length(${t.translations}::text) <= ${sql.raw(String(TRANSLATIONS_MAX_BYTES))})`),
   ],
 );
 

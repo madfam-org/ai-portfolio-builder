@@ -22,6 +22,13 @@
       "when": 1792701074536,
       "tag": "0002_job_intake_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792719704036,
+      "tag": "0003_bilingual_profile_text",
+      "breakpoints": true
     }
   ]
 }

@@ -10,6 +10,7 @@ import { useToast } from '@/components/ui/Toast';
 import { api, apiErrorMessage, type ApiError } from '@/lib/client/api';
 import type { ContentLocale, ItemKind, ProfileDto } from '@/lib/client/types';
 import { APP_COPY } from '@/lib/copy/app';
+import { BILINGUAL_COPY } from '@/lib/copy/bilingual';
 import { PROFILE_COPY, SECTOR_GUIDE_COPY } from '@/lib/copy/profile';
 import type { Locale } from '@/lib/routing';
 import { ITEM_FIELDS, ITEM_KIND_ORDER, contentToForm, issuesToErrors, itemHeading } from './fields';
@@ -17,6 +18,9 @@ import { HeaderForm } from './HeaderForm';
 import { ItemForm, type ItemDraft } from './ItemForm';
 import { KindSection, addId, controlId, sectionId } from './KindSection';
 import { globalOrder, itemsOfKind, moveWithinKind, nextPosition, placeOf, removeItem, replaceItem, tempId, type EditorItem } from './items-state';
+import { otherLocale, type ContentLocale as TextLocale } from '@/lib/profile-text';
+import { anchorTarget } from './translate-anchor';
+import { itemTextSpecs, translationsToForm } from './translation-form';
 import s from './profile.module.css';
 
 interface Editing {
@@ -55,6 +59,11 @@ export function ProfileEditor({ locale, nameHint }: { locale: Locale; nameHint: 
   const [headerVersion, setHeaderVersion] = useState(0);
   const focusAfter = useRef<string[] | null>(null);
   const counter = useRef(1);
+  /** W7 (B4): the profile's primary language (its main text); the other one is optional, field by field. */
+  const primary: TextLocale = profile?.locale ?? contentLocale;
+  /** W7 (B4): `/perfil#traducir-encabezado` opens the header in the other language (the flag's links). */
+  const [headerMode, setHeaderMode] = useState<TextLocale | null>(null);
+  const deepLinked = useRef(false);
 
   const fetchProfile = useCallback(async () => {
     setLoad({ state: 'loading' });
@@ -66,7 +75,24 @@ export function ProfileEditor({ locale, nameHint }: { locale: Locale; nameHint: 
     setProfile(res.data.profile);
     setItems(res.data.items);
     setLoad({ state: 'ready' });
-  }, []);
+    // W7 (B4): the missing-translation flag links to `/perfil#traducir-<item id>` (or the header): once, after the
+    // first load, that form opens in the other language (its heading takes the focus, which scrolls to it).
+    if (deepLinked.current) return;
+    deepLinked.current = true;
+    const target = anchorTarget(window.location.hash);
+    const loaded: TextLocale = res.data.profile?.locale ?? contentLocale;
+    if (target === 'header') {
+      setHeaderMode(otherLocale(loaded));
+      requestAnimationFrame(() => document.getElementById('perfil-encabezado')?.scrollIntoView());
+      return;
+    }
+    const item = target ? res.data.items.find((i) => i.id === target) : undefined;
+    if (item) {
+      const mode = item.kind === 'language' ? loaded : otherLocale(loaded);
+      const translation = { values: translationsToForm(itemTextSpecs(item.kind), item.translations, otherLocale(loaded)), errors: {}, mode };
+      setEditing({ kind: item.kind, id: item.id, draft: { values: contentToForm(ITEM_FIELDS[item.kind], item.content), tags: [...item.tags], draft: '', errors: {}, translation }, key: counter.current++ });
+    }
+  }, [contentLocale]);
 
   useEffect(() => {
     // Loads once on mount; the state updates happen after the fetch resolves.
@@ -90,15 +116,18 @@ export function ProfileEditor({ locale, nameHint }: { locale: Locale; nameHint: 
   function openNew(kind: ItemKind) {
     setEditing({ kind, id: null, draft: emptyDraft(kind), key: nextKey() });
   }
-  function openEdit(item: EditorItem) {
-    setEditing({ kind: item.kind, id: item.id, draft: { values: contentToForm(ITEM_FIELDS[item.kind], item.content), tags: [...item.tags], draft: '', errors: {} }, key: nextKey() });
+  function openEdit(item: EditorItem, mode?: TextLocale) {
+    const other = otherLocale(primary);
+    const translation = { values: translationsToForm(itemTextSpecs(item.kind), item.translations, other), errors: {}, mode: mode ?? primary };
+    setEditing({ kind: item.kind, id: item.id, draft: { values: contentToForm(ITEM_FIELDS[item.kind], item.content), tags: [...item.tags], draft: '', errors: {}, translation }, key: nextKey() });
   }
+
   function closeForm() {
     if (editing) focusAfter.current = editing.id ? [controlId(editing.id, 'edit')] : [addId(editing.kind)];
     setEditing(null);
   }
 
-  async function save(target: Editing, result: { content: Record<string, unknown>; tags: string[]; draft: ItemDraft }) {
+  async function save(target: Editing, result: { content: Record<string, unknown>; tags: string[]; translations: EditorItem['translations']; draft: ItemDraft }) {
     const { kind, id } = target;
     const known = ITEM_FIELDS[kind].map((f) => f.name);
     const reopen = (error: ApiError) => setEditing({ kind, id, draft: { ...result.draft, errors: issuesToErrors(error.issues, known) }, key: nextKey() });
@@ -107,9 +136,9 @@ export function ProfileEditor({ locale, nameHint }: { locale: Locale; nameHint: 
       const temp = tempId(nextKey());
       const now = new Date().toISOString();
       const position = nextPosition(items);
-      setItems((all) => [...all, { id: temp, profileId: profile?.id ?? '', kind, position, content: result.content, tags: result.tags, createdAt: now, updatedAt: now, pending: true }]);
+      setItems((all) => [...all, { id: temp, profileId: profile?.id ?? '', kind, position, content: result.content, tags: result.tags, translations: result.translations, createdAt: now, updatedAt: now, pending: true }]);
       focusAfter.current = [addId(kind)];
-      const res = await api.createItem({ kind, position, content: result.content, tags: result.tags });
+      const res = await api.createItem({ kind, position, content: result.content, tags: result.tags, ...(result.translations ? { translations: result.translations } : {}) });
       if (!res.ok) {
         setItems((all) => removeItem(all, temp));
         fail(res.error);
@@ -122,9 +151,10 @@ export function ProfileEditor({ locale, nameHint }: { locale: Locale; nameHint: 
     }
     const before = items.find((i) => i.id === id);
     if (!before) return;
-    setItems((all) => replaceItem(all, id, { ...before, content: result.content, tags: result.tags, pending: true }));
+    setItems((all) => replaceItem(all, id, { ...before, content: result.content, tags: result.tags, translations: result.translations, pending: true }));
     focusAfter.current = [controlId(id, 'edit')];
-    const res = await api.updateItem(id, { content: result.content, tags: result.tags });
+    // W7 (B4): the item's other-language text is sent with every edit (null clears it).
+    const res = await api.updateItem(id, { content: result.content, tags: result.tags, translations: result.translations ?? null });
     if (!res.ok) {
       if (res.error.kind === 'not_found') {
         setItems((all) => removeItem(all, id));
@@ -210,6 +240,8 @@ export function ProfileEditor({ locale, nameHint }: { locale: Locale; nameHint: 
         initial={editing.draft}
         copy={copy}
         guide={SECTOR_GUIDE_COPY[locale]}
+        primary={primary}
+        ui={contentLocale}
         onSubmit={(result) => void save(editing, result)}
         onCancel={closeForm}
       />
@@ -229,7 +261,16 @@ export function ProfileEditor({ locale, nameHint }: { locale: Locale; nameHint: 
           </ul>
         </EmptyState>
       ) : null}
-      <HeaderForm key={headerVersion} profile={profile} nameHint={nameHint} uiLocale={contentLocale} copy={copy} appCopy={appCopy} onSaved={setProfile} />
+      <HeaderForm
+        key={`${headerVersion}-${headerMode ?? ''}`}
+        profile={profile}
+        nameHint={nameHint}
+        uiLocale={contentLocale}
+        initialMode={headerMode ?? undefined}
+        copy={copy}
+        appCopy={appCopy}
+        onSaved={setProfile}
+      />
       <section className={s.panel} aria-labelledby="perfil-trayectoria">
         <h2 id="perfil-trayectoria">{copy.itemsTitle}</h2>
         <p>{copy.itemsIntro}</p>
@@ -250,6 +291,8 @@ export function ProfileEditor({ locale, nameHint }: { locale: Locale; nameHint: 
           title={appCopy.itemKinds[kind]}
           items={itemsOfKind(items, kind)}
           copy={copy}
+          bilingual={BILINGUAL_COPY[locale]}
+          primary={primary}
           editingId={editing?.kind === kind ? editing.id : null}
           adding={editing?.kind === kind && editing.id === null}
           reordering={reordering}

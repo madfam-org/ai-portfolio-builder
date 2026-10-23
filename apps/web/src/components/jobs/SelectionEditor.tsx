@@ -7,6 +7,7 @@ import { Icon } from '@/components/ui/Icon';
 import { Badge } from '@/components/ui/States';
 import type { ItemDto } from '@/lib/client/types';
 import { fmt, JOBS_COPY } from '@/lib/copy/jobs';
+import { localizeItem, type ContentLocale } from '@/lib/profile-text';
 import type { Locale } from '@/lib/routing';
 import { LIMITS, addEntry, cleanOverride, itemLabel, itemOriginal, moveEntry, removeEntry, setOverride, type OverrideDraft, type SelectionEntry } from './tailoring';
 import s from './jobs.module.css';
@@ -20,6 +21,8 @@ export type ItemProblems = Record<string, Partial<Record<keyof OverrideDraft, st
  */
 export function SelectionEditor({
   locale,
+  primary,
+  docLocale,
   items,
   scores,
   selection,
@@ -28,6 +31,9 @@ export function SelectionEditor({
   itemProblems,
 }: {
   locale: Locale;
+  /** W7 (B4): the profile's primary language and the documents' language; the placeholders show the latter. */
+  primary: ContentLocale;
+  docLocale: ContentLocale;
   items: readonly ItemDto[];
   scores: ReadonlyMap<string, number>;
   selection: readonly SelectionEntry[];
@@ -84,7 +90,9 @@ export function SelectionEditor({
             const item = byId.get(entry.itemId);
             if (!item) return null;
             const name = label(item);
-            const original = itemOriginal(item);
+            // W7 (B4): what the document will print when nothing is adjusted: the text of its own language.
+            const localized = { ...item, content: localizeItem(item.kind, item.content, item.translations, primary, docLocale).content };
+            const original = itemOriginal(localized);
             const adjusted = cleanOverride(entry.override) !== undefined;
             const problems = itemProblems[entry.itemId] ?? {};
             const base = `sel-${entry.itemId}`;
@@ -141,7 +149,7 @@ export function SelectionEditor({
                     id={`ov-${entry.itemId}-title`}
                     label={t.tailor.overrideTitle}
                     value={entry.override.title}
-                    placeholder={name}
+                    placeholder={label(localized)}
                     maxLength={LIMITS.overrideTitle}
                     onChange={(e) => edit({ title: e.target.value })}
                     error={problems.title ?? null}

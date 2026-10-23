@@ -16,7 +16,25 @@ import { TAILOR_LANGUAGE_COPY } from '@/lib/copy/tailor-language';
 import type { Locale } from '@/lib/routing';
 import { JobDocuments } from './JobDocuments';
 import { SelectionEditor, type ItemProblems } from './SelectionEditor';
-import { DEFAULT_KINDS, LIMITS, TAILOR_KINDS, TEMPLATES, artifactTitle, buildArtifactSet, initialSelection, languagesOf, type SelectionEntry, type TailorProblem } from './tailoring';
+import { MissingTranslations } from '@/components/render/MissingTranslations';
+import { BILINGUAL_COPY } from '@/lib/copy/bilingual';
+import { localizeHeader } from '@/lib/profile-text';
+import {
+  DEFAULT_KINDS,
+  LIMITS,
+  TAILOR_KINDS,
+  TEMPLATES,
+  artifactTitle,
+  buildArtifactSet,
+  initialSelection,
+  languagesOf,
+  restoreLanguage,
+  stashLanguage,
+  tailorMissing,
+  type LanguageTexts,
+  type SelectionEntry,
+  type TailorProblem,
+} from './tailoring';
 import { useJobBundle } from './useJobBundle';
 import s from './jobs.module.css';
 
@@ -48,6 +66,8 @@ export function TailorWorkspace({ locale, jobId }: { locale: Locale; jobId: stri
   const [serverError, setServerError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [created, setCreated] = useState<ArtifactDto[] | null>(null);
+  /** W7 (B4): the per-job texts typed for the language that is NOT shown now (tailoring.ts stashLanguage). */
+  const [stashed, setStashed] = useState<Partial<Record<ContentLocale, LanguageTexts>>>({});
   const resultRef = useRef<HTMLDivElement>(null);
   const errorRef = useRef<HTMLDivElement>(null);
 
@@ -103,8 +123,20 @@ export function TailorWorkspace({ locale, jobId }: { locale: Locale; jobId: stri
 
   const toggleKind = (kind: ArtifactKind, on: boolean) => setKinds((all) => (on ? [...new Set([...all, kind])] : all.filter((k) => k !== kind)));
 
-  function switchLanguage(to: ContentLocale) {
+  /** W7 (B4): overrides, summary, greeting and closing are per language; the selection and its order are shared. */
+  function changeLanguage(to: ContentLocale) {
+    if (to === docLocale) return;
+    setStashed((all) => ({ ...all, [docLocale]: stashLanguage(selection, { summary, greeting, closing }) }));
+    const back = restoreLanguage(selection, stashed[to]);
+    setSelection(back.selection);
+    setSummary(back.summary);
+    setGreeting(back.greeting);
+    setClosing(back.closing);
     setContentLocale(to);
+  }
+
+  function switchLanguage(to: ContentLocale) {
+    changeLanguage(to);
     setSwitched(to);
     setCreated(null);
     requestAnimationFrame(() => document.getElementById(`tailor-language-${to}`)?.focus());
@@ -169,6 +201,8 @@ export function TailorWorkspace({ locale, jobId }: { locale: Locale; jobId: stri
         ) : (
           <SelectionEditor
             locale={locale}
+            primary={profileLocale}
+            docLocale={docLocale}
             items={items}
             scores={scores}
             selection={selection}
@@ -210,7 +244,7 @@ export function TailorWorkspace({ locale, jobId }: { locale: Locale; jobId: stri
           </p>
           {(['es-MX', 'en'] as const).map((v) => (
             <div key={v}>
-              <input id={`tailor-language-${v}`} type="radio" name="tailor-language" value={v} checked={docLocale === v} onChange={() => setContentLocale(v)} />{' '}
+              <input id={`tailor-language-${v}`} type="radio" name="tailor-language" value={v} checked={docLocale === v} onChange={() => changeLanguage(v)} />{' '}
               <label htmlFor={`tailor-language-${v}`}>{lt.options[v]}</label>
             </div>
           ))}
@@ -219,6 +253,7 @@ export function TailorWorkspace({ locale, jobId }: { locale: Locale; jobId: stri
               {lt.switched[switched]}
             </p>
           ) : null}
+          {docLocale !== profileLocale ? <p className="small muted">{BILINGUAL_COPY[locale].overridesPerLanguage(BILINGUAL_COPY[locale].inLanguage[docLocale])}</p> : null}
           <div className="small muted" data-testid="tailor-languages-existing">
             {existingLanguages.length === 0 ? (
               lt.none
@@ -240,7 +275,7 @@ export function TailorWorkspace({ locale, jobId }: { locale: Locale; jobId: stri
           hint={t.tailor.summaryHint}
           rows={4}
           value={summary}
-          placeholder={profile?.summary ?? ''}
+          placeholder={profile ? localizeHeader({ headline: profile.headline, summary: profile.summary }, profile.translations, profileLocale, docLocale).header.summary : ''}
           onChange={(e) => setSummary(e.target.value)}
           error={formProblem('summary')}
         />
@@ -251,6 +286,14 @@ export function TailorWorkspace({ locale, jobId }: { locale: Locale; jobId: stri
             <TextAreaField id="tailor-closing" label={t.tailor.closing} rows={2} value={closing} onChange={(e) => setClosing(e.target.value)} error={formProblem('closing')} />
           </>
         ) : null}
+        <MissingTranslations
+          locale={locale}
+          missing={tailorMissing({ profile, items, selection, locale: docLocale, summary, showContact })}
+          target={docLocale}
+          primary={profileLocale}
+          id="tailor-translations"
+          heading="h3"
+        />
         {chosenKinds.length > 0 ? (
           <div>
             <p className="small muted">{t.tailor.willCreate}</p>

@@ -4,6 +4,7 @@
  * skills, languages, projects. `interests`, `references` and `meta` are ignored (counted, never kept).
  * Pre-v1 names some tools still write are accepted too (`work[].company`, `work[].website`, `publications[].website`).
  */
+import { languageCodeFromName } from '../../lib/languages.ts';
 import { fitHeader, makeItem, type ImportResult, type Raw } from './model.ts';
 
 export class NotJsonResumeError extends Error {}
@@ -104,7 +105,8 @@ export function parseJsonResume(text: string): ImportResult {
     raw: { title: str(e.name), publisher: str(e.publisher), date: str(e.releaseDate), url: str(e.url) || str(e.website), summary: str(e.summary) },
   }));
   each('skills', (e) => ({ kind: 'skill', raw: { name: str(e.name), level: skillLevel(str(e.level)) }, tags: strings(e.keywords) }));
-  each('languages', (e) => ({ kind: 'language', raw: { name: str(e.language), level: fluencyLevel(str(e.fluency)) } }));
+  // W7 (B4): a recognised language name also gives its ISO 639 code (lib/languages.ts).
+  each('languages', (e) => ({ kind: 'language', raw: { code: languageCodeFromName(str(e.language)) ?? undefined, name: str(e.language), level: fluencyLevel(str(e.fluency)) } }));
   each('projects', (e) => ({
     kind: 'project',
     raw: {

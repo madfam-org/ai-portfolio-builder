@@ -8,6 +8,7 @@
  * in step with the zod schemas field by field (names, required, types, enum options, every limit), in both directions.
  */
 import type { ItemKind } from '../../lib/copy/app.ts';
+import { LANGUAGE_CODES } from '../../lib/languages.ts';
 
 export const ITEM_KIND_ORDER: readonly ItemKind[] = [
   'experience',
@@ -95,7 +96,9 @@ export const ITEM_FIELDS: Record<ItemKind, readonly FieldSpec[]> = {
     { name: 'credentialId', type: 'text', max: 200 },
   ],
   achievement: [{ name: 'title', type: 'text', max: 200, required: true }, { name: 'date', type: 'date' }, summary],
+  // W7 (B4): the ISO 639 code (lib/languages.ts) first; its name in each document's language comes from it.
   language: [
+    { name: 'code', type: 'enum', options: LANGUAGE_CODES },
     { name: 'name', type: 'text', max: 80, required: true },
     { name: 'level', type: 'enum', options: LANGUAGE_LEVELS },
   ],

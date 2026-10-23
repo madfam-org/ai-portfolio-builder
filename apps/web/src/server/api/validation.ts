@@ -7,6 +7,8 @@ import { z } from 'zod';
 import { isAllowedSlug } from '../../lib/api-routes.ts';
 import { ARTIFACT_KINDS, ARTIFACT_STATUSES, JOB_STATUSES, LOCALES, PROFILE_ITEM_KINDS, SOURCE_TEXT_MAX } from '../db/schema.ts';
 import { isTemplateFor } from '../../lib/templates.ts';
+import { LANGUAGE_CODES } from '../../lib/languages.ts';
+import { HEADER_TEXT_FIELDS, ITEM_TEXT_FIELDS } from '../../lib/profile-text.ts';
 import {
   COUNTRY_CODE_PATTERN,
   CURRENCY_PATTERN,
@@ -56,6 +58,8 @@ export const profileBody = z
     summary: text(5000).default(''),
     locale: z.enum(LOCALES).default('es-MX'),
     contact: contactSchema.default({}),
+    /** W7 (B4): the header's text in the other language; omitted keeps the stored one, null clears it. */
+    translations: z.lazy(() => profileTranslations).nullable().optional(),
   })
   .strict();
 
@@ -86,7 +90,8 @@ export const ITEM_CONTENT: Record<(typeof PROFILE_ITEM_KINDS)[number], z.ZodType
     .object({ name: required(200), issuer: text(200).optional(), date: partialDate.optional(), expiresOn: partialDate.optional(), url: httpUrl.optional(), credentialId: text(200).optional() })
     .strict(),
   achievement: z.object({ title: required(200), date: partialDate.optional(), summary: text(3000).optional() }).strict(),
-  language: z.object({ name: required(80), level: z.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2', 'native']).optional() }).strict(),
+  // W7 (B4): `code` (ISO 639, lib/languages.ts) gives the name in each document's language; `name` stays the fallback.
+  language: z.object({ code: z.enum(LANGUAGE_CODES).optional(), name: required(80), level: z.enum(['A1', 'A2', 'B1', 'B2', 'C1', 'C2', 'native']).optional() }).strict(),
   publication: z.object({ title: required(300), publisher: text(200).optional(), date: partialDate.optional(), url: httpUrl.optional(), summary: text(3000).optional() }).strict(),
   volunteering: z.object({ role: required(200), organization: required(200), ...span, summary: text(3000).optional() }).strict(),
   award: z.object({ title: required(200), issuer: text(200).optional(), date: partialDate.optional(), summary: text(3000).optional() }).strict(),
@@ -94,12 +99,27 @@ export const ITEM_CONTENT: Record<(typeof PROFILE_ITEM_KINDS)[number], z.ZodType
 };
 
 export const itemCreateBody = z
-  .object({ kind: z.enum(PROFILE_ITEM_KINDS), position: z.number().int().min(0).max(10_000).default(0), content: z.unknown(), tags: tags.default([]) })
+  .object({
+    kind: z.enum(PROFILE_ITEM_KINDS),
+    position: z.number().int().min(0).max(10_000).default(0),
+    content: z.unknown(),
+    tags: tags.default([]),
+    /** W7 (B4): validated per kind by the handler (`ITEM_TRANSLATIONS`). */
+    translations: z.unknown().optional(),
+  })
   .strict();
 /** «Subir» / «Bajar»: the owner's item ids in their new order (positions 0..n-1). */
 export const itemReorderBody = z.object({ itemIds: z.array(z.uuid()).min(1).max(500) }).strict();
 
-export const itemPatchBody = z.object({ position: z.number().int().min(0).max(10_000).optional(), content: z.unknown().optional(), tags: tags.optional() }).strict();
+export const itemPatchBody = z
+  .object({
+    position: z.number().int().min(0).max(10_000).optional(),
+    content: z.unknown().optional(),
+    tags: tags.optional(),
+    /** W7 (B4): omitted keeps the stored translations, null clears them; validated per kind by the handler. */
+    translations: z.unknown().optional(),
+  })
+  .strict();
 
 /**
  * W5-J: the typed posting fields of a job (ingest/vocab.ts; all optional and nullable, so old clients keep working).
@@ -325,3 +345,33 @@ function templateAllowed(kind: string, template: string, path: (string | number)
   const message = templateIssue(kind, template);
   if (message) ctx.addIssue({ code: 'custom', path, message });
 }
+
+// ---- W7 (B4): bilingual profile text (lib/profile-text.ts) ---------------------------------------------------------
+
+/**
+ * The header's text in another language: `{ "en": { headline?, summary?, location? } }`, each with the limit of the
+ * field it translates. At most one entry per content locale (the handler refuses the profile's own primary locale).
+ */
+export const profileTranslations = z.partialRecord(
+  z.enum(LOCALES),
+  z.object({ headline: text(200).optional(), summary: text(5000).optional(), location: text(200).optional() }).strict(),
+);
+
+/** The item content schema of `kind`, as a ZodObject (every ITEM_CONTENT entry is one). */
+const contentObject = (kind: (typeof PROFILE_ITEM_KINDS)[number]) => ITEM_CONTENT[kind] as unknown as z.ZodObject<Record<string, z.ZodType>>;
+
+/**
+ * Per item kind, its translations: `{ "en": { <word field>?: … } }`, only the kind's word fields (ITEM_TEXT_FIELDS),
+ * each with the limit and type of the field it translates (strings, or highlight lines), all optional. A translation
+ * of a field that is not written in words (an organisation, a date, a URL, a level) is a 400.
+ */
+export const ITEM_TRANSLATIONS = Object.fromEntries(
+  PROFILE_ITEM_KINDS.map((kind) => {
+    const shape = contentObject(kind).shape;
+    const fields = Object.fromEntries(ITEM_TEXT_FIELDS[kind].map((f) => [f, (shape[f] as z.ZodType).optional()]));
+    return [kind, z.partialRecord(z.enum(LOCALES), z.object(fields).strict()).nullable()];
+  }),
+) as unknown as Record<(typeof PROFILE_ITEM_KINDS)[number], z.ZodType<Partial<Record<(typeof LOCALES)[number], Record<string, string | string[]>>> | null>>;
+
+/** The header fields a translation may carry (in step with `profileTranslations`). */
+export const PROFILE_TEXT_FIELDS: readonly string[] = HEADER_TEXT_FIELDS;

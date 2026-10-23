@@ -8,14 +8,18 @@ import { Notice } from '@/components/ui/States';
 import { api, apiErrorMessage } from '@/lib/client/api';
 import { APP_COPY } from '@/lib/copy/app';
 import { DATA_RIGHTS_COPY } from '@/lib/copy/import';
+import { BILINGUAL_COPY } from '@/lib/copy/bilingual';
+import type { ContentLocale } from '@/lib/profile-text';
 import type { Locale } from '@/lib/routing';
 import s from './settings.module.css';
 
 type Format = 'full' | 'json-resume';
 
 /** «cv-mis-datos-2026-10-22.json» (the person's local date; the API's Content-Disposition uses the same names). */
-export function downloadName(format: Format, now: Date): string {
+export function downloadName(format: Format, now: Date, language?: ContentLocale): string {
   const day = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  // W7 (B4): a JSON Resume in a chosen language says which («cv-json-resume-en-…»), as the API's own name does.
+  if (format === 'json-resume' && language) return `cv-json-resume-${language === 'en' ? 'en' : 'es'}-${day}.json`;
   return format === 'json-resume' ? `cv-json-resume-${day}.json` : `cv-mis-datos-${day}.json`;
 }
 
@@ -46,16 +50,16 @@ export function DataRights({ locale, accountUrl }: { locale: Locale; accountUrl:
   const [deleting, setDeleting] = useState(false);
   const [deleteNote, setDeleteNote] = useState<{ tone: 'success' | 'danger'; text: string } | null>(null);
 
-  async function download(format: Format) {
+  async function download(format: Format, language?: ContentLocale) {
     setExporting(format);
     setExportNote(null);
-    const res = await api.exportMine(format);
+    const res = await api.exportMine(format, language);
     setExporting(null);
     if (!res.ok) {
       setExportNote({ tone: 'danger', text: apiErrorMessage(res.error, appCopy.states) });
       return;
     }
-    saveJson(res.data, downloadName(format, new Date()));
+    saveJson(res.data, downloadName(format, new Date(), language));
     setExportNote({ tone: 'success', text: copy.exported });
   }
 
@@ -96,7 +100,13 @@ export function DataRights({ locale, accountUrl }: { locale: Locale; accountUrl:
           <Button variant="secondary" onClick={() => void download('json-resume')} disabled={exporting !== null}>
             {exporting === 'json-resume' ? copy.preparing : copy.jsonResumeButton}
           </Button>
+          {(['es-MX', 'en'] as const).map((l) => (
+            <Button key={l} variant="ghost" onClick={() => void download('json-resume', l)} disabled={exporting !== null}>
+              {BILINGUAL_COPY[locale].jsonResumeIn[l]}
+            </Button>
+          ))}
         </div>
+        <p className="small muted">{BILINGUAL_COPY[locale].jsonResumeNote}</p>
         {exportNote ? <Notice tone={exportNote.tone}>{exportNote.text}</Notice> : null}
       </section>
       <section className={s.panel} aria-labelledby="ajustes-eliminar">

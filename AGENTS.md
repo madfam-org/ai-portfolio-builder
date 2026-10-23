@@ -264,3 +264,25 @@ when HCM cannot answer, including an HCM that predates segments and answers 400)
 «mercado general», shows the segment under HCM's own label («no solo lujo») with n, quarter and source, and adds a
 neutral note above the general P90; it never frames an offer as too high. `e2e/benchmark-segment.spec.ts` checks the
 copy and that none of «atípico», «demasiado», «excesivo», «outlier», «too high» or «%» appears.
+
+## W7 (B4): bilingual profile text (2026-10-22)
+
+Owner directive: English CVs fully in English. One **primary language** per profile (`profiles.locale`, es-MX by
+default) holds the main text where it always lived; the other language is optional, field by field, in a nullable
+`translations` jsonb on `profiles` and `profile_items` (migration `0003`, additive; `{ "en": { "role": "…" } }`).
+[`docs/PRODUCT.md`](docs/PRODUCT.md) «Bilingual profile text» has the model and the reasons.
+
+| Path | What it is |
+|---|---|
+| `apps/web/src/lib/profile-text.ts` | the model: which fields are words (`ITEM_TEXT_FIELDS`, `HEADER_TEXT_FIELDS`), `localizeItem` / `localizeHeader` (fallback + missing report), `cleanTranslations`, `projectTranslations` |
+| `apps/web/src/lib/languages.ts` | the ISO 639 codes a language item may carry; names come from `Intl` per document language |
+| `apps/web/src/components/render/localize.ts`, `MissingTranslations.tsx` | every renderer reads `localizeRenderData` first; the «Faltan N textos en inglés» flag (preview, tailoring; never printed) |
+| `apps/web/src/components/profile/{TranslationFields.tsx,translation-form.ts,translate-anchor.ts}` | the «Texto en: Español \| English» switch per form, the other-language fields, `/perfil#traducir-<id>` deep links |
+| `apps/web/src/components/import/{language.ts,ImportLanguage.tsx}`, `src/lib/copy/bilingual.ts` | the import's file language; the strings |
+| `apps/web/e2e/bilingual.spec.ts`, `e2e/fixtures/bilingual/`, `test/render-bilingual.test.ts`, `test/fixtures/bilingual/` | the no-translation baseline written by `main` at f1ca3530 (the print view's document text, machine-independent; render hashes), and the bilingual journey |
+
+Rules: a document in the primary language reads the stored text only (byte-for-byte proof against main's golden
+print text and render hashes); proper names, dates, URLs, levels and codes stay single; no machine or AI translation
+(the Selva seam stays off until its restricted tier is live); per-job overrides belong to the language of the
+documents they are typed for; the public projection carries only the document's own language. CI minimums after this
+PR: `pg` ≥ 39 passing, `e2e` ≥ 89 passing after the rebase onto #26 (were 34 and 85).

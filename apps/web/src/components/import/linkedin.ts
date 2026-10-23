@@ -14,6 +14,7 @@
  * leaves that part empty, never an error.
  */
 import type { ItemKind } from '../../lib/copy/app.ts';
+import { languageCodeFromName } from '../../lib/languages.ts';
 import { pick, readTable } from './csv.ts';
 import { fitHeader, makeItem, type ImportResult, type Raw } from './model.ts';
 import { listEntries, readEntryText, ZIP_LIMITS, type BlobLike, type ZipEntry, type ZipLimits } from './zip.ts';
@@ -152,7 +153,8 @@ export function mapLinkedIn(files: Partial<Record<FileId, string>>, ignored = 0)
     url: pick(r, H.url),
     credentialId: pick(r, H.license),
   }));
-  each('languages', [H.name, H.proficiency], (r) => ({ name: pick(r, H.name), level: languageLevel(pick(r, H.proficiency)) }));
+  // W7 (B4): a recognised language name also gives its ISO 639 code, so each document prints it in its own language.
+  each('languages', [H.name, H.proficiency], (r) => ({ code: languageCodeFromName(pick(r, H.name)) ?? undefined, name: pick(r, H.name), level: languageLevel(pick(r, H.proficiency)) }));
   each('projects', [H.title, H.description], (r) => ({ name: pick(r, H.title), summary: pick(r, H.description), url: pick(r, H.url), startDate: pick(r, H.start), endDate: pick(r, H.end) }));
   each('honors', [H.title, H.issued], (r) => ({ title: pick(r, H.title), issuer: pick(r, H.issuer), date: pick(r, H.issued), summary: pick(r, H.description) }));
   each('publications', [H.name, H.publisher], (r) => ({ title: pick(r, H.name), publisher: pick(r, H.publisher), date: pick(r, H.published), url: pick(r, H.url), summary: pick(r, H.description) }));

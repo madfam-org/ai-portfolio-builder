@@ -12,6 +12,7 @@
  */
 import type { ArtifactKind, ItemKind } from '../../lib/copy/app.ts';
 import type { ArtifactSetInput, ContentLocale } from '../../lib/client/types.ts';
+import { localizeRenderData, type MissingText } from '../render/localize.ts';
 
 /** Every artifact kind, in the order the workspace offers them. */
 export const TAILOR_KINDS: readonly ArtifactKind[] = ['cv', 'portfolio', 'presentation', 'cover_letter'];
@@ -228,4 +229,65 @@ export function versionsByKind<A extends { kind: ArtifactKind; createdAt: string
       .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
       .map((a, i) => ({ ...a, version: i + 1 })),
   })).filter((g) => g.versions.length > 0);
+}
+
+// ---- W7 (B4): bilingual profile text in the tailoring workspace -----------------------------------------------------
+
+/**
+ * Per-job overrides belong to ONE language: the language of the documents being created (each document has one).
+ * Switching the workspace's language keeps the selection and its order, puts this language's per-job texts away
+ * (overrides, summary, cover-letter greeting and closing) and brings back the ones typed earlier for the other language
+ * (empty the first time). Nothing is translated or copied across languages.
+ */
+export interface LanguageTexts {
+  overrides: Record<string, OverrideDraft>;
+  summary: string;
+  greeting: string;
+  closing: string;
+}
+
+export function stashLanguage(selection: readonly SelectionEntry[], texts: Omit<LanguageTexts, 'overrides'>): LanguageTexts {
+  return { overrides: Object.fromEntries(selection.map((e) => [e.itemId, { ...e.override }])), ...texts };
+}
+
+export function restoreLanguage(selection: readonly SelectionEntry[], saved: LanguageTexts | undefined): { selection: SelectionEntry[] } & Omit<LanguageTexts, 'overrides'> {
+  return {
+    selection: selection.map((e) => ({ itemId: e.itemId, override: { ...(saved?.overrides[e.itemId] ?? EMPTY_OVERRIDE) } })),
+    summary: saved?.summary ?? '',
+    greeting: saved?.greeting ?? '',
+    closing: saved?.closing ?? '',
+  };
+}
+
+/**
+ * The fields the documents about to be created would print in the profile's primary language because the other
+ * language has no text for them (components/render/localize.ts, the renderers' own rule), given this workspace's
+ * selection, overrides and summary: the workspace shows them as «Faltan N textos en inglés».
+ */
+export function tailorMissing(input: {
+  profile: { headline: string; summary: string; locale: ContentLocale; contact?: { location?: string }; translations?: unknown } | null;
+  items: readonly { id: string; kind: ItemKind; content: Record<string, unknown>; translations?: unknown }[];
+  selection: readonly SelectionEntry[];
+  locale: ContentLocale;
+  summary: string;
+  showContact: boolean;
+}): MissingText[] {
+  const chosen = new Set(input.selection.map((e) => e.itemId));
+  const items = input.selection.map((e) => {
+    const override = cleanOverride(e.override);
+    return override ? { itemId: e.itemId, override } : { itemId: e.itemId };
+  });
+  const p = input.profile;
+  return localizeRenderData({
+    artifact: { kind: 'cv', title: '', locale: input.locale, template: 'base', content: { items, ...(input.summary.trim() ? { summary: input.summary.trim() } : {}), showContact: input.showContact } },
+    profile: {
+      displayName: '',
+      headline: p?.headline ?? '',
+      summary: p?.summary ?? '',
+      ...(input.showContact ? { contact: p?.contact ?? {} } : {}),
+      locale: p?.locale ?? 'es-MX',
+      translations: p?.translations,
+    },
+    items: input.items.filter((i) => chosen.has(i.id)).map((i) => ({ id: i.id, kind: i.kind, content: i.content, translations: i.translations })),
+  }).missing;
 }

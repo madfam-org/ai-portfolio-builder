@@ -11,12 +11,16 @@ import type { ItemBatchInput, ItemDto, ProfileDto } from '@/lib/client/types';
 import { APP_COPY } from '@/lib/copy/app';
 import { IMPORT_COPY } from '@/lib/copy/import';
 import { PROFILE_COPY } from '@/lib/copy/profile';
+import { BILINGUAL_COPY } from '@/lib/copy/bilingual';
 import type { Locale } from '@/lib/routing';
 import { parseJsonResume, NotJsonResumeError, JSON_RESUME_MAX_BYTES } from './json-resume';
 import { LINKEDIN_FILE_NAMES, NotLinkedInError, readLinkedInZip } from './linkedin';
 import { IMPORT_MAX_BODY_BYTES, IMPORT_MAX_ITEMS, findDuplicates, type ImportResult } from './model';
 import { headerChoices, headerPatch, type HeaderKey } from './header';
 import { ZipError } from './zip';
+import { ImportLanguage } from './ImportLanguage';
+import { importLanguagePlan } from './language';
+import type { ContentLocale } from '@/lib/profile-text';
 import s from './import.module.css';
 
 type State =
@@ -53,6 +57,10 @@ export function ImportPanel({
   const previewHeading = useRef<HTMLHeadingElement>(null);
   /** Bumped to clear the file inputs (remount). */
   const [inputs, setInputs] = useState(0);
+  /** W7 (B4): the file's language (ImportLanguage.tsx); the import fills the profile's main text. */
+  const primary: ContentLocale = profile?.locale ?? (locale === 'en' ? 'en' : 'es-MX');
+  const [fileLocale, setFileLocale] = useState<ContentLocale>(primary);
+  const plan = importLanguagePlan(fileLocale, primary, existing.length === 0 && !profile?.headline && !profile?.summary);
 
   const previewing = state.step === 'preview';
   useEffect(() => {
@@ -136,8 +144,21 @@ export function ImportPanel({
       setError(copy.errors.tooBig);
       return;
     }
+    if (plan === 'blocked') {
+      setError(BILINGUAL_COPY[locale].importLanguage.blocked(BILINGUAL_COPY[locale].inLanguage[primary], BILINGUAL_COPY[locale].inLanguage[fileLocale]));
+      return;
+    }
     setError(null);
     setState({ ...state, step: 'saving' });
+    if (plan === 'becomes_primary') {
+      // The profile is empty: its primary language becomes the file's (the name and contact stay as they are).
+      const switched = await api.putProfile({ headline: '', summary: '', locale: fileLocale, contact: profile?.contact ?? {} });
+      if (!switched.ok) {
+        setState({ ...state, step: 'preview' });
+        setError(apiErrorMessage(switched.error, appCopy.states));
+        return;
+      }
+    }
     const res = await api.importItems(body);
     if (!res.ok) {
       setState({ ...state, step: 'preview' });
@@ -276,8 +297,9 @@ export function ImportPanel({
               </fieldset>
             );
           })}
+          <ImportLanguage locale={locale} primary={primary} value={fileLocale} plan={plan} onChange={setFileLocale} />
           <div className={s.toolbar}>
-            <Button onClick={() => void confirm()} disabled={state.step === 'saving'}>
+            <Button onClick={() => void confirm()} disabled={state.step === 'saving' || plan === 'blocked'}>
               {state.step === 'saving' ? copy.preview.saving : copy.preview.confirm(state.checked.size)}
             </Button>
             <Button variant="secondary" onClick={discard} disabled={state.step === 'saving'}>

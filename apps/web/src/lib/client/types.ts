@@ -23,8 +23,9 @@ import type { EmploymentType, Provenance, SalaryPeriod, SourceKind, WorkMode } f
 import type { DraftField, DraftFields, IntakeDraft, IntakeFailure, IntakeNote } from '../../server/ingest/types.ts';
 import type { IntakeBody } from '../../server/ingest/intake.ts';
 import type { BenchmarkView } from '../../server/hcm/route.ts';
+import type { Translations } from '../profile-text.ts';
 
-export type { ArtifactContent, ArtifactKind, ArtifactStatus, ItemKind, JobStatus };
+export type { ArtifactContent, ArtifactKind, ArtifactStatus, ItemKind, JobStatus, Translations };
 export type ContentLocale = 'es-MX' | 'en';
 
 export interface ContactDto {
@@ -41,6 +42,8 @@ export interface ProfileDto {
   summary: string;
   locale: ContentLocale;
   contact: ContactDto;
+  /** W7 (B4): the header's text in the other language (lib/profile-text.ts); null or absent: none. */
+  translations?: Translations | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -53,6 +56,8 @@ export interface ItemDto {
   /** Per-kind content (server/api/validation.ts ITEM_CONTENT). */
   content: Record<string, unknown>;
   tags: string[];
+  /** W7 (B4): the item's word fields in the other language (lib/profile-text.ts); null or absent: none. */
+  translations?: Translations | null;
   createdAt: string;
   updatedAt: string;
 }

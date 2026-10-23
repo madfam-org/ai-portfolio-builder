@@ -9,6 +9,8 @@
  *   keywords) stay in the full export.
  */
 import type { OwnerData } from '../db/data-rights.ts';
+import type { ItemKind } from '../../lib/copy/app.ts';
+import { contentLocale, localizeHeader, localizeItem, type ContentLocale } from '../../lib/profile-text.ts';
 
 export const EXPORT_SCHEMA = 'madfam-cv-export';
 export const EXPORT_VERSION = 1;
@@ -32,10 +34,11 @@ export function fullExport(data: OwnerData, now: Date) {
   };
 }
 
-/** «cv-mis-datos-2026-10-22.json» / «cv-json-resume-2026-10-22.json» (UTC date). */
-export function exportFilename(format: ExportFormat, now: Date): string {
+/** «cv-mis-datos-2026-10-22.json» / «cv-json-resume-2026-10-22.json» (UTC date); W7-B4: «cv-json-resume-en-…» per language. */
+export function exportFilename(format: ExportFormat, now: Date, locale?: string): string {
   const day = now.toISOString().slice(0, 10);
-  return format === 'json-resume' ? `cv-json-resume-${day}.json` : `cv-mis-datos-${day}.json`;
+  if (format !== 'json-resume') return `cv-mis-datos-${day}.json`;
+  return locale ? `cv-json-resume-${locale === 'en' ? 'en' : 'es'}-${day}.json` : `cv-json-resume-${day}.json`;
 }
 
 type C = Record<string, unknown>;
@@ -43,11 +46,27 @@ const s = (c: C, k: string): string | undefined => (typeof c[k] === 'string' && 
 const list = (c: C, k: string): string[] | undefined => (Array.isArray(c[k]) && (c[k] as unknown[]).length ? (c[k] as string[]) : undefined);
 const nonEmpty = <T>(xs: T[]): T[] | undefined => (xs.length ? xs : undefined);
 
-/** The core profile as a JSON Resume v1.0.0 document. */
-export function toJsonResume(data: OwnerData, now: Date) {
-  const p = data.profile;
+/**
+ * The core profile as a JSON Resume v1.0.0 document, in ONE language (JSON Resume has no place for two): `locale`, or
+ * the profile's primary language when absent. W7 (B4): in the other language each text field is its translation when
+ * there is one, else the primary text (as a document falls back); language names come from their ISO 639 codes.
+ * The full export carries every translation as stored.
+ */
+export function toJsonResume(data: OwnerData, now: Date, locale?: ContentLocale) {
+  const primary = contentLocale(data.profile?.locale);
+  const target = locale ?? primary;
+  const header = data.profile
+    ? localizeHeader(
+        { headline: data.profile.headline, summary: data.profile.summary, location: typeof (data.profile.contact as C)?.location === 'string' ? ((data.profile.contact as C).location as string) : undefined },
+        data.profile.translations,
+        primary,
+        target,
+      ).header
+    : null;
+  const p = data.profile && header ? { ...data.profile, headline: header.headline, summary: header.summary, contact: { ...((data.profile.contact ?? {}) as C), ...(header.location === undefined ? {} : { location: header.location }) } } : data.profile;
   const contact = ((p?.contact ?? {}) as C) ?? {};
-  const of = (kind: string) => data.items.filter((i) => i.kind === kind).map((i) => ({ c: (i.content ?? {}) as C, tags: i.tags }));
+  const of = (kind: string) =>
+    data.items.filter((i) => i.kind === kind).map((i) => ({ c: localizeItem(i.kind as ItemKind, i.content, i.translations, primary, target).content as C, tags: i.tags }));
   const contactLinks = Array.isArray(contact.links) ? (contact.links as { label: string; url: string }[]) : [];
   const sampleLinks = of('link').map(({ c }) => ({ label: s(c, 'label') ?? '', url: s(c, 'url') ?? '' }));
   return {
