@@ -235,3 +235,47 @@ offer and not a prediction. cv is never the data owner: it holds no figure and c
 - **Dormant by default**: without `HCM_API_URL`, `HCM_CLIENT_ID` and `HCM_CLIENT_SECRET` the route answers 503
   `not_configured` and the panel says the comparison is not available yet. HCM down or slow (3 s budget, circuit
   breaker after 3 failures for 30 s): 503 `benchmark_unavailable`; the rest of the page is unaffected.
+
+## Luxury retail beta (W7, B3)
+
+The first beta persona works in luxury retail in Mexico and is looking for a comparable or better role in Mexico
+City while employed. What cv does for that search, and what it deliberately does not do:
+
+### Luxury career sites
+
+Checked on 2026-10-22 by fetching each house's public careers page, its `robots.txt` and, where reachable, one job
+page and the terms of use (the lane report lists every URL). **No provider these houses use publishes a key-free
+public posting API**, so no new ATS reader was added; their job pages go through the existing page path, each only
+when its `robots.txt` allows it:
+
+| System (who uses it, as observed) | How cv reads one posting |
+|---|---|
+| SAP SuccessFactors Career Site Builder (Prada Group, Burberry, Sephora, El Palacio de Hierro) | schema.org `JobPosting` **microdata** (`http://schema.org`); its Java-style `datePosted` («Wed Oct 14 00:00:00 UTC 2026») is now read; its XML job feeds are per-customer for contracted boards, not a public API |
+| Workday (Chanel, Kering, Richemont tenants) | the job page's **JSON-LD** (entity-escaped names decoded); `/wday/cxs/` JSON is undocumented and never called. Some tenants' `robots.txt` disallow their site (`Disallow: /Kering/`, `/richemont/`): cv also checks the path **without its locale segment** (`/en-US/Kering/…` → `/Kering/…`) and refuses either |
+| Oracle Recruiting Cloud (Hermès, Tiffany & Co.) | client-rendered; only the Open Graph title and description are readable by a server (the bookmark reads the full page in the person's browser). Oracle reserves its candidate-experience REST resources for internal use |
+| Eightfold (Kering's front end), Lumesse/Cornerstone TalentLink (Dior and, by reference scheme, other LVMH maisons) | customer API key / no public documentation: capture from the browser |
+| lvmh.com (the group's listing of maison postings) | **capture-only** (`boards.ts`): robots allows, but the legal terms reserve the content for personal and private use and prohibit extraction |
+| Sites behind bot protection (careers.chanel.com, careers.richemont.com, jobs.louisvuitton.com, liverpool.com.mx, Computrabajo) | the 403 is reported honestly («bloqueó la lectura automática») and never evaded; capture, paste or file |
+
+A posting that is **no longer open** but still answers 200 (Workday `postingAvailable: false`, a SuccessFactors
+«Sorry, this position has been filled» page, the Spanish and English equivalents) is now the failure
+`posting_closed` instead of a draft made of the site's navigation (`ingest/closed.ts`); a live JobPosting always wins.
+
+### Retail and luxury content, languages, discretion
+
+- **Profile:** a folded «Ideas para ventas de lujo y retail» guide inside the forms of experience, achievements,
+  skills, languages, certifications and projects (`components/profile/SectorGuide.tsx`, `SECTOR_GUIDE_COPY` in
+  `lib/copy/profile.ts`): what luxury hiring looks for (target attainment, average ticket, UPT, conversion, client book
+  size and retention, clienteling and CRM, VIC events, product and brand training, visual merchandising, languages with
+  their CEFR level, team leadership), example formats whose figures are marked illustrative, and suggested keywords the
+  person adds to the item's tags with one click. No schema change: every field already existed.
+- **Languages per job:** the tailoring workspace's language control is a plain radio group that says what changes
+  (section titles, dates) and what does not (the person's own text, translated per item under «Ajustar el texto para
+  este empleo»), lists the languages the job's documents already exist in, and offers «Preparar también la versión en
+  inglés» after a set is created. A version in a language other than the profile's carries « (English)» or
+  « (Español)» in its title. `/documentos/:id` keeps its own per-document language.
+- **Templates:** the «Clásica» CV description says it suits luxury houses; nothing is chosen automatically.
+- **Discretion:** before a document becomes link-shared or public, the publish panel shows «Búsqueda confidencial»:
+  who will see it, that a link can be forwarded, that indexing stays off unless ticked, and the document's current
+  title (shown in the browser tab and when shared), with where to change it. cv sends no e-mail about jobs or
+  documents; the public reads carry the document, the profile header and the chosen items, never the job.

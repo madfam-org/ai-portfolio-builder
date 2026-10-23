@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { TemplatePicker } from '@/components/render/TemplatePicker';
 import { Button } from '@/components/ui/Button';
-import { CheckboxField, SelectField, TextAreaField, TextField } from '@/components/ui/Field';
+import { CheckboxField, TextAreaField, TextField } from '@/components/ui/Field';
 import { PageHeader } from '@/components/ui/Layout';
 import { ErrorState, Notice } from '@/components/ui/States';
 import { appPath } from '@/lib/app-routes';
@@ -12,10 +12,11 @@ import type { ArtifactDto, ArtifactKind, ContentLocale } from '@/lib/client/type
 import { APP_COPY } from '@/lib/copy/app';
 import { fmt, JOBS_COPY } from '@/lib/copy/jobs';
 import { TEMPLATE_PICKER_COPY } from '@/lib/copy/render';
+import { TAILOR_LANGUAGE_COPY } from '@/lib/copy/tailor-language';
 import type { Locale } from '@/lib/routing';
 import { JobDocuments } from './JobDocuments';
 import { SelectionEditor, type ItemProblems } from './SelectionEditor';
-import { DEFAULT_KINDS, LIMITS, TAILOR_KINDS, TEMPLATES, artifactTitle, buildArtifactSet, initialSelection, type SelectionEntry, type TailorProblem } from './tailoring';
+import { DEFAULT_KINDS, LIMITS, TAILOR_KINDS, TEMPLATES, artifactTitle, buildArtifactSet, initialSelection, languagesOf, type SelectionEntry, type TailorProblem } from './tailoring';
 import { useJobBundle } from './useJobBundle';
 import s from './jobs.module.css';
 
@@ -30,6 +31,7 @@ type FormField = 'kinds' | 'items' | 'summary' | 'greeting' | 'closing';
 export function TailorWorkspace({ locale, jobId }: { locale: Locale; jobId: string }) {
   const a = APP_COPY[locale];
   const t = JOBS_COPY[locale];
+  const lt = TAILOR_LANGUAGE_COPY[locale];
   const { bundle, reload } = useJobBundle(jobId);
   const [selectionDraft, setSelection] = useState<SelectionEntry[] | null>(null);
   const [kinds, setKinds] = useState<ArtifactKind[]>([...DEFAULT_KINDS]);
@@ -37,6 +39,7 @@ export function TailorWorkspace({ locale, jobId }: { locale: Locale; jobId: stri
   // W4-T: one template per kind (registry ids), `base` until the person picks another.
   const [kindTemplates, setKindTemplates] = useState<Partial<Record<ArtifactKind, string>>>({});
   const [contentLocale, setContentLocale] = useState<ContentLocale | null>(null);
+  const [switched, setSwitched] = useState<ContentLocale | null>(null);
   const [summary, setSummary] = useState('');
   const [showContact, setShowContact] = useState(false);
   const [greeting, setGreeting] = useState('');
@@ -74,7 +77,12 @@ export function TailorWorkspace({ locale, jobId }: { locale: Locale; jobId: stri
   const scores = new Map(match.items.map((m) => [m.itemId, m.score]));
   // Until the person changes it, the selection IS the match's pre-selection (computed, not copied into state).
   const selection = selectionDraft ?? initialSelection(match, new Set(items.map((i) => i.id)));
-  const docLocale: ContentLocale = contentLocale ?? profile?.locale ?? (locale === 'en' ? 'en' : 'es-MX');
+  const profileLocale: ContentLocale = profile?.locale ?? (locale === 'en' ? 'en' : 'es-MX');
+  const docLocale: ContentLocale = contentLocale ?? profileLocale;
+  // W7 (B3): a version in a language other than the profile's says so in its title, so the two read apart.
+  const languageTag = docLocale !== profileLocale ? lt.titleTag[docLocale] : undefined;
+  const otherLocale: ContentLocale = docLocale === 'en' ? 'es-MX' : 'en';
+  const existingLanguages = languagesOf(artifacts);
   const chosenKinds = TAILOR_KINDS.filter((k) => kinds.includes(k));
 
   const formProblem = (field: FormField): string | null => {
@@ -95,8 +103,16 @@ export function TailorWorkspace({ locale, jobId }: { locale: Locale; jobId: stri
 
   const toggleKind = (kind: ArtifactKind, on: boolean) => setKinds((all) => (on ? [...new Set([...all, kind])] : all.filter((k) => k !== kind)));
 
+  function switchLanguage(to: ContentLocale) {
+    setContentLocale(to);
+    setSwitched(to);
+    setCreated(null);
+    requestAnimationFrame(() => document.getElementById(`tailor-language-${to}`)?.focus());
+  }
+
   async function create() {
     setServerError(null);
+    setSwitched(null);
     setCreated(null);
     const built = buildArtifactSet({
       jobId,
@@ -112,6 +128,7 @@ export function TailorWorkspace({ locale, jobId }: { locale: Locale; jobId: stri
       greeting,
       closing,
       kindLabels: a.kinds,
+      languageTag,
     });
     if (!built.ok) {
       setProblems(built.problems);
@@ -186,13 +203,37 @@ export function TailorWorkspace({ locale, jobId }: { locale: Locale; jobId: stri
             onChange={(v) => setKindTemplates((all) => ({ ...all, [k]: v }))}
           />
         ))}
-        <SelectField
-          id="tailor-language"
-          label={t.tailor.language}
-          value={docLocale}
-          onChange={(e) => setContentLocale(e.target.value as ContentLocale)}
-          options={(['es-MX', 'en'] as const).map((v) => ({ value: v, label: t.tailor.languages[v] }))}
-        />
+        <fieldset className={s.fieldset} aria-describedby="tailor-language-hint" data-testid="tailor-language">
+          <legend>{lt.legend}</legend>
+          <p className="small muted" id="tailor-language-hint">
+            {lt.hint}
+          </p>
+          {(['es-MX', 'en'] as const).map((v) => (
+            <div key={v}>
+              <input id={`tailor-language-${v}`} type="radio" name="tailor-language" value={v} checked={docLocale === v} onChange={() => setContentLocale(v)} />{' '}
+              <label htmlFor={`tailor-language-${v}`}>{lt.options[v]}</label>
+            </div>
+          ))}
+          {switched ? (
+            <p className="small" role="status">
+              {lt.switched[switched]}
+            </p>
+          ) : null}
+          <div className="small muted" data-testid="tailor-languages-existing">
+            {existingLanguages.length === 0 ? (
+              lt.none
+            ) : (
+              <>
+                {lt.existing}
+                <ul>
+                  {existingLanguages.map((g) => (
+                    <li key={g.locale}>{lt.existingLine(lt.options[g.locale], g.kinds.map((k) => a.kinds[k]).join(', '))}</li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
+        </fieldset>
         <TextAreaField
           id="tailor-summary"
           label={t.tailor.summary}
@@ -215,7 +256,7 @@ export function TailorWorkspace({ locale, jobId }: { locale: Locale; jobId: stri
             <p className="small muted">{t.tailor.willCreate}</p>
             <ul data-testid="tailor-will-create">
               {chosenKinds.map((k) => (
-                <li key={k}>{artifactTitle(a.kinds[k], job.title, job.company)}</li>
+                <li key={k}>{artifactTitle(a.kinds[k], job.title, job.company, languageTag)}</li>
               ))}
             </ul>
           </div>
@@ -242,6 +283,9 @@ export function TailorWorkspace({ locale, jobId }: { locale: Locale; jobId: stri
                 </li>
               ))}
             </ul>
+            <Button variant="secondary" onClick={() => switchLanguage(otherLocale)}>
+              {lt.alsoCreate[otherLocale]}
+            </Button>
           </div>
         ) : null}
       </section>

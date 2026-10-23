@@ -211,3 +211,52 @@
 .wide {
   grid-column: 1 / -1;
 }
+
+/* W7 (B3): the sector guide inside an item form (SectorGuide.tsx). */
+.guide {
+  border: 1px dashed var(--line);
+  border-radius: 0.5rem;
+  padding: 0.6rem 0.9rem;
+  display: grid;
+  gap: 0.5rem;
+}
+.guideSummary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.guideSummary:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.guideList {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 0.25rem;
+}
+.guideLabel {
+  font-weight: 600;
+  font-size: 0.92rem;
+  margin: 0.3rem 0 0;
+}
+.guideExample {
+  font-style: italic;
+}
+.suggestion {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 0.15rem 0.65rem;
+  cursor: pointer;
+}
+.suggestion:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 1px;
+}
+.suggestion:disabled {
+  background: var(--tag-bg);
+  cursor: default;
+}

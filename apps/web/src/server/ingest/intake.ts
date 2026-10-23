@@ -7,15 +7,18 @@
  *   1. syntax and SSRF checks (fetcher.ts `checkUrl`); a board that forbids fetching → `capture_only` (boards.ts);
  *   2. the per-owner fetch ceiling (rate-limit.ts);
  *   3. a known ATS → its public API (ats.ts); on any failure, fall through to the page;
- *   4. robots.txt for `madfam-cv` (robots.ts), then ONE page fetch, read as JSON-LD → microdata → Open Graph → text.
+ *   4. robots.txt for `madfam-cv` (robots.ts), then ONE page fetch, read as JSON-LD → microdata → Open Graph → text;
+ *      a page that says its posting is closed (closed.ts) is `posting_closed`, never a draft of its navigation.
  * A text or a capture is parsed only (no network). Logs: source, host and outcome, never the URL or the content.
  */
 import { z } from 'zod';
 import { SOURCE_TEXT_MAX } from '../db/schema.ts';
 import { detectAts } from './ats.ts';
 import { captureOnlyBoard } from './boards.ts';
-import { draftFromCapture, draftFromHtml, draftFromText } from './extract.ts';
+import { closedPosting } from './closed.ts';
+import { draftFromCapture, draftFromParts, draftFromText } from './extract.ts';
 import { FETCH_LIMITS, FetchError, checkUrl, decodeBody, safeFetch, type Resolver, type Transport } from './fetcher.ts';
+import { pageParts } from './html.ts';
 import { robotsVerdict } from './robots.ts';
 import { fetchLimiter as defaultFetchLimiter, parseLimiter as defaultParseLimiter, type RateLimiter } from './rate-limit.ts';
 import type { IntakeDraft, IntakeFailure } from './types.ts';
@@ -123,7 +126,11 @@ async function fromUrl(owner: string, raw: string, deps: IntakeDeps): Promise<In
   if (robots === 'unreachable') return done(fail('robots_unreachable'), 'robots');
   try {
     const doc = await safeFetch(url, { ...net, accept: ['text/html', 'application/xhtml+xml'] });
-    const draft = draftFromHtml(decodeBody(doc), doc.url, 'url');
+    const html = decodeBody(doc);
+    const parts = pageParts(html);
+    const draft = draftFromParts({ parts, pageUrl: doc.url, sourceKind: 'url' });
+    const live = !!draft && (draft.fields.title?.from === 'json-ld' || draft.fields.title?.from === 'microdata');
+    if (closedPosting(html, parts, live)) return done(fail('posting_closed'), 'page');
     if (!draft) return done(fail('unreadable'), 'page');
     if (atsFellBack) draft.notes.push('ats_fallback');
     return done({ ok: true, draft }, 'page');

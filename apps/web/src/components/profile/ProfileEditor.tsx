@@ -10,7 +10,7 @@ import { useToast } from '@/components/ui/Toast';
 import { api, apiErrorMessage, type ApiError } from '@/lib/client/api';
 import type { ContentLocale, ItemKind, ProfileDto } from '@/lib/client/types';
 import { APP_COPY } from '@/lib/copy/app';
-import { PROFILE_COPY } from '@/lib/copy/profile';
+import { PROFILE_COPY, SECTOR_GUIDE_COPY } from '@/lib/copy/profile';
 import type { Locale } from '@/lib/routing';
 import { ITEM_FIELDS, ITEM_KIND_ORDER, contentToForm, issuesToErrors, itemHeading } from './fields';
 import { HeaderForm } from './HeaderForm';
@@ -209,6 +209,7 @@ export function ProfileEditor({ locale, nameHint }: { locale: Locale; nameHint: 
         submitLabel={isNew ? copy.actions.saveNew : copy.actions.save}
         initial={editing.draft}
         copy={copy}
+        guide={SECTOR_GUIDE_COPY[locale]}
         onSubmit={(result) => void save(editing, result)}
         onCancel={closeForm}
       />

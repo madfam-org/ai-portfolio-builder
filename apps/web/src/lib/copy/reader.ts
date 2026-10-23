@@ -28,7 +28,7 @@ export interface ReaderCopy {
 }
 
 const ATS = 'Greenhouse, Lever, SmartRecruiters, Ashby, Workable, Recruitee, Pinpoint';
-const BOARDS = 'LinkedIn, Indeed, Google, Glassdoor, Talent.com, Computrabajo';
+const BOARDS = 'LinkedIn, Indeed, Google, Glassdoor, Talent.com, Computrabajo, LVMH';
 
 export const READER_COPY: Record<Locale, ReaderCopy> = {
   es: {

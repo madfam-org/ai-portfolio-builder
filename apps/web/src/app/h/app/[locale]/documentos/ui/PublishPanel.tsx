@@ -11,6 +11,7 @@ import { isAllowedSlug } from '@/lib/api-routes';
 import { api, apiErrorMessage, type ApiError } from '@/lib/client/api';
 import type { ArtifactDto } from '@/lib/client/types';
 import { APP_COPY } from '@/lib/copy/app';
+import { DISCRETION_COPY } from '@/lib/copy/discretion';
 import { DOCUMENTS_COPY, type Visibility } from '@/lib/copy/render';
 import type { Locale } from '@/lib/routing';
 import css from './documents.module.css';
@@ -120,6 +121,9 @@ export function PublishPanel({ locale, artifact, pagesHost }: { locale: Locale; 
     { value: 'public', label: d.choicePublic, hint: pagesHost ? `${d.choicePublicHint} (${pagesHost}/…)` : d.choicePublicHint },
   ];
   const locked = suspended || busy;
+  // W7 (B3): before a document becomes link-shared or public (or moves from one to the other), say who will see it.
+  const discretion = DISCRETION_COPY[locale];
+  const remind = !suspended && (choice === 'link' || choice === 'public') && choice !== current.visibility;
 
   return (
     <section className={css.panel} aria-labelledby="publish-title">
@@ -181,6 +185,15 @@ export function PublishPanel({ locale, artifact, pagesHost }: { locale: Locale; 
               maxLength={64}
             />
             <CheckboxField id="publish-indexable" label={d.indexLabel} hint={d.indexHint} checked={indexable} onChange={(e) => setIndexable(e.target.checked)} disabled={locked || offline} />
+          </div>
+        ) : null}
+        {remind ? (
+          <div data-testid="discretion-reminder">
+            <Notice tone="warning" title={discretion.title}>
+              {choice === 'link' ? discretion.link : discretion.public}
+              <br />
+              {discretion.titleNote(current.title)}
+            </Notice>
           </div>
         ) : null}
         {problem ? (
