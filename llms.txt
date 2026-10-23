@@ -59,3 +59,5 @@ repo-boundary contract (docs/REPO_BOUNDARY.md).
 - `apps/web/src/server/hcm/route.ts` `RETAIL_SALES_SINCO`, `src/components/jobs/benchmark/SegmentSection.tsx`: W7, the retail industry segment beside the general ENOE figure for store sales and store management jobs (HCM `segment=retail_apparel_personal`, labelled «no solo lujo»)
 
 - `apps/web/src/lib/profile-text.ts`, `src/components/render/localize.ts`, `e2e/bilingual.spec.ts`: W7 (B4), bilingual profile text: one primary language per profile, the other optional field by field in a nullable `translations` jsonb (migration 0003); documents print their own language and fall back to the primary text with a «Faltan N textos en inglés» flag (preview and tailoring only); language names from ISO 639 codes; no machine translation
+
+- `apps/web/src/components/onboarding/`, `src/lib/copy/onboarding.ts`, `src/lib/ui-locales.ts`: B1, the first-run guide on the app home (empty profile → import or by hand, then the first job; private by default) and the `ui_locales` cv sends Janua; beta access is invite-only in Janua (docs/DEPLOYMENT.md "Beta access")

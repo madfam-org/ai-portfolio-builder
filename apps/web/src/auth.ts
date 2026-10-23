@@ -16,6 +16,7 @@ import NextAuth, { type NextAuthConfig } from 'next-auth';
 import type { OIDCConfig } from 'next-auth/providers';
 import { JANUA_PROVIDER_ID, SESSION_OPTIONS, authCookies, authSecret, januaClientConfig, secureAuthCookies, verifierConfig, type JanuaClientConfig } from '@/lib/auth-env';
 import { resolvePublicOrigin } from '@/lib/public-origin';
+import { JANUA_UI_LOCALES } from '@/lib/ui-locales';
 import { verifyAccessToken } from '@/server/janua';
 import { refreshJanuaTokens } from '@/server/janua-oidc';
 import { publicSession, refreshSessionTokenIfNeeded, sessionTokenFromSignIn, type CvSessionToken } from '@/server/session-token';
@@ -36,7 +37,9 @@ function januaProvider(client: JanuaClientConfig): OIDCConfig<JanuaProfile> {
     issuer: client.issuer,
     clientId: client.clientId,
     clientSecret: client.clientSecret,
-    authorization: { params: { scope: 'openid email profile offline_access' } },
+    // Janua's hosted pages in es-MX (OIDC ui_locales; `/auth/entrar` sends `en` from an /en page) and the emailed
+    // sign-in link first: beta accounts are invite-only and passwordless (docs/DEPLOYMENT.md "Beta access").
+    authorization: { params: { scope: 'openid email profile offline_access', ui_locales: JANUA_UI_LOCALES.es, login_method: 'magic_link' } },
     checks: ['pkce', 'state', 'nonce'],
     profile(profile) {
       return { id: profile.sub, name: profile.name ?? profile.preferred_username ?? profile.email ?? null, email: profile.email ?? null };
