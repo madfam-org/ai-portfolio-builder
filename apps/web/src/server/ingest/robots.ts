@@ -4,6 +4,10 @@
  *
  * - The group whose user-agent line matches `madfam-cv` (case-insensitive) wins; else the `*` group; else allowed.
  * - Longest matching rule wins; on a tie, Allow wins (RFC 9309 §2.2.2). `*` and a trailing `$` are supported.
+ * - W7 (B3), stricter than RFC 9309 on purpose: when the path starts with a locale segment (`/en-US/…`, `/es/…`), the
+ *   path without it is checked too, and either being disallowed disallows. Career sites serve the same posting under
+ *   both (a Workday tenant whose robots.txt says `Disallow: /Brand/` also answers at `/en-US/Brand/job/…`); the site's
+ *   intent wins over the literal prefix. Never the other way round: this can only refuse more, never allow more.
  * - 2xx: parsed (first 500 KiB). 4xx: no rules, access allowed (§2.3.1.3). 5xx, a network failure or a timeout:
  *   treated as complete disallow (§2.3.1.4). Results are cached per host for an hour (at most 500 hosts).
  */
@@ -110,9 +114,18 @@ async function loadGroups(origin: URL, opts: Omit<FetchOptions, 'accept'>): Prom
   return groups;
 }
 
+/** A leading locale path segment: `/es/`, `/en-US/`, `/es_MX/`, `/pt-br/` (two letters, an optional region). */
+const LOCALE_SEGMENT = /^\/[a-z]{2}(?:[-_][A-Za-z]{2})?(?=\/)/;
+
+/** The paths robots.txt is checked against: the path itself and, under a locale segment, the path without it. */
+export function robotsPaths(pathWithQuery: string): string[] {
+  const m = LOCALE_SEGMENT.exec(pathWithQuery);
+  return m ? [pathWithQuery, pathWithQuery.slice(m[0].length)] : [pathWithQuery];
+}
+
 /** The verdict for one page URL (already validated by `checkUrl`). */
 export async function robotsVerdict(url: URL, opts: Omit<FetchOptions, 'accept'> = {}): Promise<RobotsVerdict> {
   const groups = await loadGroups(url, opts);
   if (groups === 'unreachable') return 'unreachable';
-  return robotsAllows(groups, `${url.pathname}${url.search}`) ? 'allowed' : 'disallowed';
+  return robotsPaths(`${url.pathname}${url.search}`).every((p) => robotsAllows(groups, p)) ? 'allowed' : 'disallowed';
 }

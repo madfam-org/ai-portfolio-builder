@@ -246,3 +246,13 @@ suficientes», never an estimate; the panel never blocks `/ready`. The structure
 lane W5-J (`stateCode` ISO 3166-2, `countryCode`, `salaryMin`/`salaryMax`/`salaryCurrency`/`salaryPeriod`):
 `server/hcm/facts.ts` names the fields it reads and `test/hcm-facts.test.ts` pins them; rows from before W5-J fall
 back to a state named in the location text.
+
+## W7 (B3): luxury retail beta (2026-10-22)
+
+The luxury-retail beta persona ([`docs/PRODUCT.md`](docs/PRODUCT.md) «Luxury retail beta»). B3 owns
+`apps/web/src/server/ingest/closed.ts`, `src/components/profile/SectorGuide.tsx`, `src/lib/copy/{tailor-language,discretion}.ts`,
+`e2e/luxury.spec.ts`, `test/{ingest-luxury,tailor-language,profile-sector-guide}.test.ts` and
+`test/fixtures/ingest/luxury/` (synthetic pages; invented houses on `*.example`). Rules: no new ATS reader without the
+provider's own documentation of a key-free public API (Workday, SuccessFactors, Oracle, Eightfold and TalentLink have
+none); robots.txt is also checked without a leading locale segment (only ever refuses more); a closed posting is
+`posting_closed`, never a draft; the e2e persona is fictional («Valeria Ficticia Robles», «Maison Ejemplo»).

@@ -145,15 +145,30 @@ export function parseSalary(text: string): Salary | null {
   return { min, max, currency: currencyOf(f), period };
 }
 
-/** An ISO date or date-time → YYYY-MM-DD (a real calendar date), else null. */
+const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+
+/**
+ * W7 (B3): «Wed Oct 14 00:00:00 UTC 2026», the Java `Date.toString()` form some career sites write into their
+ * JobPosting microdata (seen on SAP SuccessFactors Career Site Builder pages) → [year, month, day] as written.
+ */
+function javaDateParts(value: string): [string, string, string] | null {
+  const m = /^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun) ([A-Za-z]{3}) (\d{1,2}) \d{2}:\d{2}:\d{2} [A-Za-z]{1,5} (\d{4})$/.exec(value);
+  const month = m ? MONTHS.indexOf(m[1]!.toLowerCase()) : -1;
+  if (!m || month < 0) return null;
+  return [m[3]!, String(month + 1).padStart(2, '0'), m[2]!.padStart(2, '0')];
+}
+
+/** An ISO date or date-time (or a Java `Date.toString()`) → YYYY-MM-DD (a real calendar date), else null. */
 export function isoDate(value: unknown): string | null {
   if (typeof value !== 'string') return null;
-  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(value.trim());
-  if (!m) return null;
-  const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
-  if (d.getUTCFullYear() !== Number(m[1]) || d.getUTCMonth() !== Number(m[2]) - 1 || d.getUTCDate() !== Number(m[3])) return null;
-  if (Number(m[1]) < 1990 || Number(m[1]) > 2100) return null;
-  return `${m[1]}-${m[2]}-${m[3]}`;
+  const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(value.trim());
+  const parts = iso ? ([iso[1]!, iso[2]!, iso[3]!] as const) : javaDateParts(value.trim());
+  if (!parts) return null;
+  const [y, mo, day] = parts.map(Number) as [number, number, number];
+  const d = new Date(Date.UTC(y, mo - 1, day));
+  if (d.getUTCFullYear() !== y || d.getUTCMonth() !== mo - 1 || d.getUTCDate() !== day) return null;
+  if (y < 1990 || y > 2100) return null;
+  return `${parts[0]}-${parts[1]}-${parts[2]}`;
 }
 
 /** Epoch milliseconds (Lever `createdAt`) → YYYY-MM-DD. */

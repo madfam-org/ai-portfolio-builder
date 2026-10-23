@@ -5,10 +5,11 @@ import { Button } from '@/components/ui/Button';
 import { CheckboxField, SelectField, TextAreaField, TextField } from '@/components/ui/Field';
 import { Notice } from '@/components/ui/States';
 import type { ItemKind } from '@/lib/client/types';
-import { fieldLabel, type ProfileCopy } from '@/lib/copy/profile';
+import { fieldLabel, type ProfileCopy, type SectorGuideCopy } from '@/lib/copy/profile';
 import { errorText } from './errors';
 import { ITEM_FIELDS, checkTags, formToContent, type FieldErrors, type FieldSpec, type FormValue, type FormValues, type LinkRow } from './fields';
 import { LinksField } from './LinksField';
+import { SectorGuide } from './SectorGuide';
 import { TagsField, mergeTags } from './TagsField';
 import s from './profile.module.css';
 
@@ -95,6 +96,7 @@ export function ItemForm({
   submitLabel,
   initial,
   copy,
+  guide,
   onSubmit,
   onCancel,
 }: {
@@ -104,6 +106,8 @@ export function ItemForm({
   submitLabel: string;
   initial: ItemDraft;
   copy: ProfileCopy;
+  /** W7 (B3): the retail and luxury guide; shown only for the kinds it covers. */
+  guide?: SectorGuideCopy;
   onSubmit: (result: { content: Record<string, unknown>; tags: string[]; draft: ItemDraft }) => void;
   onCancel: () => void;
 }) {
@@ -149,6 +153,14 @@ export function ItemForm({
         {title}
       </h4>
       {errors._form ? <Notice tone="danger">{errorText(copy, errors._form)}</Notice> : null}
+      {guide?.kinds[kind] ? (
+        <SectorGuide
+          copy={guide}
+          guide={guide.kinds[kind]!}
+          tags={tags.tags}
+          onAddKeyword={(k) => setTags((t) => (t.tags.some((x) => x.toLowerCase() === k.toLowerCase()) ? t : { ...t, tags: [...t.tags, k] }))}
+        />
+      ) : null}
       <div className={s.grid2}>
         {ITEM_FIELDS[kind].map((spec) => {
           const control = (

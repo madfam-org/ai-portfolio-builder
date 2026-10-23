@@ -64,8 +64,8 @@ export const TEMPLATE_REGISTRY: Readonly<Record<ArtifactKind, readonly TemplateI
       id: 'clasico',
       label: { es: 'Clásica', en: 'Classic' },
       description: {
-        es: 'Jerarquía tipográfica tradicional, con letra con remates (serif) y encabezado centrado, en una sola columna. Ocupa un poco más que la básica.',
-        en: 'A traditional typographic hierarchy, serif type and a centred header, in a single column. It runs slightly longer than the basic one.',
+        es: 'Jerarquía tipográfica tradicional, con letra con remates (serif) y encabezado centrado, en una sola columna. Ocupa un poco más que la básica. Una buena opción para postular a casas de lujo y a otros sectores donde se espera un documento sobrio.',
+        en: 'A traditional typographic hierarchy, serif type and a centred header, in a single column. It runs slightly longer than the basic one. A good choice for luxury houses and other sectors that expect a restrained document.',
       },
       ats: ATS_SAFE,
     },

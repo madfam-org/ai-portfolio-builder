@@ -401,3 +401,134 @@ export const PROFILE_COPY: Record<Locale, ProfileCopy> = {
 export function fieldLabel(copy: ProfileCopy, kind: ItemKind | null, field: string): string {
   return (kind ? copy.fieldOverrides[kind]?.[field] : undefined) ?? copy.fields[field] ?? field;
 }
+
+/**
+ * W7 (B3): «Ideas para ventas de lujo y retail», a guide folded inside the item forms of the kinds where retail and
+ * luxury hiring looks for something specific (measurable sales results, clienteling and CRM, VIC events, product and
+ * brand training, visual merchandising, languages with their level, team leadership). Tips and the format of an
+ * example only: every figure in an example is marked as illustrative, nothing is filled in for the person (R85).
+ * The keywords are suggestions the person can add to the item's tags with one click (the match reads tags).
+ */
+export interface SectorGuideKind {
+  tips: readonly string[];
+  examples: readonly string[];
+  keywords: readonly string[];
+}
+export interface SectorGuideCopy {
+  summary: string;
+  intro: string;
+  examplesLabel: string;
+  keywordsLabel: string;
+  keywordsHint: string;
+  addKeyword: (keyword: string) => string;
+  kinds: Partial<Record<ItemKind, SectorGuideKind>>;
+}
+
+export const SECTOR_GUIDE_COPY: Record<Locale, SectorGuideCopy> = {
+  es: {
+    summary: 'Ideas para ventas de lujo y retail',
+    intro: 'En boutiques y tiendas de lujo se busca ver resultados medibles, relación con clientes y conocimiento de producto. Escribe solo cifras que puedas sostener en una entrevista.',
+    examplesLabel: 'Ejemplos de formato (las cifras son ilustrativas: usa las tuyas)',
+    keywordsLabel: 'Palabras clave sugeridas',
+    keywordsHint: 'Agrégalas a este elemento si te describen: con ellas comparamos tu perfil con cada vacante.',
+    addKeyword: (k) => `Sugerencia: agregar «${k}»`,
+    kinds: {
+      experience: {
+        tips: [
+          'Pon cifras: cumplimiento de meta (%), ticket promedio, unidades por transacción (UPT), conversión, tamaño y retención de tu cartera de clientes.',
+          'Menciona el clienteling y las herramientas de CRM que usas, sin datos de tus clientes.',
+          'Si coordinas a un equipo: cuántas personas, qué lograron y cómo las formaste.',
+          'Discreción: si aún trabajas ahí, puedes describir tu empleo actual sin nombrarlo («boutique de alta joyería en CDMX»).',
+        ],
+        examples: [
+          'Cumplí el 118 % de mi meta anual de ventas en 2025.',
+          'Elevé el ticket promedio un 22 % con venta cruzada de joyería y accesorios.',
+          'Desarrollé una cartera de 180 clientes activos con 65 % de recompra anual.',
+          'Organicé 6 eventos privados para clientes VIC; 40 % de conversión en la semana del evento.',
+        ],
+        keywords: ['Clienteling', 'Venta consultiva', 'Experiencia del cliente', 'CRM', 'Cumplimiento de meta', 'Ticket promedio', 'Eventos VIC', 'Visual merchandising', 'Liderazgo de equipo'],
+      },
+      achievement: {
+        tips: ['Un logro por elemento, con su número y su periodo.'],
+        examples: ['Primer lugar regional en ventas, segundo trimestre de 2025.', 'Mayor conversión de la boutique en la temporada navideña de 2024 (31 %).'],
+        keywords: ['Ventas', 'Cumplimiento de meta', 'Conversión'],
+      },
+      skill: {
+        tips: ['Una habilidad por elemento, con su nivel.'],
+        examples: ['Clienteling', 'Venta consultiva de alta joyería', 'Visual merchandising', 'Gestión de CRM', 'Protocolo de servicio', 'Punto de venta e inventario'],
+        keywords: ['Lujo', 'Retail', 'Servicio al cliente'],
+      },
+      language: {
+        tips: [
+          'Si una casa pide inglés, indica tu nivel real (MCER) y, si tienes certificado, agrégalo en «Certificaciones».',
+          'Si hablas un tercer idioma, agrégalo: algunas vacantes lo piden para atender clientela internacional.',
+        ],
+        examples: ['Inglés · C1 (avanzado)', 'Francés · B1 (intermedio)'],
+        keywords: ['Bilingüe', 'Inglés'],
+      },
+      certification: {
+        tips: ['Incluye las capacitaciones de producto y de marca que completaste (gemología, relojería, cuidado de la piel, servicio), con quien las impartió y el año.'],
+        examples: ['Curso de diamantes y gemas de color, 2023', 'Programa de excelencia en servicio, 2024'],
+        keywords: ['Gemología', 'Relojería', 'Capacitación de producto'],
+      },
+      project: {
+        tips: ['Eventos, lanzamientos, montajes de vitrina o aperturas en las que participaste: tu papel y el resultado.'],
+        examples: ['Apertura de boutique: capacitación del equipo y montaje de visual merchandising.', 'Lanzamiento de colección: evento privado para 60 clientes.'],
+        keywords: ['Eventos', 'Lanzamiento', 'Visual merchandising', 'Apertura de tienda'],
+      },
+    },
+  },
+  en: {
+    summary: 'Ideas for luxury and retail sales',
+    intro: 'Luxury boutiques and stores look for measurable results, client relationships and product knowledge. Only write figures you can stand behind in an interview.',
+    examplesLabel: 'Format examples (the figures are illustrative: use your own)',
+    keywordsLabel: 'Suggested keywords',
+    keywordsHint: 'Add them to this item if they describe you: we compare your profile with each posting through them.',
+    addKeyword: (k) => `Suggestion: add “${k}”`,
+    kinds: {
+      experience: {
+        tips: [
+          'Use figures: target attainment (%), average ticket, units per transaction (UPT), conversion, size and retention of your client book.',
+          'Mention clienteling and the CRM tools you use, without any client data.',
+          'If you lead a team: how many people, what they achieved and how you trained them.',
+          'Discretion: if you still work there, you can describe your current employer without naming it (“fine jewellery boutique in Mexico City”).',
+        ],
+        examples: [
+          'Reached 118% of my annual sales target in 2025.',
+          'Raised the average ticket by 22% through cross-selling jewellery and accessories.',
+          'Built a book of 180 active clients with 65% yearly repeat purchases.',
+          'Organised 6 private events for VIC clients; 40% conversion in the event week.',
+        ],
+        keywords: ['Clienteling', 'Consultative selling', 'Client experience', 'CRM', 'Target attainment', 'Average ticket', 'VIC events', 'Visual merchandising', 'Team leadership'],
+      },
+      achievement: {
+        tips: ['One achievement per item, with its figure and its period.'],
+        examples: ['First in regional sales, second quarter of 2025.', 'Highest conversion in the boutique over the 2024 holiday season (31%).'],
+        keywords: ['Sales', 'Target attainment', 'Conversion'],
+      },
+      skill: {
+        tips: ['One skill per item, with its level.'],
+        examples: ['Clienteling', 'Consultative selling of fine jewellery', 'Visual merchandising', 'CRM management', 'Service etiquette', 'Point of sale and inventory'],
+        keywords: ['Luxury', 'Retail', 'Customer service'],
+      },
+      language: {
+        tips: [
+          'If a house asks for English, state your real level (CEFR) and, if you hold a certificate, add it under “Certifications”.',
+          'If you speak a third language, add it: some postings ask for one to serve international clients.',
+        ],
+        examples: ['English · C1 (advanced)', 'French · B1 (intermediate)'],
+        keywords: ['Bilingual', 'English'],
+      },
+      certification: {
+        tips: ['Include the product and brand trainings you completed (gemmology, watchmaking, skincare, service), who gave them and the year.'],
+        examples: ['Diamonds and coloured gemstones course, 2023', 'Service excellence programme, 2024'],
+        keywords: ['Gemmology', 'Watchmaking', 'Product training'],
+      },
+      project: {
+        tips: ['Events, launches, window installations or openings you took part in: your role and the result.'],
+        examples: ['Boutique opening: team training and visual merchandising set-up.', 'Collection launch: private event for 60 clients.'],
+        keywords: ['Events', 'Launch', 'Visual merchandising', 'Store opening'],
+      },
+    },
+  },
+};

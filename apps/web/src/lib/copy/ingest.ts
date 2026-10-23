@@ -163,6 +163,7 @@ const es: IngestCopy = {
   },
   failures: {
     unreadable: 'No pudimos leer esta vacante. Pégala o súbela como archivo.',
+    posting_closed: 'La página dice que esta vacante ya no está abierta (cubierta o cerrada). Si la ves abierta en tu navegador, captúrala desde ahí o pega su texto.',
     capture_only: '{board} no permite que un servidor lea sus vacantes. Usa «Capturar desde tu navegador» con la vacante abierta, o pega su texto.',
     robots_disallowed: 'Este sitio pide que no leamos esa página (robots.txt). Pega la vacante, súbela o captúrala desde tu navegador.',
     robots_unreachable: 'No pudimos consultar las reglas de este sitio (robots.txt), así que no leímos la página. Pégala, súbela o captúrala desde tu navegador.',
@@ -295,6 +296,7 @@ const en: IngestCopy = {
   },
   failures: {
     unreadable: 'We could not read this posting. Paste it or upload it as a file.',
+    posting_closed: 'The page says this posting is no longer open (filled or closed). If you see it open in your browser, capture it from there or paste its text.',
     capture_only: '{board} does not allow a server to read its postings. Use «Capture from your browser» with the posting open, or paste its text.',
     robots_disallowed: 'This site asks us not to read that page (robots.txt). Paste the posting, upload it or capture it from your browser.',
     robots_unreachable: 'We could not check this site’s rules (robots.txt), so we did not read the page. Paste it, upload it or capture it from your browser.',

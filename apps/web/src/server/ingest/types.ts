@@ -55,6 +55,7 @@ export interface IntakeDraft {
 /** Why an intake produced no draft (copy/ingest.ts says it honestly and offers paste, upload or capture). */
 export type IntakeFailure =
   | 'unreadable'
+  | 'posting_closed'
   | 'capture_only'
   | 'robots_disallowed'
   | 'robots_unreachable'

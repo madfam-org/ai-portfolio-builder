@@ -85,8 +85,10 @@ export function mapJobPosting(o: Obj, from: Provenance): { fields: DraftFields; 
   const set = <K extends keyof DraftFields>(key: K, value: NonNullable<DraftFields[K]>['value'] | null) => {
     if (value !== null && value !== undefined && value !== '') fields[key] = { value, from } as DraftFields[K];
   };
-  set('title', clean(text(o.title) ?? text(o.name)));
-  set('company', clean(text(o.hiringOrganization)));
+  // Some career sites (seen on Workday) entity-escape names inside JSON-LD: «Watches &amp; Fine Jewelry».
+  const plain = (v: string | null) => (v === null ? null : decodeEntities(v));
+  set('title', clean(plain(text(o.title) ?? text(o.name))));
+  set('company', clean(plain(text(o.hiringOrganization))));
 
   const places = list(o.jobLocation).slice(0, 10).map(addressParts);
   const labels = places.map((p) => [p.locality, p.region, p.country].filter((x, i, all) => x && all.indexOf(x) === i).join(', ')).filter(Boolean);

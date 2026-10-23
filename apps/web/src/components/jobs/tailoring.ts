@@ -113,12 +113,22 @@ export interface TailorInput {
   greeting: string;
   closing: string;
   kindLabels: Readonly<Record<ArtifactKind, string>>;
+  /** W7 (B3): «(English)» when the documents' language is not the profile's, so both versions read apart. */
+  languageTag?: string;
 }
 
-/** «CV · Desarrolladora backend · Empresa», capped at the artifact title limit. */
-export function artifactTitle(kindLabel: string, jobTitle: string, company: string): string {
+/** «CV · Desarrolladora backend · Empresa» (+ « (English)» for a version in another language), capped at the limit. */
+export function artifactTitle(kindLabel: string, jobTitle: string, company: string, languageTag = ''): string {
   const parts = [kindLabel, jobTitle.trim(), company.trim()].filter((p) => p !== '');
-  return parts.join(' · ').slice(0, LIMITS.artifactTitle).trim();
+  const tag = languageTag.trim() ? ` ${languageTag.trim()}` : '';
+  return `${parts.join(' · ').slice(0, LIMITS.artifactTitle - tag.length).trim()}${tag}`;
+}
+
+/** W7 (B3): which languages a job's documents exist in, per language the kinds (in TAILOR_KINDS order). */
+export function languagesOf<A extends { kind: ArtifactKind; locale: ContentLocale }>(artifacts: readonly A[]): { locale: ContentLocale; kinds: ArtifactKind[] }[] {
+  return (['es-MX', 'en'] as const)
+    .map((locale) => ({ locale, kinds: TAILOR_KINDS.filter((k) => artifacts.some((a) => a.locale === locale && a.kind === k)) }))
+    .filter((g) => g.kinds.length > 0);
 }
 
 function checkInput(input: TailorInput): TailorProblem[] {
@@ -165,7 +175,7 @@ export function buildArtifactSet(input: TailorInput): { ok: true; body: Artifact
       content = { ...base, ...(greeting ? { greeting } : {}), ...(closing ? { closing } : {}) };
     }
     const template = input.templates?.[kind];
-    return { kind, title: artifactTitle(input.kindLabels[kind], input.jobTitle, input.company), content, ...(template ? { template } : {}) };
+    return { kind, title: artifactTitle(input.kindLabels[kind], input.jobTitle, input.company, input.languageTag), content, ...(template ? { template } : {}) };
   });
   return { ok: true, body: { jobId: input.jobId, locale: input.locale, template: input.template, artifacts } };
 }

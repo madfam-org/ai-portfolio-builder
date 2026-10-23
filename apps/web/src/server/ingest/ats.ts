@@ -14,6 +14,12 @@
  *
  * Not here (a key, a customer token or no documented contract): Teamtailor, Comeet, BambooHR, Breezy HR, Homerun,
  * Workday, Rippling, Personio (an XML feed with no single-job contract). Their pages go through the page path (JSON-LD).
+ * W7 (B3), the systems the luxury houses use (checked 2026-10-22; docs/PRODUCT.md "Luxury career sites"): Workday (no
+ * public posting API; the `/wday/cxs/` JSON is undocumented and never called), SAP SuccessFactors Career Site Builder
+ * (its XML job feeds are set up per customer for contracted boards, not a public reader API), Oracle Recruiting Cloud
+ * (Oracle's docs reserve the candidate-experience REST resources for Oracle's internal use), Eightfold (a customer API
+ * key), Lumesse/Cornerstone TalentLink (no public documentation found). Their job pages go through the page path:
+ * Workday's JSON-LD, SuccessFactors' microdata, Oracle's Open Graph, each only when robots.txt allows.
  * Fields map only what the API returns; the company is left empty when the API does not name it.
  */
 import { clean, employmentType, isoDate, workMode } from './fields.ts';
