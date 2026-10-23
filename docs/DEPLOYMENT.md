@@ -271,3 +271,38 @@ Activation (coordinator, in this order; each apply only after reading its own dr
 4. symbiosis-hcm: set `MARKET_BENCHMARK_CLIENT_IDS` to that client id (`api-deployment.yaml`).
 5. This repo: merge the W5-H PR (ExternalSecret `cv-hcm-client`, `HCM_API_URL`). Probe: a signed-in job page shows
    «Datos de la ENOE (INEGI), <quarter>, n = …»; `/ready` is unchanged.
+
+## Beta access: invite-only accounts (B1)
+
+Owner directive 2026-10-22: the beta is invite-only. Identity is Janua's job, so the gate lives there, not in this
+repo. Janua's invite-only clients are described in its runbook `docs/runbooks/invite-only-clients.md`.
+
+- **The gate.** Janua lists the cv-app client in `INVITE_ONLY_CLIENTS` with the product `cv`. A person can sign in to
+  cv only while they hold the `cv` entitlement. Otherwise `/authorize` shows «Esta cuenta no tiene acceso a MADFAM
+  CV» (or answers `access_denied` to `prompt=none`), and the token endpoint refuses the code and the refresh. Janua's
+  hosted sign-in link never creates an account for this client, so nobody can self-register through cv. A removed
+  invitee loses cv at their next token refresh.
+- **What cv sends.** `ui_locales=es-MX` (`en` when sign-in starts on an `/en` page) and `login_method=magic_link`.
+  Janua's login, sign-in link and recovery pages appear in Spanish, with the emailed link first.
+- **Order (coordinator).** 1. Merge and promote the Janua code PR. 2. Merge this PR. 3. Merge the Janua on-switch PR
+  (the `INVITE_ONLY_CLIENTS` value) and let it sync. 4. Invite the owner's own test account and the first beta
+  user at once: until someone is invited, nobody can sign in to cv. 5. Optional, recommended: mark the client
+  first-party (`madfam:silent_auth`) so Janua skips its English consent screen.
+
+### Invite, resend, remove (operator)
+
+The commands go to Janua's internal API (`X-Internal-API-Key`) from inside the Janua API pod. The public edge
+refuses `/api/v1/internal/*`, and Enclii has no adapter for this call yet. The exact command, with the address as a
+run-time argument, is in MADFAM's private ops runbook for this wave. Never write an address into this repository,
+an issue or a log.
+
+| Step | Janua call | Body |
+|---|---|---|
+| Invite (one email: «Invitación a MADFAM CV», one link valid 72 h, no password) | `POST /api/v1/internal/product-invites` | `{"email": "<EMAIL>", "client_id": "<CV_APP_CLIENT_ID>", "locale": "es", "formality": "tu", "first_name": "<optional>"}` |
+| Resend (a fresh link; nothing else changes) | the same call again | the same body |
+| Remove (cancels the `cv` entitlement, spends unused invitation links; the Janua account stays) | `POST /api/v1/internal/product-invites/revoke` | `{"email": "<EMAIL>", "client_id": "<CV_APP_CLIENT_ID>"}` |
+
+The invitation link opens Janua's «Entrar» page. Janua then sends the browser to `https://cv-app.madfam.io/`, where
+«Iniciar sesión» reuses the Janua session (no password). With an empty profile, the home shows «Primeros pasos». For
+a later sign-in, the person uses «Enviarme un enlace para entrar» on Janua's page. The person's cv data is deleted
+from «Ajustes» (`DELETE /api/v1/me`), never by removing the invitation.

@@ -286,3 +286,14 @@ print text and render hashes); proper names, dates, URLs, levels and codes stay 
 (the Selva seam stays off until its restricted tier is live); per-job overrides belong to the language of the
 documents they are typed for; the public projection carries only the document's own language. CI minimums after this
 PR: `pg` ≥ 39 passing, `e2e` ≥ 89 passing after the rebase onto #26 (were 34 and 85).
+
+## B1: beta access (invite-only) and the first-run guide
+
+Beta accounts are invite-only, and the gate lives in Janua, never here ([`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)
+«Beta access»). Janua admits a person to the cv-app client only while they hold the `cv` product entitlement, and its
+sign-in links never create accounts for this client. cv asks Janua's hosted pages for the person's language (OIDC
+`ui_locales`: es-MX, or `en` from an `/en` page; `src/lib/ui-locales.ts`, used by `src/auth.ts` and
+`src/app/auth/entrar/route.ts`) and for the emailed sign-in link first (`login_method=magic_link`). The app home
+shows «Primeros pasos» to a signed-in person whose profile is empty (`src/components/onboarding/`,
+`src/lib/copy/onboarding.ts`, `e2e/onboarding.spec.ts`): import or start by hand, then save the first job, plus
+the privacy line. The guide reads only the existing profile. It adds no data model and no flag.

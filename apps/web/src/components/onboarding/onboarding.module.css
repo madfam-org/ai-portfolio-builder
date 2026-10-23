@@ -1,0 +1,38 @@
+/* The first-run guide (B1). Classes only: the nonce CSP blocks style attributes. Tokens from app/globals.css. */
+.guide {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  padding: 1.25rem;
+  display: grid;
+  gap: 0.85rem;
+  margin-bottom: 1.5rem;
+}
+.guide > h2,
+.guide > p {
+  margin: 0;
+}
+.intro {
+  color: var(--muted);
+}
+.steps {
+  margin: 0;
+  padding-left: 1.4rem;
+  display: grid;
+  gap: 1rem;
+}
+.steps h3 {
+  margin: 0 0 0.3rem;
+  font-size: 1.05rem;
+}
+.steps p {
+  margin: 0 0 0.6rem;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+.privacy {
+  font-weight: 600;
+}
