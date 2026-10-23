@@ -260,3 +260,42 @@
   background: var(--tag-bg);
   cursor: default;
 }
+
+/* W7 (B4): bilingual profile text. «Texto en: Español (principal) | English» above a form, and the other language's fields. */
+.grid2[hidden] {
+  display: none;
+}
+.languageSwitch {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.5rem 0.75rem;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  align-items: center;
+}
+.languageSwitch legend {
+  font-weight: 600;
+  padding: 0 0.25rem;
+}
+.languageOption {
+  display: inline-flex;
+  gap: 0.375rem;
+  align-items: center;
+}
+.missingBadge {
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  padding: 0.125rem 0.625rem;
+  font-size: 0.875rem;
+}
+.translation {
+  display: grid;
+  gap: 0.75rem;
+  border-left: 4px solid var(--accent);
+  padding-left: 0.75rem;
+}
+.fieldset[hidden] {
+  display: none;
+}

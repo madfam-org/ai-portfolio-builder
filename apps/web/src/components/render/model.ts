@@ -13,14 +13,16 @@ import type { ArtifactKind, ItemKind } from '../../lib/copy/app.ts';
 import { APP_COPY } from '../../lib/copy/app.ts';
 import { RENDER_COPY, type EmploymentType, type SkillLevel } from '../../lib/copy/render.ts';
 import type { Locale } from '../../lib/routing.ts';
+import { localizeRenderData } from './localize.ts';
 
 type Rec = Record<string, unknown>;
 
 /** What a renderer receives: the public projection's shape (server/db/repository.ts PublicArtifact). */
 export interface RenderData {
   artifact: { kind: string; title: string; locale: string; template: string; content: unknown };
-  profile: { displayName: string; headline: string; summary: string; contact?: unknown };
-  items: { id: string; kind: string; content: unknown }[];
+  /** W7 (B4): `locale` is the profile's primary language (absent: es-MX); `translations` its other-language text. */
+  profile: { displayName: string; headline: string; summary: string; contact?: unknown; locale?: string; translations?: unknown };
+  items: { id: string; kind: string; content: unknown; translations?: unknown }[];
 }
 
 export interface DocLink {
@@ -249,7 +251,10 @@ export function buildEntry(id: string, kind: ItemKind, raw: unknown, override: A
 }
 
 /** The document model of one artifact. `locale` is the CONTENT's language (the artifact's own `locale`). */
-export function buildDocModel(data: RenderData): DocModel {
+export function buildDocModel(raw: RenderData): DocModel {
+  // W7 (B4): every text in the document's own language first (components/render/localize.ts); a document in the
+  // primary language, or of a profile without translations, gets its data back unchanged.
+  const { data } = localizeRenderData(raw);
   const locale = renderLocale(data.artifact.locale);
   const content = readContent(data.artifact.content);
   const kindLabels = APP_COPY[locale].itemKinds;
@@ -322,8 +327,8 @@ export function buildDocModel(data: RenderData): DocModel {
  */
 export function ownerRenderData(
   artifact: { kind: string; title: string; locale: string; template: string; content: unknown },
-  profile: { displayName: string; headline: string; summary: string; contact: unknown } | null,
-  items: readonly { id: string; kind: string; content: unknown }[],
+  profile: { displayName: string; headline: string; summary: string; contact: unknown; locale?: string; translations?: unknown } | null,
+  items: readonly { id: string; kind: string; content: unknown; translations?: unknown }[],
 ): RenderData {
   const content = readContent(artifact.content);
   const ids = new Set([...content.items.map((i) => i.itemId), ...(content.slides ?? []).flatMap((s) => s.itemIds)]);
@@ -334,7 +339,9 @@ export function ownerRenderData(
       headline: profile?.headline ?? '',
       summary: profile?.summary ?? '',
       ...(content.showContact ? { contact: profile?.contact ?? {} } : {}),
+      ...(profile?.locale ? { locale: profile.locale } : {}),
+      ...(profile?.translations ? { translations: profile.translations } : {}),
     },
-    items: items.filter((i) => ids.has(i.id)).map((i) => ({ id: i.id, kind: i.kind, content: i.content })),
+    items: items.filter((i) => ids.has(i.id)).map((i) => ({ id: i.id, kind: i.kind, content: i.content, ...(i.translations ? { translations: i.translations } : {}) })),
   };
 }

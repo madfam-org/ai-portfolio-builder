@@ -27,6 +27,7 @@ import {
   type FieldSpec,
 } from '../src/components/profile/fields.ts';
 import { PROFILE_COPY, fieldLabel } from '../src/lib/copy/profile.ts';
+import { languageName, type LanguageCode } from '../src/lib/languages.ts';
 
 // Test-only: zod internals are walked structurally.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -142,11 +143,12 @@ function structuralParity(label: string, schema: Any, specs: readonly FieldSpec[
 test('descriptor ↔ zod, field by field: names, required, nullable, types, enum options and limits', () => {
   let checked = 0;
   for (const kind of KINDS) checked += structuralParity(kind, ITEM_CONTENT[kind], ITEM_FIELDS[kind]);
-  checked += structuralParity('profile', profileBody.omit({ locale: true, contact: true }), HEADER_FIELDS.map((f) => ({ ...f, required: false })));
+  // W7 (B4): `translations` has its own controls (the «Texto en» switch; test/profile-translation.test.ts).
+  checked += structuralParity('profile', profileBody.omit({ locale: true, contact: true, translations: true }), HEADER_FIELDS.map((f) => ({ ...f, required: false })));
   checked += structuralParity('contact', contactSchema, CONTACT_FIELDS);
   assert.ok(checked >= 60, `checked only ${checked} fields`);
   // The header descriptor covers profileBody except the two fields with their own controls (locale select, contact).
-  assert.deepEqual(Object.keys((profileBody as Any).shape).sort(), ['contact', 'displayName', 'headline', 'locale', 'summary']);
+  assert.deepEqual(Object.keys((profileBody as Any).shape).sort(), ['contact', 'displayName', 'headline', 'locale', 'summary', 'translations']);
 });
 
 /** Samples per field type: [value, expected by zod]. The browser check must agree with zod on every one. */
@@ -290,13 +292,18 @@ test('copy: every field and option of every kind is labelled in es and en; both 
         assert.notEqual(fieldLabel(c, kind, spec.name), spec.name, `${locale} ${kind}.${spec.name} has no label`);
         labelled += 1;
         if (spec.type === 'enum') {
+          // W7 (B4): a language's ISO 639 code is labelled by its name (lib/languages.ts), not by copy.
+          if (spec.name === 'code') {
+            for (const o of spec.options) assert.notEqual(languageName(o as LanguageCode, locale === 'es' ? 'es-MX' : 'en'), o, `${locale} language code ${o}`);
+            continue;
+          }
           const labels = spec.name === 'employmentType' ? c.options.employmentType : kind === 'language' ? c.options.languageLevel : c.options.skillLevel;
           for (const o of spec.options) assert.ok(labels[o], `${locale} ${kind}.${spec.name}=${o}`);
         }
       }
     }
   }
-  // Read-proof: 54 item fields in 11 kinds, in two languages.
+  // Read-proof: 55 item fields in 11 kinds (W7-B4 added the language code), in two languages.
   assert.equal(labelled, 2 * KINDS.reduce((sum, k) => sum + ITEM_FIELDS[k].length, 0));
   assert.ok(labelled >= 100, `labelled ${labelled}`);
 });

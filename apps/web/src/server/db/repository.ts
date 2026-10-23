@@ -11,6 +11,8 @@ import { and, asc, desc, eq, gt, inArray, isNull, ne, sql, type SQL } from 'driz
 import type { Db } from './client.ts';
 import { artifacts, jobs, profileItems, profiles } from './schema.ts';
 import { referencedItemIds, type ArtifactContent } from '../api/validation.ts';
+import type { ItemKind } from '../../lib/copy/app.ts';
+import { HEADER_TEXT_FIELDS, ITEM_TEXT_FIELDS, contentLocale, projectTranslations, type Translations } from '../../lib/profile-text.ts';
 
 export type Profile = typeof profiles.$inferSelect;
 export type ProfileItem = typeof profileItems.$inferSelect;
@@ -98,10 +100,17 @@ export function createRepository(db: Db) {
     /** Full replace of the editable fields; `displayName` omitted keeps the stored one (or the name hint on creation). */
     async putProfile(
       ownerSub: string,
-      input: Pick<Profile, 'headline' | 'summary' | 'locale' | 'contact'> & { displayName?: string },
+      // W7 (B4): `translations` undefined keeps the stored ones (clients from before W7-B4 never send it); null clears.
+      input: Pick<Profile, 'headline' | 'summary' | 'locale' | 'contact'> & { displayName?: string; translations?: Profile['translations'] },
       nameHint?: string,
     ): Promise<Profile> {
-      const fields = { headline: input.headline, summary: input.summary, locale: input.locale, contact: input.contact };
+      const fields = {
+        headline: input.headline,
+        summary: input.summary,
+        locale: input.locale,
+        contact: input.contact,
+        ...(input.translations === undefined ? {} : { translations: input.translations }),
+      };
       const [row] = await db
         .insert(profiles)
         .values({ ownerSub, displayName: input.displayName ?? nameHint ?? '', ...fields })
@@ -119,12 +128,16 @@ export function createRepository(db: Db) {
       return db.select().from(profileItems).where(eq(profileItems.ownerSub, ownerSub)).orderBy(asc(profileItems.position), asc(profileItems.createdAt));
     },
 
-    async createItem(ownerSub: string, input: Pick<ProfileItem, 'kind' | 'position' | 'content' | 'tags'>, nameHint?: string): Promise<ProfileItem> {
+    async createItem(
+      ownerSub: string,
+      input: Pick<ProfileItem, 'kind' | 'position' | 'content' | 'tags'> & { translations?: ProfileItem['translations'] },
+      nameHint?: string,
+    ): Promise<ProfileItem> {
       return db.transaction(async (tx) => {
         const profile = await ensureProfile(ownerSub, tx, nameHint);
         const [row] = await tx
           .insert(profileItems)
-          .values({ ownerSub, profileId: profile.id, kind: input.kind, position: input.position, content: input.content, tags: input.tags })
+          .values({ ownerSub, profileId: profile.id, kind: input.kind, position: input.position, content: input.content, tags: input.tags, translations: input.translations ?? null })
           .returning();
         if (!row) throw new Error('item insert returned nothing');
         return row;
@@ -136,7 +149,7 @@ export function createRepository(db: Db) {
       return row ?? null;
     },
 
-    async updateItem(ownerSub: string, id: string, patch: Partial<Pick<ProfileItem, 'position' | 'content' | 'tags'>>): Promise<ProfileItem | null> {
+    async updateItem(ownerSub: string, id: string, patch: Partial<Pick<ProfileItem, 'position' | 'content' | 'tags' | 'translations'>>): Promise<ProfileItem | null> {
       const [row] = await db
         .update(profileItems)
         .set({ ...patch, updatedAt: now })
@@ -349,8 +362,12 @@ export type Repository = ReturnType<typeof createRepository>;
 
 export interface PublicArtifact {
   artifact: Pick<Artifact, 'kind' | 'title' | 'locale' | 'template' | 'content' | 'publishedAt' | 'indexable'>;
-  profile: { displayName: string; headline: string; summary: string; contact?: unknown };
-  items: Pick<ProfileItem, 'id' | 'kind' | 'content'>[];
+  /**
+   * W7 (B4): `locale` is the profile's primary language; `translations` carries ONLY the artifact's own locale, and only
+   * when it is not the primary one (lib/profile-text.ts projectTranslations), the place only with the contact.
+   */
+  profile: { displayName: string; headline: string; summary: string; contact?: unknown; locale?: string; translations?: Translations };
+  items: (Pick<ProfileItem, 'id' | 'kind' | 'content'> & { translations?: Translations })[];
 }
 
 async function publicProjection(db: Db, row: Artifact): Promise<PublicArtifact> {
@@ -359,11 +376,15 @@ async function publicProjection(db: Db, row: Artifact): Promise<PublicArtifact> 
   // Items are read with the ARTIFACT's owner, so a public page can only ever show that person's own items.
   const items = ids.length
     ? await db
-        .select({ id: profileItems.id, kind: profileItems.kind, content: profileItems.content })
+        .select({ id: profileItems.id, kind: profileItems.kind, content: profileItems.content, translations: profileItems.translations })
         .from(profileItems)
         .where(and(eq(profileItems.ownerSub, row.ownerSub), inArray(profileItems.id, ids)))
     : [];
   const [profile] = await db.select().from(profiles).where(eq(profiles.ownerSub, row.ownerSub));
+  const primary = contentLocale(profile?.locale);
+  const target = contentLocale(row.locale);
+  const headerFields = content.showContact ? HEADER_TEXT_FIELDS : HEADER_TEXT_FIELDS.filter((f) => f !== 'location');
+  const headerTexts = projectTranslations(profile?.translations, primary, target, headerFields);
   return {
     artifact: { kind: row.kind, title: row.title, locale: row.locale, template: row.template, content: row.content, publishedAt: row.publishedAt, indexable: row.indexable },
     profile: {
@@ -371,8 +392,13 @@ async function publicProjection(db: Db, row: Artifact): Promise<PublicArtifact> 
       headline: profile?.headline ?? '',
       summary: profile?.summary ?? '',
       ...(content.showContact ? { contact: profile?.contact ?? {} } : {}),
+      ...(profile ? { locale: primary } : {}),
+      ...(headerTexts ? { translations: headerTexts } : {}),
     },
-    items,
+    items: items.map(({ translations, ...item }) => {
+      const texts = projectTranslations(translations, primary, target, ITEM_TEXT_FIELDS[item.kind as ItemKind] ?? []);
+      return texts ? { ...item, translations: texts } : item;
+    }),
   };
 }
 

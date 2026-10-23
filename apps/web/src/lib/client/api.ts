@@ -16,6 +16,7 @@ import type {
   ArtifactPatchInput,
   ArtifactSetInput,
   BenchmarkDto,
+  ContentLocale,
   ItemBatchInput,
   ItemCreateInput,
   ItemDto,
@@ -143,7 +144,8 @@ export function createApiClient(fetchImpl: Fetch = (i, init) => fetch(i, init), 
     /** The confirmed import: items (and chosen header fields), all or none. */
     importItems: (body: ItemBatchInput) => call<{ profile: ProfileDto; items: ItemDto[] }>('POST', '/profile/items/batch', body),
     /** Everything the person holds (`full`) or their profile as JSON Resume; the parsed document. */
-    exportMine: (format: 'full' | 'json-resume' = 'full') => call<Record<string, unknown>>('GET', `/me/export${query({ format: format === 'full' ? undefined : format })}`),
+    exportMine: (format: 'full' | 'json-resume' = 'full', locale?: ContentLocale) =>
+      call<Record<string, unknown>>('GET', `/me/export${query({ format: format === 'full' ? undefined : format, locale })}`),
     /** Deletes every row the person holds (profile, items, jobs, documents, publications). */
     deleteMine: () => call<{ deleted: { profiles: number; items: number; jobs: number; artifacts: number } }>('DELETE', '/me', { confirm: 'delete-all-my-data' }),
   };

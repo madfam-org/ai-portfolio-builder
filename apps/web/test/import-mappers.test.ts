@@ -79,7 +79,8 @@ test('LinkedIn CSVs → items of every mapped kind and the header; rows without 
   assert.deepEqual(certs[0], { name: 'Certificado de Datos', issuer: 'Consejo Ejemplo', date: '2022-06', expiresOn: '2025-06', url: 'https://cert.example.test/123', credentialId: 'ABC-123' });
   assert.equal(certs[1]!.url, undefined, 'javascript: URLs never survive');
   assert.deepEqual(r.items.find((i) => i.content.name === 'Curso sin enlace')!.notes, ['url_dropped']);
-  assert.deepEqual(byKind(r, 'language'), [{ name: 'Español', level: 'native' }, { name: 'Inglés', level: 'C1' }, { name: 'Francés', level: 'A2' }, { name: 'Náhuatl' }]);
+  // W7 (B4): a recognised name also carries its ISO 639 code; «Náhuatl» is not in the list and keeps its name only.
+  assert.deepEqual(byKind(r, 'language'), [{ code: 'es', name: 'Español', level: 'native' }, { code: 'en', name: 'Inglés', level: 'C1' }, { code: 'fr', name: 'Francés', level: 'A2' }, { name: 'Náhuatl' }]);
   assert.deepEqual(byKind(r, 'project'), [{ name: 'Tablero abierto', url: 'https://www.example.test/tablero', startDate: '2023-02', summary: 'Un tablero de datos públicos' }]);
   assert.deepEqual(byKind(r, 'award'), [{ title: 'Premio a la Innovación', date: '2019-11', summary: 'Primer lugar regional' }]);
   assert.deepEqual(byKind(r, 'publication'), [{ title: 'Series de tiempo para todos', publisher: 'Revista Ejemplo', date: '2020-04', url: 'https://revista.example.test/series', summary: 'Artículo de divulgación' }]);
@@ -94,7 +95,7 @@ test('Spanish headers, CRLF, BOM and Spanish dates; missing files are simply abs
     { role: 'Desarrolladora', organization: 'Empresa, S.A. de C.V.', location: 'Puebla', startDate: '2019-01', endDate: '2020-12', summary: 'Línea uno\r\nLínea dos' },
     { role: 'Consultora', organization: 'Otra Empresa', startDate: '2021-09', current: true },
   ]);
-  assert.deepEqual(byKind(r, 'language'), [{ name: 'Alemán', level: 'B1' }, { name: 'Portugués', level: 'C1' }]);
+  assert.deepEqual(byKind(r, 'language'), [{ code: 'de', name: 'Alemán', level: 'B1' }, { code: 'pt', name: 'Portugués', level: 'C1' }]);
   assert.deepEqual(r.header, { contact: {} });
   // Missing columns: a Positions file with only a title column yields nothing, and says so (skipped), never a guess.
   const thin = mapLinkedIn({ positions: 'Title\nSolo título\n' });
@@ -172,7 +173,7 @@ test('JSON Resume → items and header; interests, references and meta ignored; 
   assert.deepEqual(byKind(r, 'education'), [{ institution: 'Universidad Prueba', degree: 'Licenciatura', field: 'Ingeniería en Computación', startDate: '2015-08', endDate: '2019-06', summary: '9.1', highlights: ['Redes', 'Bases de datos'] }]);
   assert.deepEqual(byKind(r, 'skill'), [{ name: 'TypeScript', level: 'expert' }, { name: 'CSS', level: 'intermediate' }]);
   assert.deepEqual(r.items.find((i) => i.content.name === 'TypeScript')!.tags, ['React', 'Node.js'], 'keywords → tags, unique');
-  assert.deepEqual(byKind(r, 'language'), [{ name: 'Español', level: 'native' }, { name: 'Inglés', level: 'B2' }, { name: 'Italiano' }]);
+  assert.deepEqual(byKind(r, 'language'), [{ code: 'es', name: 'Español', level: 'native' }, { code: 'en', name: 'Inglés', level: 'B2' }, { code: 'it', name: 'Italiano' }]);
   assert.deepEqual(byKind(r, 'project')[0], { name: 'Formulario universal', role: 'Autor, Mantenedor', url: 'https://code.example.test/beto-ejemplo/formulario', startDate: '2022', summary: 'Componentes de formulario', highlights: ['Usado en 3 sitios'] });
   for (const bad of ['no es json', '[]', '"texto"', '{"foo": 1}', 'null']) assert.throws(() => parseJsonResume(bad), NotJsonResumeError, bad);
   assert.throws(() => parseJsonResume(`{"basics":{"name":"${'x'.repeat(3 * 1024 * 1024)}"}}`), NotJsonResumeError);
@@ -185,8 +186,8 @@ test('JSON Resume → items and header; interests, references and meta ignored; 
 test('JSON Resume export round trip: profile → JSON Resume → import keeps every mapped item', () => {
   const r = parseJsonResume(read('resume.json'));
   const now = new Date('2026-10-22T12:00:00Z');
-  const rows = r.items.map((i, n) => ({ id: `id-${n}`, ownerSub: 'x', profileId: 'p', kind: i.kind, position: n, content: i.content, tags: i.tags, createdAt: now, updatedAt: now }));
-  const profile = { id: 'p', ownerSub: 'x', displayName: r.header.displayName!, headline: r.header.headline!, summary: r.header.summary!, locale: 'es-MX', contact: r.header.contact, createdAt: now, updatedAt: now };
+  const rows = r.items.map((i, n) => ({ id: `id-${n}`, ownerSub: 'x', profileId: 'p', kind: i.kind, position: n, content: i.content, tags: i.tags, translations: null, createdAt: now, updatedAt: now }));
+  const profile = { id: 'p', ownerSub: 'x', displayName: r.header.displayName!, headline: r.header.headline!, summary: r.header.summary!, locale: 'es-MX', contact: r.header.contact, translations: null, createdAt: now, updatedAt: now };
   const doc = toJsonResume({ profile, items: rows, jobs: [], artifacts: [] }, now);
   const again = parseJsonResume(JSON.stringify(doc));
   assert.equal(doc.$schema, 'https://raw.githubusercontent.com/jsonresume/resume-schema/v1.0.0/schema.json');

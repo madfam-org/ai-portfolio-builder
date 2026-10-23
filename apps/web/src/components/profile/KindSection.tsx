@@ -4,7 +4,9 @@ import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
 import type { ItemKind } from '@/lib/client/types';
+import type { BilingualCopy } from '@/lib/copy/bilingual';
 import type { ProfileCopy } from '@/lib/copy/profile';
+import { otherLocale, untranslatedFields, type ContentLocale } from '@/lib/profile-text';
 import { itemHeading, itemPeriod } from './fields';
 import type { EditorItem } from './items-state';
 import s from './profile.module.css';
@@ -23,6 +25,8 @@ export function KindSection({
   title,
   items,
   copy,
+  bilingual,
+  primary,
   editingId,
   adding,
   reordering,
@@ -36,6 +40,9 @@ export function KindSection({
   title: string;
   items: EditorItem[];
   copy: ProfileCopy;
+  /** W7 (B4): the profile's primary language; each row says how many of its texts lack the other one. */
+  bilingual: BilingualCopy;
+  primary: ContentLocale;
   /** The id of the item whose form is open in this section, if any. */
   editingId: string | null;
   adding: boolean;
@@ -48,6 +55,8 @@ export function KindSection({
 }) {
   const k = copy.kinds[kind];
   const a = copy.actions;
+  const other = otherLocale(primary);
+  const b = bilingual;
   return (
     <section className={s.section} id={sectionId(kind)} aria-labelledby={`${sectionId(kind)}-title`} data-testid={`section-${kind}`}>
       <div className={s.sectionHead}>
@@ -79,6 +88,14 @@ export function KindSection({
                     {detail ? <span className={s.count}> · {detail}</span> : null}
                   </p>
                   {period ? <p className={s.rowMeta}>{period}</p> : null}
+                  {(() => {
+                    const missing = untranslatedFields(kind, item.content, item.translations, primary, other).length;
+                    return missing > 0 ? (
+                      <p className={s.rowMeta} data-testid="item-missing-translation">
+                        <span className={s.missingBadge}>{b.missingBadge(missing, b.inLanguage[other])}</span>
+                      </p>
+                    ) : null;
+                  })()}
                   {locked ? <p className={s.rowMeta}>{a.pending}</p> : null}
                 </div>
                 {item.tags.length > 0 ? (

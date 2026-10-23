@@ -1,6 +1,6 @@
 /**
  * W7 (B3): the tailoring workspace's language control (`/empleos/:id/adaptar`), stated plainly: one language per set
- * of documents, what changes with it (the renderers' section names, dates) and what does not (the person's own text),
+ * of documents, what changes with it (section names, dates and, since W7-B4, the person's text in that language),
  * which languages this job already has, and «crear también la versión en inglés». es-MX source, en.
  */
 import type { ContentLocale } from '../client/types.ts';
@@ -23,7 +23,7 @@ export interface TailorLanguageCopy {
 export const TAILOR_LANGUAGE_COPY: Record<Locale, TailorLanguageCopy> = {
   es: {
     legend: 'Idioma de los documentos',
-    hint: 'Cambia los títulos de las secciones y las fechas. Tu texto se queda como lo escribiste: para una versión en otro idioma, escribe la traducción en «Ajustar el texto para este empleo» de cada elemento (tu perfil no cambia). Cada idioma es un documento aparte.',
+    hint: 'Cambia los títulos de las secciones, las fechas y tu texto: cada documento usa el texto de tu perfil en su idioma, el que escribes con «Texto en» en cada sección del perfil. Donde falte, usa el texto principal y te lo avisamos aquí. Cada idioma es un documento aparte.',
     options: { 'es-MX': 'Español (México)', en: 'Inglés' },
     titleTag: { 'es-MX': '(Español)', en: '(English)' },
     existing: 'Ya tienes para este empleo:',
@@ -32,12 +32,12 @@ export const TAILOR_LANGUAGE_COPY: Record<Locale, TailorLanguageCopy> = {
     alsoCreate: { 'es-MX': 'Preparar también la versión en español', en: 'Preparar también la versión en inglés' },
     switched: {
       'es-MX': 'Elegiste español. Revisa los textos de cada elemento y vuelve a crear los documentos.',
-      en: 'Elegiste inglés. Escribe la traducción en «Ajustar el texto para este empleo» de cada elemento y vuelve a crear los documentos.',
+      en: 'Elegiste inglés. Los documentos usan el texto en inglés de tu perfil; revisa el aviso de textos faltantes y vuelve a crear los documentos.',
     },
   },
   en: {
     legend: 'Language of the documents',
-    hint: 'It changes the section titles and the dates. Your text stays as you wrote it: for a version in another language, write the translation under “Adjust the text for this job” on each item (your profile does not change). Each language is a separate document.',
+    hint: 'It changes the section titles, the dates and your text: each document uses your profile’s text in its language, the one you write with “Text in” on each profile section. Where it is missing, it uses the main text and we tell you here. Each language is a separate document.',
     options: { 'es-MX': 'Spanish (Mexico)', en: 'English' },
     titleTag: { 'es-MX': '(Español)', en: '(English)' },
     existing: 'You already have for this job:',
@@ -46,7 +46,7 @@ export const TAILOR_LANGUAGE_COPY: Record<Locale, TailorLanguageCopy> = {
     alsoCreate: { 'es-MX': 'Also prepare the Spanish version', en: 'Also prepare the English version' },
     switched: {
       'es-MX': 'You chose Spanish. Review each item’s text and create the documents again.',
-      en: 'You chose English. Write the translation under “Adjust the text for this job” on each item and create the documents again.',
+      en: 'You chose English. The documents use your profile’s English text; check the notice of missing texts and create the documents again.',
     },
   },
 };
