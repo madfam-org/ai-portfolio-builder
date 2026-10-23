@@ -1,7 +1,9 @@
 /**
  * W7 (B4): the renderers and bilingual profile text. First, the no-translation guarantee: every (kind, template,
  * locale) renders the same markup, byte for byte, as `main` did before translations existed (hashes written by the
- * same matrix at cab8e0d0; `CV_WRITE_RENDER_BASELINE=1` rewrites them, only ever from that baseline).
+ * same matrix at f1ca3530; `CV_WRITE_RENDER_BASELINE=1` rewrites them, only ever from main's source). Markup from
+ * react-dom/server in Node: no fonts and no layout, so the hashes do not depend on the machine (dates come from Node's
+ * ICU, the Node version pinned in .nvmrc).
  */
 import assert from 'node:assert/strict';
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -23,7 +25,7 @@ const render = (d: any) => renderToStaticMarkup(createElement(ArtifactView, { da
 test('without translations, every kind × template × locale renders the markup main rendered (read-proof)', () => {
   const now = renderMatrix(render, templatesFor);
   if (process.env.CV_WRITE_RENDER_BASELINE === '1') {
-    writeFileSync(BASELINE, `${JSON.stringify({ source: 'main@cab8e0d0 (before W7-B4)', hashes: now }, null, 2)}\n`);
+    writeFileSync(BASELINE, `${JSON.stringify({ source: 'main@f1ca3530 (before W7-B4)', hashes: now }, null, 2)}\n`);
     return;
   }
   const { hashes } = JSON.parse(readFileSync(BASELINE, 'utf8')) as { hashes: Record<string, string> };

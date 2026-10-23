@@ -4,8 +4,13 @@
  * to it, field by field, in the profile editor.
  *
  * 1. Baseline: documents of a profile WITHOUT translations print the same text, byte for byte, as before W7-B4. The
- *    golden files under e2e/fixtures/bilingual/ were printed by the build of `main` at cab8e0d0 (the commit this lane
- *    started from) with this very test (`CV_E2E_WRITE_GOLDEN=1`); this build must print the identical text.
+ *    golden files under e2e/fixtures/bilingual/ are the print view's document text (DOM `textContent`, rendered by
+ *    the server: no fonts, no layout, so identical on macOS and on CI's Linux) written by the build of `main` at
+ *    f1ca3530 with this very test (`CV_E2E_WRITE_GOLDEN=1`); this build must produce the identical text. The PDF is
+ *    checked separately where it is environment-independent (no images, Letter pages) and, within one run, the
+ *    Spanish PDFs after translations exist must equal the same documents' PDFs before (normalised text, page count).
+ *    The PDF text layer itself is NOT compared with a file: how Chromium's text layer splits small caps and wraps
+ *    lines depends on the machine's fonts (macOS «Perfil profesional», Linux «P ERFIL PROFESIONAL»).
  * 2. The editor: «Español | English» per form, the English text written next to the Spanish one, per-item «falta en
  *    inglés» marks, the language chosen from a list (its name comes from the ISO 639 code).
  * 3. The English «Clásica» CV prints the English strings and none of the Spanish free text (proper nouns aside); the
@@ -86,15 +91,37 @@ const docs: Record<'cvEs' | 'cvEn' | 'letterEs' | 'portfolioEn', string> = { cvE
 const itemIds: Record<string, string> = {};
 let jobId = '';
 
-async function printedText(page: Page, id: string): Promise<string> {
+/**
+ * A text compared across PDF text layers: Unicode NFKC, case-folded, every whitespace removed (small caps and line
+ * wrapping differ between machines; the words and their order do not).
+ */
+const norm = (text: string) => text.normalize('NFKC').toLowerCase().replace(/\s/g, '');
+
+interface Printed {
+  /** The print view's document text as the server rendered it (DOM textContent): exact, machine-independent. */
+  text: string;
+  /** The PDF's text layer, normalised (`norm`), and its page count: comparable within one machine. */
+  pdfText: string;
+  pages: number;
+}
+
+/** The print view of a document: its exact text, and the PDF Chromium prints from it (Letter, no images). */
+async function printed(page: Page, id: string): Promise<Printed> {
   await page.goto(url('app', `/documentos/${id}/imprimir`));
-  await expect(page.locator('article[data-kind]')).toBeVisible();
+  const doc = page.locator('article[data-kind]');
+  await expect(doc).toBeVisible();
+  const text = await doc.evaluate((el) => el.textContent ?? '');
   await page.emulateMedia({ media: 'print' });
   const pdf = readPdf(await page.pdf({ preferCSSPageSize: true }));
   await page.emulateMedia({ media: 'screen' });
   expect(pdf.images).toBe(0);
-  return pdf.text;
+  expect(pdf.pages).toBeGreaterThan(0);
+  for (const size of pdf.sizes) expect(size.map(Math.round)).toEqual([612, 792]);
+  return { text, pdfText: norm(pdf.text), pages: pdf.pages };
 }
+
+/** The baseline run's PDFs (same machine, same run): the Spanish documents must print them again later. */
+const baselinePdf: Record<string, Pick<Printed, 'pdfText' | 'pages'>> = {};
 
 /** The tailoring workspace: every profile item into the selection («Agregar» until none is left). */
 async function addEverything(page: Page): Promise<void> {
@@ -113,7 +140,7 @@ function golden(name: string, text: string): void {
     writeFileSync(file, text);
     return;
   }
-  expect(text, `${name}: the printed text equals the text main printed (${file})`).toBe(readFileSync(file, 'utf8'));
+  expect(text, `${name}: the document text equals the text main rendered (${file})`).toBe(readFileSync(file, 'utf8'));
 }
 
 test.describe.serial('bilingual profile text (synthetic persona)', () => {
@@ -147,15 +174,18 @@ test.describe.serial('bilingual profile text (synthetic persona)', () => {
     docs.portfolioEn = byKind(en, 'portfolio');
 
     await signIn(context, VALERIA);
-    const texts = {
-      'cv-es-clasico': await printedText(page, docs.cvEs),
-      'cv-en-clasico': await printedText(page, docs.cvEn),
-      'cover-letter-es-formal': await printedText(page, docs.letterEs),
-      'portfolio-en-base': await printedText(page, docs.portfolioEn),
+    const prints = {
+      'cv-es-clasico': await printed(page, docs.cvEs),
+      'cv-en-clasico': await printed(page, docs.cvEn),
+      'cover-letter-es-formal': await printed(page, docs.letterEs),
+      'portfolio-en-base': await printed(page, docs.portfolioEn),
     };
-    for (const [name, text] of Object.entries(texts)) {
-      expect(text.replace(/\s/g, '')).toContain('ValeriaFicticiaRobles');
-      golden(name, text);
+    for (const [name, p] of Object.entries(prints)) {
+      expect(p.text).toContain('Valeria Ficticia Robles');
+      expect(p.pdfText, `${name}: the PDF carries the document's text`).toContain(norm('Valeria Ficticia Robles'));
+      expect(p.pdfText).toContain(norm(name.includes('-es-') ? 'Asesora de ventas de lujo' : 'Maison Ejemplo'));
+      golden(name, p.text);
+      baselinePdf[name] = { pdfText: p.pdfText, pages: p.pages };
     }
     expect(violations).toEqual([]);
   });
@@ -231,11 +261,12 @@ test.describe.serial('bilingual profile text (synthetic persona)', () => {
     await expect(page.locator('article[data-kind="cv"]')).toContainText('Licenciatura en Mercadotecnia');
     await shot(page, '3-preview-flag');
 
-    const printed = await printedText(page, docs.cvEn);
-    const flat = printed.replace(/\s/g, '');
-    expect(flat).toContain('Luxurysalesadvisor');
-    expect(flat).toContain('LicenciaturaenMercadotecnia');
-    for (const word of ['Faltan', 'textos', 'aviso']) expect(printed).not.toContain(word);
+    const fallback = await printed(page, docs.cvEn);
+    for (const flat of [norm(fallback.text), fallback.pdfText]) {
+      expect(flat).toContain(norm('Luxury sales advisor'));
+      expect(flat).toContain(norm('Licenciatura en Mercadotecnia'));
+      for (const word of ['Faltan', 'textos', 'aviso']) expect(flat).not.toContain(norm(word));
+    }
 
     await page.goto(url('app', `/documentos/${docs.cvEn}/vista-previa`));
     await page.getByTestId('missing-translations').getByRole('link', { name: 'Licenciatura en Mercadotecnia (Educación)' }).click();
@@ -297,31 +328,42 @@ test.describe.serial('bilingual profile text (synthetic persona)', () => {
       await expect(doc).toHaveAttribute('lang', 'en');
       await expect(doc.getByRole('heading', { name: 'Experience' })).toBeVisible();
       if (id === docs.cvEn) await shot(page, '5-preview-en');
-      const flat = (await printedText(page, id)).replace(/\s/g, '');
-      for (const en of [
-        'Luxurysalesadvisor·finejewelleryandwatches',
-        'withfiveyearsinaboutique',
-        'Reached112%ofmyannualsalestargetin2025.',
-        'Bachelor’sdegreeinMarketing,Luxuryretail',
-        'Consultativeselling',
-        'English',
-        'Spanish',
-        'Native',
-        'Firstplaceinregionalsales',
-        'Diamondsandcolouredgemstonescourse',
-        'MexicoCity',
-        'Feb2021–Present',
-        'MaisonEjemplo',
-        'UniversidadEjemplo',
-      ]) {
-        expect(flat, `${id}: ${en}`).toContain(en);
+      const p = await printed(page, id);
+      // The same checks on the document's text and on the PDF's text layer (normalised).
+      for (const flat of [norm(p.text), p.pdfText]) {
+        for (const en of [
+          'Luxury sales advisor · fine jewellery and watches',
+          'with five years in a boutique',
+          'Reached 112% of my annual sales target in 2025.',
+          'Bachelor’s degree in Marketing, Luxury retail',
+          'Consultative selling',
+          'English',
+          'Spanish',
+          'Native',
+          'First place in regional sales',
+          'Diamonds and coloured gemstones course',
+          'Mexico City',
+          'Feb 2021 – Present',
+          'Maison Ejemplo',
+          'Universidad Ejemplo',
+        ]) {
+          expect(flat, `${id}: ${en}`).toContain(norm(en));
+        }
+        for (const es of SPANISH_FREE_TEXT) expect(flat, `${id}: no «${es}»`).not.toContain(norm(es));
       }
-      for (const es of SPANISH_FREE_TEXT) expect(flat, `${id}: no «${es}»`).not.toContain(es.replace(/\s/g, ''));
     }
 
-    // The Spanish documents of the same (now bilingual) profile print exactly what main printed.
-    golden('cv-es-clasico', await printedText(page, docs.cvEs));
-    golden('cover-letter-es-formal', await printedText(page, docs.letterEs));
+    // The Spanish documents of the same (now bilingual) profile: exactly main's text, and the same PDF as before the
+    // translations existed (same machine, same run: normalised text layer and page count).
+    for (const [name, id] of [
+      ['cv-es-clasico', docs.cvEs],
+      ['cover-letter-es-formal', docs.letterEs],
+    ] as const) {
+      const p = await printed(page, id);
+      golden(name, p.text);
+      expect(p.pdfText, `${name}: the PDF text is the baseline's`).toBe(baselinePdf[name]!.pdfText);
+      expect(p.pages, `${name}: the page count is the baseline's`).toBe(baselinePdf[name]!.pages);
+    }
     await page.goto(url('app', `/documentos/${docs.cvEs}/vista-previa`));
     await expect(page.getByTestId('missing-translations')).toHaveCount(0);
     await shot(page, '6-preview-es');

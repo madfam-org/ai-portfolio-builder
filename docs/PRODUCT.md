@@ -319,8 +319,9 @@ the code when it recognises the name.
 and the pages host). A field without that language falls back to the primary text and is listed in «Faltan N textos
 en inglés» above the preview and in the tailoring workspace, each entry linking to `/perfil#traducir-<item>`, which
 opens that item in the other language. The flag is never printed nor shown on the pages host. A document in the
-primary language never reads a translation: its markup and printed text are byte for byte what `main` produced
-(`test/render-bilingual.test.ts`, `e2e/bilingual.spec.ts`). Section titles, level words (Nativo/Native, CEFR codes)
+primary language never reads a translation: its markup and its print view's text are byte for byte what `main`
+produced, and its PDF is the same before and after translations exist (`test/render-bilingual.test.ts`,
+`e2e/bilingual.spec.ts`). Section titles, level words (Nativo/Native, CEFR codes)
 and dates already follow the document's locale.
 
 **Editor.** Each profile form has «Texto en: Español (principal) | English» (a radio group: one tab stop, arrow

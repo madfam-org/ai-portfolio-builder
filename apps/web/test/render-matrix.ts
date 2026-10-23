@@ -1,7 +1,7 @@
 /**
  * W7 (B4): every (kind, template, locale) the renderers draw, over the shared fixtures WITHOUT translations, as markup
  * hashes. test/render-bilingual.test.ts compares them with test/fixtures/bilingual/render-baseline.json, written by
- * this same matrix on `main` at cab8e0d0 (before bilingual profile text existed): a profile without translations
+ * this same matrix on `main` at f1ca3530 (identical to cab8e0d0's) (before bilingual profile text existed): a profile without translations
  * renders byte for byte what it rendered before. Test-only; register render-loader.mjs before importing.
  */
 import { createHash } from 'node:crypto';

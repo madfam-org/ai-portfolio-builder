@@ -279,7 +279,7 @@ default) holds the main text where it always lived; the other language is option
 | `apps/web/src/components/render/localize.ts`, `MissingTranslations.tsx` | every renderer reads `localizeRenderData` first; the «Faltan N textos en inglés» flag (preview, tailoring; never printed) |
 | `apps/web/src/components/profile/{TranslationFields.tsx,translation-form.ts,translate-anchor.ts}` | the «Texto en: Español \| English» switch per form, the other-language fields, `/perfil#traducir-<id>` deep links |
 | `apps/web/src/components/import/{language.ts,ImportLanguage.tsx}`, `src/lib/copy/bilingual.ts` | the import's file language; the strings |
-| `apps/web/e2e/bilingual.spec.ts`, `e2e/fixtures/bilingual/`, `test/render-bilingual.test.ts`, `test/fixtures/bilingual/` | the no-translation baseline printed and rendered by `main` at cab8e0d0, and the bilingual journey |
+| `apps/web/e2e/bilingual.spec.ts`, `e2e/fixtures/bilingual/`, `test/render-bilingual.test.ts`, `test/fixtures/bilingual/` | the no-translation baseline written by `main` at f1ca3530 (the print view's document text, machine-independent; render hashes), and the bilingual journey |
 
 Rules: a document in the primary language reads the stored text only (byte-for-byte proof against main's golden
 print text and render hashes); proper names, dates, URLs, levels and codes stay single; no machine or AI translation
