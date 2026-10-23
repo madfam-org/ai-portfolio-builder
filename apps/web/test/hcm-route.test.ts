@@ -5,7 +5,7 @@ import type { Repository } from '../src/server/db/repository.ts';
 import { matchRoute } from '../src/lib/api-routes.ts';
 import { createHcmClient, type HcmBenchmarkPort } from '../src/server/hcm/client.ts';
 import { hcmConfig } from '../src/server/hcm/config.ts';
-import { jobBenchmark, salaryPosition } from '../src/server/hcm/route.ts';
+import { RETAIL_SALES_SINCO, RETAIL_SEGMENT, jobBenchmark, salaryPosition } from '../src/server/hcm/route.ts';
 import { startFakeHcm, type FakeHcm } from '../test-support/hcm-fake.ts';
 
 const ID = '00000000-0000-4000-8000-000000000001';
@@ -85,4 +85,73 @@ test('salaryPosition: bands, and tails withheld are never estimated', () => {
   assert.equal(salaryPosition(5, core), 'below_p25');
   assert.equal(salaryPosition(60, core), 'above_p75');
   assert.equal(salaryPosition(30, { ...core, p50: null }), null);
+});
+
+// ---- W7: the retail segment view (decided from the matched SINCO, never from a company or brand) ----
+
+const benchCalls = () => fake.requests.filter((r) => r.path === '/api/v1/market-benchmarks/');
+
+test('retail sales job: a second, segment call by SINCO; the general answer is unchanged', async () => {
+  const before = benchCalls().length;
+  const salary = { salaryMin: 30_000, salaryMax: 30_000, salaryCurrency: 'MXN', salaryPeriod: 'month' };
+  const { status, body } = await read(await jobBenchmark(repo(job({ title: 'Client Advisor', company: 'Maison X', ...salary })), 'janua|a', ID, {}, port));
+  assert.equal(status, 200);
+  assert.equal(body.occupation.sinco, '4211');
+  assert.equal(body.income.percentiles.p90, 13_000, 'general CDMX P90');
+  assert.equal(body.posting.position, 'above_p90');
+  assert.equal(body.segment.state, 'ready');
+  assert.match(body.segment.label, /no solo lujo$/);
+  assert.match(body.segment.labelEn, /not only luxury$/);
+  assert.equal(body.segment.status, 'ok');
+  assert.equal(body.segment.income.n, 30);
+  assert.deepEqual(body.segment.income.percentiles, { p10: null, p25: 4_400, p50: 6_400, p75: 8_400, p90: null });
+  assert.equal(body.segment.position, 'above_p75', 'P90 withheld in the segment: never estimated');
+  assert.equal(body.segment.source.dataset_id, 'MEX-INEGI.SYNTHETIC-ENOE-2031-III');
+  const calls = benchCalls().slice(before);
+  assert.equal(calls.length, 2);
+  assert.deepEqual(calls[0]!.query, { title: 'Client Advisor', state: 'MX-CMX' });
+  assert.deepEqual(calls[1]!.query, { sinco: '4211', state: 'MX-CMX', segment: 'retail_apparel_personal' });
+  assert.ok(!JSON.stringify(calls).includes('Maison'), 'the company never reaches HCM');
+});
+
+test('non-retail occupation or unresolved title: no segment call, segment null', async () => {
+  for (const title of ['Desarrolladora de software', 'Ninja de la vida']) {
+    const before = benchCalls().length;
+    const { body } = await read(await jobBenchmark(repo(job({ title, location: 'Guadalajara, Jalisco' })), 'janua|a', ID, {}, port));
+    assert.equal(body.segment, null, title);
+    assert.equal(benchCalls().length - before, 1, title);
+  }
+});
+
+test('store manager: the segment is withheld below the floor and says so with n', async () => {
+  const { body } = await read(await jobBenchmark(repo(job({ title: 'Store Manager' })), 'janua|a', ID, {}, port));
+  assert.equal(body.occupation.sinco, '1411');
+  assert.equal(body.segment.state, 'ready');
+  assert.equal(body.segment.status, 'insufficient_data');
+  assert.equal(body.segment.income, null);
+  assert.deepEqual(body.segment.suppression, { reason: 'below_minimum_n', n: 12, minimum_n: 30 });
+  assert.equal(body.segment.position, null);
+});
+
+test('segment call failing (HCM 503): the general answer still shows; segment unavailable', async () => {
+  const { status, body } = await read(await jobBenchmark(repo(job({ title: 'Subgerente de tienda' })), 'janua|a', ID, {}, port));
+  assert.equal(status, 200);
+  assert.equal(body.status, 'ok');
+  assert.equal(body.occupation.sinco, '1711');
+  assert.deepEqual(body.segment, { state: 'unavailable' });
+});
+
+test('an HCM without segments (400 to the new parameter) leaves the general answer intact', async () => {
+  const general = await port.benchmark({ title: 'Asesora de ventas', state: null });
+  assert.ok(general.ok);
+  const oldHcm: HcmBenchmarkPort = { benchmark: async (q) => (q.segment ? { ok: false, reason: 'invalid' } : general) };
+  const { status, body } = await read(await jobBenchmark(repo(job({ title: 'Asesora de ventas', location: '' })), 'janua|a', ID, {}, oldHcm));
+  assert.equal(status, 200);
+  assert.equal(body.income.n, 6_000);
+  assert.deepEqual(body.segment, { state: 'unavailable' });
+});
+
+test('RETAIL_SALES_SINCO is the store sales and store management groups only', () => {
+  assert.deepEqual([...RETAIL_SALES_SINCO].sort(), ['1411', '1711', '4201', '4211']);
+  assert.equal(RETAIL_SEGMENT, 'retail_apparel_personal');
 });

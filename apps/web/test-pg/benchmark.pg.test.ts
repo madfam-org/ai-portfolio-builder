@@ -106,3 +106,36 @@ test('W5-J typed columns drive the query: stateCode over the location text, the 
   assert.equal(notComparable.body?.posting.position, null);
   assert.equal(notComparable.body?.posting.salary.period, 'hour');
 });
+
+test('W7 retail job: the segment call carries only the SINCO, the state and the segment id, never the person or the house', async () => {
+  const job = await api('POST', '/api/v1/jobs', {
+    sub: A,
+    body: {
+      title: 'Client Advisor',
+      company: 'Maison Ejemplo',
+      location: 'Polanco, Ciudad de México',
+      salaryMin: 30000,
+      salaryMax: 30000,
+      salaryCurrency: 'MXN',
+      salaryPeriod: 'month',
+      sourceText: 'Vacante sintética de boutique.',
+    },
+  });
+  assert.equal(job.status, 201, JSON.stringify(job.body));
+  const before = fake.requests.length;
+  const res = await api('GET', `/api/v1/jobs/${job.body?.job.id as string}/benchmark`, { sub: A });
+  assert.equal(res.status, 200, JSON.stringify(res.body));
+  assert.equal(res.body?.posting.position, 'above_p90');
+  assert.equal(res.body?.segment.state, 'ready');
+  assert.match(res.body?.segment.label as string, /no solo lujo$/);
+  const sent = fake.requests.slice(before).filter((r) => r.path === '/api/v1/market-benchmarks/');
+  assert.deepEqual(
+    sent.map((r) => r.query),
+    [
+      { title: 'Client Advisor', state: 'MX-CMX' },
+      { sinco: '4211', state: 'MX-CMX', segment: 'retail_apparel_personal' },
+    ],
+  );
+  const wire = JSON.stringify(sent);
+  for (const secret of [A, 'Persona', 'example.test', 'Maison', 'Polanco', 'boutique', '30000']) assert.ok(!wire.includes(secret), `${secret} must not reach HCM`);
+});

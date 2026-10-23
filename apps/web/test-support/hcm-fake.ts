@@ -5,7 +5,11 @@
  *
  * Titles drive the answer: «desarroll…»/«software» → ok (SINCO 2271; state cell for MX-CMX, national fallback for any
  * other state), «contador…» → insufficient_data (n = 12), «falla» → 503, anything else → occupation_unresolved.
- * It records every request so tests can prove what cv sent (title and state, never a person).
+ * Retail (W7 segment view): «advisor»/«asesor»/«vendedor» → 4211 (state cell for MX-CMX); «subgerente»/«assistant»/
+ * «jefa de piso» → 1711 (national, quartiles only); «manager»/«gerente» → 1411 (national). `sinco=` answers the same
+ * occupations. `segment=retail_apparel_personal`: 4211 → its own synthetic cells (CDMX n = 30, quartiles only),
+ * 1411 → insufficient_data (n = 12), 1711 → 503; any other segment id → 400, as HCM's allowlist does.
+ * It records every request so tests can prove what cv sent (title or SINCO, state, segment; never a person).
  */
 import { randomBytes } from 'node:crypto';
 import { createServer, type IncomingMessage } from 'node:http';
@@ -30,6 +34,45 @@ export interface FakeHcm {
 
 const PERCENTILES = { p10: 10_950, p25: 12_450, p50: 14_950, p75: 17_450, p90: 18_950 };
 const NATIONAL = { p10: 11_150, p25: 12_950, p50: 15_950, p75: 18_950, p90: 30_000 };
+export const FAKE_SEGMENT = 'retail_apparel_personal';
+/** Synthetic retail figures (invented; the source block says SINTÉTICO). */
+const RETAIL = {
+  '4211': {
+    title: 'Empleados de ventas, despachadores y dependientes en comercios',
+    state: { n: 140, p: { p10: 4_000, p25: 5_500, p50: 8_000, p75: 10_000, p90: 13_000 } },
+    national: { n: 6_000, p: { p10: 3_300, p25: 5_200, p50: 7_700, p75: 10_000, p90: 12_800 } },
+    segmentState: { n: 30, p: { p10: null, p25: 4_400, p50: 6_400, p75: 8_400, p90: null } },
+    segmentNational: { n: 1_200, p: { p10: 2_600, p25: 4_500, p50: 7_000, p75: 9_000, p90: 10_700 } },
+  },
+  '1411': {
+    title: 'Directores y gerentes de ventas, comercialización y alquiler',
+    state: null,
+    national: { n: 350, p: { p10: 10_000, p25: 13_000, p50: 16_500, p75: 26_000, p90: 45_000 } },
+    segmentState: null,
+    segmentNational: null,
+  },
+  '1711': {
+    title: 'Coordinadores y jefes de área de ventas, comercialización y alquiler',
+    state: null,
+    national: { n: 97, p: { p10: null, p25: 12_000, p50: 14_000, p75: 20_000, p90: null } },
+    segmentState: null,
+    segmentNational: null,
+  },
+} as const;
+const SEGMENT_BLOCK = {
+  id: FAKE_SEGMENT,
+  available: true,
+  label:
+    'Comercio al por menor en tiendas de ropa, calzado, bisutería y accesorios de vestir (incluye artículos de piel), y de artículos de uso personal (incluye perfumería, cosméticos, joyería y relojes); no solo lujo',
+  label_en:
+    'Retail stores selling clothing, footwear, costume jewellery and accessories (including leather goods), and personal items (including perfume, cosmetics, jewellery and watches); not only luxury',
+  scope_note: 'SINTÉTICO: nota de alcance de prueba. La ENOE no identifica marcas ni distingue tiendas de lujo.',
+  industry_classification: 'SCIAN 2018, versión hogares (catálogo p4a de la ENOE)',
+  industries: [
+    { code: '4631', title: 'Comercio al por menor de productos textiles, bisutería, accesorios de vestir y calzado' },
+    { code: '4651', title: 'Comercio al por menor de artículos de papelería, para el esparcimiento y otros artículos de uso personal' },
+  ],
+};
 
 function envelope() {
   return {
@@ -56,9 +99,46 @@ const geography = (requested: string | null, scope: 'state' | 'national' | null,
   requested_state_n: n,
 });
 
-export function fakeBenchmark(title: string, state: string | null): { status: number; body: unknown } {
+function retailCode(t: string, sinco: string | null): '4211' | '1411' | '1711' | null {
+  if (sinco) return sinco in RETAIL ? (sinco as '4211' | '1411' | '1711') : null;
+  if (t.includes('advisor') || t.includes('asesor') || t.includes('vendedor')) return '4211';
+  if (t.includes('subgerente') || t.includes('assistant') || t.includes('jefa de piso')) return '1711';
+  if (t.includes('manager') || t.includes('gerente')) return '1411';
+  return null;
+}
+
+type Cell = { n: number; p: Record<'p10' | 'p25' | 'p50' | 'p75' | 'p90', number | null> } | null;
+
+function retailBenchmark(code: '4211' | '1411' | '1711', state: string | null, segment: string | null): { status: number; body: unknown } {
+  const r = RETAIL[code];
+  if (segment && code === '1711') return { status: 503, body: { status: 'unavailable' } };
+  const local: Cell = segment ? r.segmentState : r.state;
+  const national: Cell = segment ? r.segmentNational : r.national;
+  const useState = state === 'MX-CMX' && local !== null;
+  const cell = useState ? local : national;
+  const occupation = {
+    sinco: code,
+    title: r.title,
+    taxonomy: 'SINCO 2019 (catálogo p3 de la ENOE)',
+    aliases_version: 'synthetic',
+    match: { method: 'alias_exact', confidence: 0.8, matched_phrase: 'sintético', ignored_terms: [], alternatives: [] },
+  };
+  const geo = useState ? geography(state, 'state', null, cell!.n) : geography(state, cell ? 'national' : null, state ? 'state_cell_below_minimum_n' : null, state ? 14 : null);
+  const base = { ...envelope(), occupation, segment: segment ? SEGMENT_BLOCK : null, geography: geo };
+  if (!cell) {
+    return { status: 200, body: { ...base, status: 'insufficient_data', income: null, suppression: { reason: 'below_minimum_n', n: 12, minimum_n: 30 } } };
+  }
+  const income = { currency: 'MXN', period: 'month', concept: 'declared_monthly_income_main_job', percentiles: cell.p, n: cell.n, weighted_population: cell.n * 400, income_reporting_share: '0.600' };
+  return { status: 200, body: { ...base, status: 'ok', income, suppression: null } };
+}
+
+export function fakeBenchmark(title: string, state: string | null, sinco: string | null = null, segment: string | null = null): { status: number; body: unknown } {
   const t = title.toLowerCase();
+  if (segment !== null && segment !== FAKE_SEGMENT) return { status: 400, body: { status: 'invalid_query' } };
   if (t.includes('falla')) return { status: 503, body: { status: 'unavailable' } };
+  const retail = retailCode(t, sinco);
+  if (retail) return retailBenchmark(retail, state, segment);
+  if (segment) return { status: 200, body: { ...envelope(), status: 'insufficient_data', occupation: null, segment: SEGMENT_BLOCK, geography: geography(state, null, null, null), income: null, suppression: { reason: 'below_minimum_n', n: 0, minimum_n: 30 } } };
   if (t.includes('desarroll') || t.includes('software')) {
     const local = state === 'MX-CMX';
     return {
@@ -144,7 +224,7 @@ export async function startFakeHcm(port = 0): Promise<FakeHcm> {
       if (req.method === 'GET' && url.pathname === '/api/v1/market-benchmarks/') {
         const bearer = req.headers.authorization?.replace(/^Bearer /, '') ?? '';
         if (!tokens.has(bearer)) return send(401, { detail: 'not authenticated' });
-        const answer = fakeBenchmark(url.searchParams.get('title') ?? '', url.searchParams.get('state'));
+        const answer = fakeBenchmark(url.searchParams.get('title') ?? '', url.searchParams.get('state'), url.searchParams.get('sinco'), url.searchParams.get('segment'));
         return send(answer.status, answer.body);
       }
       return send(404, { detail: 'not found' });

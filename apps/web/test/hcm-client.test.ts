@@ -27,7 +27,9 @@ test('ok answer: one token for many calls, title and state only, the scope reque
   const calls = fake.requests.filter((r) => r.path === '/api/v1/market-benchmarks/');
   assert.ok(calls.length >= 2, `read ${calls.length} benchmark calls`);
   for (const call of calls) {
-    assert.deepEqual(Object.keys(call.query).sort(), call.query.state ? ['state', 'title'] : ['title'], 'only title and state leave cv');
+    // W7: a segment call sends the SINCO HCM already returned and the segment id instead of the title.
+    const allowed = call.query.segment ? ['segment', 'sinco', 'state'] : call.query.state ? ['state', 'title'] : ['title'];
+    assert.deepEqual(Object.keys(call.query).sort(), allowed, 'only title (or SINCO), state and a segment id leave cv');
     assert.equal(call.headers.cookie, undefined);
   }
 });
@@ -101,4 +103,27 @@ test('a source that is not INEGI is rejected by the schema', async () => {
     },
   });
   assert.deepEqual(await forged.benchmark({ title: 'Desarrollador', state: null }), { ok: false, reason: 'invalid' });
+});
+
+test('segment query: the SINCO replaces the title; only sinco, state and the segment id leave cv; cached apart', async () => {
+  const client = createHcmClient(config);
+  const before = fake.requests.length;
+  const general = await client.benchmark({ title: 'Client Advisor', state: 'MX-CMX' });
+  const segment = await client.benchmark({ title: 'Client Advisor', state: 'MX-CMX', sinco: '4211', segment: 'retail_apparel_personal' });
+  assert.ok(general.ok && segment.ok);
+  assert.equal(general.benchmark.segment, null);
+  assert.equal(segment.benchmark.segment?.available, true);
+  assert.equal(segment.benchmark.income?.n, 30);
+  const sent = fake.requests.slice(before).filter((r) => r.path === '/api/v1/market-benchmarks/');
+  assert.deepEqual(sent.at(-1)!.query, { sinco: '4211', state: 'MX-CMX', segment: 'retail_apparel_personal' });
+  const again = await client.benchmark({ title: 'Client Advisor', state: 'MX-CMX', sinco: '4211', segment: 'retail_apparel_personal' });
+  assert.ok(again.ok && again.cached && again.benchmark.income?.n === 30, 'the segment answer has its own cache entry');
+});
+
+test('a segment id HCM does not allowlist is a 400: invalid, and it does not trip the breaker', async () => {
+  const client = createHcmClient(config);
+  for (let i = 0; i < FAILURE_THRESHOLD + 1; i++) {
+    assert.deepEqual(await client.benchmark({ title: 'x', state: null, sinco: '4211', segment: 'lujo' }), { ok: false, reason: 'invalid' });
+  }
+  assert.equal((await client.benchmark({ title: 'Client Advisor', state: null })).ok, true);
 });
