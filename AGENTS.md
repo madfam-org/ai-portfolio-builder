@@ -256,3 +256,11 @@ The luxury-retail beta persona ([`docs/PRODUCT.md`](docs/PRODUCT.md) «Luxury re
 provider's own documentation of a key-free public API (Workday, SuccessFactors, Oracle, Eightfold and TalentLink have
 none); robots.txt is also checked without a leading locale segment (only ever refuses more); a closed posting is
 `posting_closed`, never a draft; the e2e persona is fictional («Valeria Ficticia Robles», «Maison Ejemplo»).
+
+**W7 (segment view, 2026-10-22).** For store sales and store management occupations (`RETAIL_SALES_SINCO` in
+`server/hcm/route.ts`: SINCO 4211, 4201, 1411, 1711) the route asks HCM a second time by SINCO with
+`segment=retail_apparel_personal` and returns it as `segment` (null for other occupations, `{state: 'unavailable'}`
+when HCM cannot answer, including an HCM that predates segments and answers 400). The panel names the general figure
+«mercado general», shows the segment under HCM's own label («no solo lujo») with n, quarter and source, and adds a
+neutral note above the general P90; it never frames an offer as too high. `e2e/benchmark-segment.spec.ts` checks the
+copy and that none of «atípico», «demasiado», «excesivo», «outlier», «too high» or «%» appears.

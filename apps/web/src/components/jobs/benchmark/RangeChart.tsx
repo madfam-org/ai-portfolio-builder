@@ -9,6 +9,8 @@ interface Props {
   posting: number | null;
   label: string;
   format: (n: number) => string;
+  /** Distinguishes the general chart from the segment one on the same page. */
+  testId?: string;
 }
 
 const W = 600;
@@ -20,7 +22,7 @@ const PAD = 24;
  * a `style` (the CSP forbids inline styles); colours come from the CSS module. The numbers are also written out next
  * to the chart, so nothing depends on seeing it.
  */
-export function RangeChart({ p10, p25, p50, p75, p90, posting, label, format }: Props) {
+export function RangeChart({ p10, p25, p50, p75, p90, posting, label, format, testId = 'benchmark-chart' }: Props) {
   const values = [p10 ?? p25, p90 ?? p75, ...(posting === null ? [] : [posting])];
   const lo = Math.min(...values);
   const hi = Math.max(...values);
@@ -29,7 +31,7 @@ export function RangeChart({ p10, p25, p50, p75, p90, posting, label, format }: 
   const tails = p10 !== null && p90 !== null;
 
   return (
-    <svg className={s.chart} viewBox={`0 0 ${W} 96`} role="img" aria-label={label} data-testid="benchmark-chart">
+    <svg className={s.chart} viewBox={`0 0 ${W} 96`} role="img" aria-label={label} data-testid={testId}>
       <line className={s.axis} x1={PAD} x2={W - PAD} y1={44} y2={44} />
       {tails ? <line className={s.whisker} x1={x(p10)} x2={x(p90)} y1={44} y2={44} /> : null}
       <rect className={s.box} x={x(p25)} y={30} width={Math.max(2, x(p75) - x(p25))} height={28} rx={4} />
@@ -44,7 +46,7 @@ export function RangeChart({ p10, p25, p50, p75, p90, posting, label, format }: 
         {format(p50)}
       </text>
       {posting !== null ? (
-        <polygon className={s.posting} points={`${x(posting) - 7},70 ${x(posting) + 7},70 ${x(posting)},58`} data-testid="benchmark-posting-marker" />
+        <polygon className={s.posting} points={`${x(posting) - 7},70 ${x(posting) + 7},70 ${x(posting)},58`} data-testid={`${testId}-posting-marker`} />
       ) : null}
     </svg>
   );

@@ -279,3 +279,15 @@ A posting that is **no longer open** but still answers 200 (Workday `postingAvai
   who will see it, that a link can be forwarded, that indexing stays off unless ticked, and the document's current
   title (shown in the browser tab and when shared), with where to change it. cv sends no e-mail about jobs or
   documents; the public reads carry the document, the profile header and the chosen items, never the job.
+- **General market, said out loud (W7)**: the general figure carries «Mercado general: todas las empresas y tiendas de
+  esta ocupación, de cualquier giro y tamaño».
+- **Retail segment (W7)**: when HCM resolves the title to a store sales or store management occupation (SINCO 4211,
+  4201, 1411, 1711; decided from the code alone, never from a company or brand), cv asks HCM a second time by SINCO,
+  with the same state and `segment=retail_apparel_personal`: the same ENOE statistic counting only people whose
+  employer is a store of clothing, footwear, accessories or personal items (SCIAN 4631/4651). The panel shows HCM's
+  exact label, which ends «no solo lujo», with its own n, quarter and source; «sin datos suficientes» when withheld;
+  «no disponible» when HCM cannot answer (the general figure stays). Only the SINCO code, the state and the segment id
+  leave cv on that call.
+- **Above the general P90 (W7)**: a neutral note says the ENOE does not separate luxury houses from other employers
+  and that commission-based roles often report income differently from a posting's pay. The panel never calls an
+  offer high, atypical or an outlier.

@@ -6,6 +6,11 @@
  * declare they earn, never «our survey», never an offer and never a prediction. When HCM withholds a figure the panel
  * says «sin datos suficientes» and shows nothing in its place. No «%» sign: the reporting share HCM returns (0-1) is
  * written as «de cada 100», like the rest of the jobs pages (jobs.spec.ts checks the page carries no percentage).
+ *
+ * W7 (segment view): the general figure is named for what it is, «mercado general: todas las empresas y tiendas». For
+ * retail-sales occupations a second block shows the same statistic within one retail industry, under HCM's exact
+ * label (which ends «no solo lujo»). When a posting sits above the general P90 the panel says, neutrally, what the ENOE
+ * cannot see (luxury houses, commission pay); it never calls an offer high, atypical or an outlier.
  */
 import type { Locale } from '../routing.ts';
 
@@ -53,6 +58,16 @@ export interface BenchmarkCopy {
   sourceLink: string;
   methodology: string;
   thresholds: string;
+  marketScope: string;
+  aboveGeneralP90: string;
+  segmentHeading: string;
+  segmentIntro: string;
+  segmentLabel: string;
+  segmentWhy: string;
+  segmentInsufficient: string;
+  segmentUnavailable: string;
+  segmentPosting: string;
+  segmentIndustries: string;
 }
 
 export const BENCHMARK_COPY: Record<Locale, BenchmarkCopy> = {
@@ -60,7 +75,7 @@ export const BENCHMARK_COPY: Record<Locale, BenchmarkCopy> = {
     heading: 'Rango de ingreso en el mercado',
     intro:
       'Estadística oficial de INEGI sobre lo que declaran ganar al mes las personas asalariadas en la ocupación de esta vacante. No es una oferta ni una predicción.',
-    privacy: 'Para consultarla enviamos sólo el puesto y el estado, nunca tu nombre, tu perfil ni tu CV.',
+    privacy: 'Para consultarla enviamos sólo el puesto (o su código de ocupación) y el estado, nunca tu nombre, tu perfil ni tu CV.',
     loading: 'Consultando los datos del mercado…',
     dormant: 'La comparación con el mercado laboral todavía no está disponible.',
     unavailable: 'No pudimos consultar los datos del mercado en este momento.',
@@ -117,12 +132,23 @@ export const BENCHMARK_COPY: Record<Locale, BenchmarkCopy> = {
     sourceLink: 'Encuesta Nacional de Ocupación y Empleo (INEGI)',
     methodology: 'Cómo se calcula',
     thresholds: 'Con menos de {min} registros no se publica ningún percentil; P10 y P90 requieren {tails}.',
+    marketScope: 'Mercado general: todas las empresas y tiendas de esta ocupación, de cualquier giro y tamaño.',
+    aboveGeneralP90:
+      'La ENOE no distingue a las casas de lujo del resto de las empresas, y en los puestos con comisión el ingreso que la gente declara suele reportarse de otra forma que el sueldo de un anuncio. Quedar por encima del percentil 90 general describe al mercado general, no a esta oferta.',
+    segmentHeading: 'Mismo dato, sólo en un giro del comercio',
+    segmentIntro: 'El mismo cálculo de la ENOE, contando sólo a quienes trabajan en tiendas de este giro.',
+    segmentLabel: 'Giro: {label}.',
+    segmentWhy: 'Se muestra porque la ocupación de esta vacante es de venta o de gerencia en tiendas (SINCO {code}).',
+    segmentInsufficient: 'Sin datos suficientes en este giro: la ENOE tiene {n} registros con ingreso y se necesitan {min}.',
+    segmentUnavailable: 'El dato de este giro no está disponible en este momento; el dato general de arriba no cambia.',
+    segmentPosting: 'Frente a este giro, el salario del anuncio queda {position}.',
+    segmentIndustries: 'Actividades del empleador incluidas (SCIAN 2018):',
   },
   en: {
     heading: 'Market income range',
     intro:
       'Official INEGI statistics on what salaried people in this job’s occupation declare they earn per month. Not an offer and not a prediction.',
-    privacy: 'To look it up we send only the job title and the state, never your name, your profile or your CV.',
+    privacy: 'To look it up we send only the job title (or its occupation code) and the state, never your name, your profile or your CV.',
     loading: 'Looking up market data…',
     dormant: 'The labour-market comparison is not available yet.',
     unavailable: 'We could not reach the market data right now.',
@@ -178,6 +204,17 @@ export const BENCHMARK_COPY: Record<Locale, BenchmarkCopy> = {
     sourceLink: 'National Occupation and Employment Survey (INEGI)',
     methodology: 'How it is computed',
     thresholds: 'Below {min} records no percentile is published; P10 and P90 need {tails}.',
+    marketScope: 'General market: every company and store in this occupation, of any line of business and size.',
+    aboveGeneralP90:
+      'The ENOE does not separate luxury houses from other employers, and in commission-based roles the income people declare is often reported differently from a posting’s pay. Sitting above the general 90th percentile describes the general market, not this offer.',
+    segmentHeading: 'Same figures, one retail industry only',
+    segmentIntro: 'The same ENOE calculation, counting only people who work in stores of this industry.',
+    segmentLabel: 'Industry: {label}.',
+    segmentWhy: 'Shown because this job’s occupation is store sales or store management (SINCO {code}).',
+    segmentInsufficient: 'Not enough data in this industry: the ENOE has {n} records with income and {min} are needed.',
+    segmentUnavailable: 'The figures for this industry are not available right now; the general figures above do not change.',
+    segmentPosting: 'Against this industry, the posted salary sits {position}.',
+    segmentIndustries: 'Employer activities included (SCIAN 2018):',
   },
 };
 

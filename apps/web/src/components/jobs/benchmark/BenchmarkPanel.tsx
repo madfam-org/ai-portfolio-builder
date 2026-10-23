@@ -9,6 +9,7 @@ import { BENCHMARK_COPY, count, money, quarterLabel } from '@/lib/copy/benchmark
 import { fmt } from '@/lib/copy/jobs';
 import type { Locale } from '@/lib/routing';
 import { RangeChart } from './RangeChart';
+import { SegmentSection } from './SegmentSection';
 import { stateName } from './states';
 import jobs from '../jobs.module.css';
 import s from './benchmark.module.css';
@@ -22,7 +23,8 @@ function toState(error: ApiError): State {
 /**
  * `/empleos/:id` → «Rango de ingreso en el mercado»: Symbiosis HCM's INEGI ENOE range for the job's occupation and
  * state (`GET /api/v1/jobs/:id/benchmark`). Shows the range, the median, where the posting's stated monthly salary
- * falls, n, the quarter and the source next to every figure; «sin datos suficientes» when HCM withholds them.
+ * falls, n, the quarter and the source next to every figure; «sin datos suficientes» when HCM withholds them. The
+ * general figure says it is the general market; retail-sales jobs also get the industry segment (SegmentSection).
  */
 export function BenchmarkPanel({ locale, jobId, location, headingId }: { locale: Locale; jobId: string; location: string; headingId: string }) {
   const t = BENCHMARK_COPY[locale];
@@ -116,6 +118,9 @@ function Result({ locale, data, location }: { locale: Locale; data: BenchmarkDto
         {geo.scope === 'national' && !geo.fallback_reason && data.query.stateSource !== null ? t.scopeNational : null}
       </p>
 
+      <p className="small" data-testid="benchmark-market-scope">
+        {t.marketScope}
+      </p>
       {data.status === 'insufficient_data' || !data.income ? (
         <Notice tone="warning">
           <span data-testid="benchmark-insufficient">
@@ -132,6 +137,9 @@ function Result({ locale, data, location }: { locale: Locale; data: BenchmarkDto
           {t.sourceLink}
         </a>
       </p>
+      {data.segment ? (
+        <SegmentSection locale={locale} segment={data.segment} sinco={occ.sinco} minimumN={data.methodology.minimum_n} tailsMinimumN={data.methodology.tails_minimum_n} />
+      ) : null}
       <details>
         <summary>{t.methodology}</summary>
         <ul className={s.list}>
@@ -208,6 +216,11 @@ function Figures({ locale, data }: { locale: Locale; data: BenchmarkDto }) {
           t.noSalary
         )}
       </p>
+      {posting.position === 'above_p90' ? (
+        <p className="small" data-testid="benchmark-above-p90">
+          {t.aboveGeneralP90}
+        </p>
+      ) : null}
       {posting.position ? <p className="small muted">{t.postingCaveat}</p> : null}
     </>
   );

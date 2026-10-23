@@ -6,11 +6,12 @@
  * - Budget: every call is bounded by `timeoutMs` (AbortSignal.timeout).
  * - Circuit breaker: after FAILURE_THRESHOLD consecutive failures (network, timeout, 5xx, refused token) the client
  *   answers `unavailable` at once for OPEN_MS, then lets one probe through.
- * - Cache: answers are cached per (title, state) for CACHE_TTL_MS (the data changes once a quarter), at most
- *   CACHE_MAX entries. Never per person: the query carries no identity.
+ * - Cache: answers are cached per (title or SINCO, state, segment) for CACHE_TTL_MS (the data changes once a
+ *   quarter), at most CACHE_MAX entries. Never per person: the query carries no identity.
  * - Validation: HCM's answer is parsed with zod; an unexpected shape is `unavailable`, never shown.
  *
- * Sends ONLY the job title (or SINCO) and the ISO state code. Logs status codes only, never the query.
+ * Sends ONLY the job title (or the SINCO code HCM already returned for it), the ISO state code and, for the industry
+ * segment view, an allowlisted segment id. Logs status codes only, never the query.
  */
 import { z } from 'zod';
 import { HCM_BENCHMARK_SCOPE, type HcmConfig } from './config.ts';
@@ -25,7 +26,7 @@ type Fetch = (input: string, init?: RequestInit) => Promise<Response>;
 
 const percentile = z.number().int().nonnegative().nullable();
 const benchmarkSchema = z.object({
-  status: z.enum(['ok', 'insufficient_data', 'occupation_unresolved', 'occupation_ambiguous', 'occupation_unknown']),
+  status: z.enum(['ok', 'insufficient_data', 'occupation_unresolved', 'occupation_ambiguous', 'occupation_unknown', 'segment_unavailable']),
   data_kind: z.literal('public_official_aggregate'),
   occupation: z
     .object({
@@ -75,6 +76,19 @@ const benchmarkSchema = z.object({
     tails_minimum_n: z.number().int(),
     notes: z.array(z.string().max(400)).max(10),
   }),
+  /** Only on an answer asked with `segment`: HCM's exact label of the industries the segment holds. */
+  segment: z
+    .object({
+      id: z.string().max(60),
+      available: z.boolean(),
+      label: z.string().max(400).optional(),
+      label_en: z.string().max(400).optional(),
+      scope_note: z.string().max(600).optional(),
+      industry_classification: z.string().max(120).optional(),
+      industries: z.array(z.object({ code: z.string().regex(/^\d{4}$/), title: z.string().max(300) })).max(10).optional(),
+    })
+    .nullable()
+    .optional(),
 });
 export type HcmBenchmark = z.infer<typeof benchmarkSchema>;
 
@@ -82,6 +96,10 @@ export interface BenchmarkQuery {
   title: string;
   /** ISO 3166-2:MX (MX-CMX), or null for the national figure. */
   state: string | null;
+  /** The SINCO code HCM already resolved for `title`; when set, it is sent instead of the title. */
+  sinco?: string;
+  /** An industry segment id HCM allowlists (`retail_apparel_personal`). */
+  segment?: string;
 }
 
 export type BenchmarkResult = { ok: true; benchmark: HcmBenchmark; cached: boolean } | { ok: false; reason: 'unavailable' | 'refused' | 'invalid' };
@@ -138,8 +156,9 @@ export function createHcmClient(config: HcmConfig, deps: { fetch?: Fetch; now?: 
   }
 
   async function call(query: BenchmarkQuery, retry: boolean): Promise<HcmBenchmark> {
-    const params = new URLSearchParams({ title: query.title });
+    const params = query.sinco ? new URLSearchParams({ sinco: query.sinco }) : new URLSearchParams({ title: query.title });
     if (query.state) params.set('state', query.state);
+    if (query.segment) params.set('segment', query.segment);
     let res: Response;
     try {
       res = await doFetch(`${config.apiUrl}/api/v1/market-benchmarks/?${params}`, {
@@ -166,7 +185,7 @@ export function createHcmClient(config: HcmConfig, deps: { fetch?: Fetch; now?: 
 
   return {
     async benchmark(query) {
-      const key = `${query.title.toLowerCase()}\u0000${query.state ?? ''}`;
+      const key = [query.sinco ? `#${query.sinco}` : query.title.toLowerCase(), query.state ?? '', query.segment ?? ''].join('\u0000');
       const hit = cache.get(key);
       if (hit && now() - hit.at < CACHE_TTL_MS) return { ok: true, benchmark: hit.benchmark, cached: true };
       if (openUntil > now()) return { ok: false, reason: 'unavailable' };
