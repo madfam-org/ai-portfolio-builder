@@ -147,6 +147,6 @@ test('the intake end to end: microdata page read; closed pages → posting_close
   assert.ok(!n.seen.some((s) => s.path === '/en-US/Ejemplo/job/x_3'), 'a refused page is never fetched');
   const lv = await run('https://www.lvmh.com/en/join-us/our-job-offers/EJEMPLO1');
   assert.ok(!lv.ok && lv.body.reason === 'capture_only' && lv.body.board === 'LVMH');
-  assert.ok(!n.seen.some((s) => s.hostname.endsWith('lvmh.com')), 'no connection to a capture-only site');
+  assert.ok(!n.seen.some((s) => s.hostname === 'lvmh.com' || s.hostname.endsWith('.lvmh.com')), 'no connection to a capture-only site');
   clearRobotsCache();
 });
