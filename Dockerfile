@@ -12,7 +12,7 @@
 # - Every COPY source below is mirrored in the `paths` of .github/workflows/build-deploy.yml and the trigger
 #   paths of .github/workflows/image.yml.
 
-FROM node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402 AS build
+FROM node:22-alpine@sha256:fe4f6d74e20370acb04ad889077d14d0f64a9c8ea6a42bc60cddf1e844699914 AS build
 ENV NEXT_TELEMETRY_DISABLED=1 \
     CI=true \
     COREPACK_ENABLE_DOWNLOAD_PROMPT=0
@@ -30,7 +30,7 @@ COPY apps/web apps/web
 RUN pnpm --filter @cv/web run build \
  && test -f apps/web/.next/standalone/apps/web/server.js
 
-FROM node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402 AS runtime
+FROM node:22-alpine@sha256:fe4f6d74e20370acb04ad889077d14d0f64a9c8ea6a42bc60cddf1e844699914 AS runtime
 
 LABEL org.opencontainers.image.source="https://github.com/madfam-org/ai-portfolio-builder" \
       org.opencontainers.image.licenses="AGPL-3.0-only" \
