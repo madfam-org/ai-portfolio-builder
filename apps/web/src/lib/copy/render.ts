@@ -149,6 +149,16 @@ export interface DocumentsCopy {
   published: string;
   unpublished: string;
   shareUrl: string;
+  /** The state said beside the link once a document is shared: what it is, who can open it, how to take it back. */
+  sharedLinkTitle: string;
+  sharedPublicTitle: string;
+  sharedLinkWho: string;
+  sharedPublicWho: string;
+  sharedIndexed: string;
+  sharedNotIndexed: string;
+  sharedWithdraw: string;
+  /** Under the publish button while «Privado» is both stored and chosen (the button is disabled then). */
+  publishChooseHint: string;
   copy: string;
   copied: string;
   copyFailed: string;
@@ -232,6 +242,14 @@ export const DOCUMENTS_COPY: Record<Locale, DocumentsCopy> = {
     published: 'Publicado',
     unpublished: 'Ya no está publicado',
     shareUrl: 'Dirección para compartir',
+    sharedLinkTitle: 'Compartido con enlace.',
+    sharedPublicTitle: 'Publicado en una dirección pública.',
+    sharedLinkWho: 'Solo quien tenga este enlace puede abrirlo. Los buscadores no lo muestran.',
+    sharedPublicWho: 'Cualquier persona con la dirección puede abrirlo.',
+    sharedIndexed: 'Los buscadores pueden mostrarlo.',
+    sharedNotIndexed: 'Los buscadores no lo muestran.',
+    sharedWithdraw: 'Puedes retirarlo en cualquier momento con «Despublicar».',
+    publishChooseHint: 'Hoy es privado. Elige «Con enlace» o «Público» para compartirlo.',
     copy: 'Copiar enlace',
     copied: 'Enlace copiado',
     copyFailed: 'No se pudo copiar. Selecciona la dirección y cópiala a mano.',
@@ -313,6 +331,14 @@ export const DOCUMENTS_COPY: Record<Locale, DocumentsCopy> = {
     published: 'Published',
     unpublished: 'No longer published',
     shareUrl: 'Address to share',
+    sharedLinkTitle: 'Shared by link.',
+    sharedPublicTitle: 'Published at a public address.',
+    sharedLinkWho: 'Only people who have this link can open it. Search engines do not show it.',
+    sharedPublicWho: 'Anyone with the address can open it.',
+    sharedIndexed: 'Search engines can show it.',
+    sharedNotIndexed: 'Search engines do not show it.',
+    sharedWithdraw: 'You can withdraw it at any time with “Unpublish”.',
+    publishChooseHint: 'It is private today. Choose “Link” or “Public” to share it.',
     copy: 'Copy link',
     copied: 'Link copied',
     copyFailed: 'It could not be copied. Select the address and copy it by hand.',
