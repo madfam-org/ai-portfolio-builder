@@ -13,7 +13,9 @@ test('landing: the built parts say private beta, only assisted writing says comi
   for (const locale of LOCALES) {
     const t = COPY[locale];
     const planned = t.building.filter((item) => !item.live);
-    assert.equal(t.building.length, 5, locale);
+    assert.equal(t.building.length, 6, locale);
+    // Discretion is a built trait (contact off by default, «Despublicar»), never a plan.
+    assert.ok(t.building.find((item) => /Discreci|Discreet/.test(item.title))?.live, `${locale}: discretion is live`);
     assert.equal(planned.length, 1, `${locale}: exactly one planned item`);
     assert.match(planned[0]!.title, /asistida|Assisted/, locale);
     const tags = new Set(t.building.filter((item) => item.live).map((item) => item.tag));
@@ -30,5 +32,5 @@ test('landing: says invite-only, never that nothing exists or that anyone can si
     assert.doesNotMatch(all, /Nada de esto|None of this|no hay cuentas|no accounts/i, locale);
     assert.ok(t.ecosystem.find((item) => /Janua/.test(item.title))?.live, `${locale}: Janua sign-in is live`);
   }
-  assert.equal(COPY.es.building.length + COPY.en.building.length, 10, 'read both locales');
+  assert.equal(COPY.es.building.length + COPY.en.building.length, 12, 'read both locales');
 });
