@@ -115,6 +115,8 @@ export interface DocumentsCopy {
   locales: Record<'es-MX' | 'en', string>;
   templateLabel: string;
   templateHint: string;
+  /** Added for CVs and letters only: the kinds a recruiting system reads. */
+  templateHintAts: string;
   templates: Record<string, string>;
   statusLabel: string;
   statusPublishedHint: string;
@@ -195,7 +197,8 @@ export const DOCUMENTS_COPY: Record<Locale, DocumentsCopy> = {
     localeLabel: 'Idioma del documento',
     locales: { 'es-MX': 'Español (México)', en: 'Inglés' },
     templateLabel: 'Plantilla',
-    templateHint: 'Cambia el aspecto, nunca el contenido. Todas las plantillas de CV y carta son de una columna con texto real: los sistemas de reclutamiento (ATS) las leen sin problema.',
+    templateHint: 'Cambia el aspecto, nunca el contenido.',
+    templateHintAts: 'Todas las plantillas de CV y carta son de una columna con texto real: los sistemas de reclutamiento (ATS) las leen sin problema.',
     templates: { base: 'Básica (compatible con ATS)' },
     statusLabel: 'Estado',
     statusPublishedHint: 'Está publicado. Para volverlo borrador o listo, primero despublícalo.',
@@ -276,7 +279,8 @@ export const DOCUMENTS_COPY: Record<Locale, DocumentsCopy> = {
     localeLabel: 'Document language',
     locales: { 'es-MX': 'Spanish (Mexico)', en: 'English' },
     templateLabel: 'Template',
-    templateHint: 'It changes the look, never the content. Every CV and letter template is one column of real text: applicant tracking systems (ATS) read them without trouble.',
+    templateHint: 'It changes the look, never the content.',
+    templateHintAts: 'Every CV and letter template is one column of real text: applicant tracking systems (ATS) read them without trouble.',
     templates: { base: 'Basic (ATS-friendly)' },
     statusLabel: 'Status',
     statusPublishedHint: 'It is published. To make it a draft or ready again, unpublish it first.',

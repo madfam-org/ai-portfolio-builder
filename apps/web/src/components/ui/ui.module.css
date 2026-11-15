@@ -48,6 +48,10 @@
   background: transparent;
   color: var(--ink);
   border-color: transparent;
+  /* Without a border or a fill, the underline is what says «this is a control». */
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
 }
 .small {
   min-height: 2.25rem;
@@ -99,7 +103,6 @@ textarea.input {
 
 .notice {
   border: 1px solid var(--line);
-  border-left-width: 4px;
   border-radius: 10px;
   padding: 0.75rem 1rem;
   background: var(--surface);
@@ -109,16 +112,16 @@ textarea.input {
   margin: 0;
 }
 .info {
-  border-left-color: var(--brand);
+  border-color: var(--brand);
 }
 .success {
-  border-left-color: #2e7d4f;
+  border-color: #2e7d4f;
 }
 .warning {
-  border-left-color: var(--accent);
+  border-color: var(--accent);
 }
 .danger-notice {
-  border-left-color: #a1291c;
+  border-color: #a1291c;
 }
 
 .empty {
@@ -268,6 +271,6 @@ textarea.input {
     border-color: #ff9c8f;
   }
   .danger-notice {
-    border-left-color: #ff9c8f;
+    border-color: #ff9c8f;
   }
 }

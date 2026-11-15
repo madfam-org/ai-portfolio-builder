@@ -77,7 +77,7 @@ export function DocumentSettings({ locale, artifact }: { locale: Locale; artifac
         kind={artifact.kind}
         locale={locale}
         legend={d.templateLabel}
-        hint={published ? `${d.templateHint} ${TEMPLATE_PICKER_COPY[locale].publishedNote}` : d.templateHint}
+        hint={[d.templateHint, artifact.kind === 'cv' || artifact.kind === 'cover_letter' ? d.templateHintAts : null, published ? TEMPLATE_PICKER_COPY[locale].publishedNote : null].filter(Boolean).join(' ')}
         value={template}
         current={artifact.template}
         onChange={setTemplate}

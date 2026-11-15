@@ -293,7 +293,7 @@
 .translation {
   display: grid;
   gap: 0.75rem;
-  border-left: 4px solid var(--accent);
+  border-left: 1px solid var(--line);
   padding-left: 0.75rem;
 }
 .fieldset[hidden] {
