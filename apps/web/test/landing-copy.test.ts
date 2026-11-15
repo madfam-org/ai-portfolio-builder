@@ -30,5 +30,5 @@ test('landing: says invite-only, never that nothing exists or that anyone can si
     assert.doesNotMatch(all, /Nada de esto|None of this|no hay cuentas|no accounts/i, locale);
     assert.ok(t.ecosystem.find((item) => /Janua/.test(item.title))?.live, `${locale}: Janua sign-in is live`);
   }
-  console.log(`landing_copy_check locales=${LOCALES.length} building=${COPY.es.building.length + COPY.en.building.length}`);
+  assert.equal(COPY.es.building.length + COPY.en.building.length, 10, 'read both locales');
 });
