@@ -144,7 +144,6 @@ test('the whole journey, screen by screen', async ({ page, context }, info) => {
   await see('en-landing', url('landing', '/en'));
 
   writeFileSync(join(out, 'report.json'), JSON.stringify({ project, screens: n, findings }, null, 2));
-  console.log(`rehearsal: project=${project} screens=${n} findings=${findings.length}`);
   expect(n, 'screens walked').toBeGreaterThanOrEqual(35);
   expect(findings.filter((f) => f.kind !== 'console'), 'no CSP violation, page error or 5xx').toEqual([]);
 });
