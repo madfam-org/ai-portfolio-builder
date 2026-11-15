@@ -33,6 +33,7 @@ import { matchItems } from './match.ts';
 import { intakeResponse, type IntakeDeps } from '../ingest/intake.ts';
 import type { HcmBenchmarkPort } from '../hcm/client.ts';
 import { jobBenchmark } from '../hcm/route.ts';
+import { ocrPage, ocrStatus, type OcrDeps } from '../tlacuilo/route.ts';
 import {
   ARTIFACT_CONTENT,
   ITEM_CONTENT,
@@ -65,6 +66,8 @@ export interface ApiDeps {
   intake?: IntakeDeps;
   /** W5-H: the Symbiosis HCM benchmark client; tests inject a fake. Unset: built from env (server/hcm/config.ts). */
   hcm?: HcmBenchmarkPort;
+  /** The tlacuilo OCR client and its ceiling; tests inject fakes. Unset: built from env (server/tlacuilo/config.ts). */
+  ocr?: OcrDeps;
 }
 
 /** Throws 429 `quota_exceeded` when creating `adding` more rows would take the owner past the table's ceiling. */
@@ -171,6 +174,12 @@ export async function handleApi(request: Request, segments: readonly string[], d
       const input = await readJson(request);
       await quota('jobs', 1);
       return await intakeResponse(auth.sub, input, deps.intake);
+    }
+    if (route.name === 'job-intake-ocr') {
+      // Whether reading images is on (GET), or one page image → its text through tlacuilo (POST). Nothing stored.
+      if (method === 'GET') return ocrStatus(deps.env, deps.ocr);
+      await quota('jobs', 1);
+      return await ocrPage(auth.sub, request, deps.env, deps.ocr);
     }
     // W5-H: owner-scoped read of the job, then Symbiosis HCM with the title and state only (server/hcm/route.ts).
     if (route.name === 'job-benchmark') return await jobBenchmark(createRepository(handle!.db), auth.sub, route.ids[0] ?? '', deps.env, deps.hcm);

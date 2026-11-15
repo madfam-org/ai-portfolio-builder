@@ -30,7 +30,8 @@ async function handle(request: Request, ctx: { params: Promise<{ path: string[] 
   const headers = new Headers({ Authorization: `Bearer ${session.token.accessToken}` });
   const type = request.headers.get('content-type');
   if (type) headers.set('Content-Type', type);
-  const body = SAFE.has(request.method) ? undefined : await request.text();
+  // Bytes, not text: a page image for the OCR route must arrive as it was sent (JSON bodies are unaffected).
+  const body = SAFE.has(request.method) ? undefined : await request.arrayBuffer();
   const inner = new Request(request.url, { method: request.method, headers, body });
   const res = await handleApi(inner, path, { env, getDb: () => getSharedDb(env) });
   res.headers.set('Cache-Control', 'private, no-store');

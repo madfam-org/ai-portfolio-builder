@@ -56,6 +56,18 @@ export interface IngestCopy {
   failures: Record<IntakeFailure, string>;
   fallback: string;
   fileErrors: { image: string; scanned: string; unsupported: string; tooLarge: string; unreadable: string; pdfFailed: string };
+  /** Reading a photo, a screenshot or a scanned PDF through tlacuilo (shown only when the service is on). */
+  ocr: {
+    offerImage: string;
+    offerScanned: string;
+    privacy: string;
+    confirm: string;
+    cancel: string;
+    preparing: string;
+    progress: (page: number, of: number) => string;
+    partial: (read: number, total: number) => string;
+    errors: { unreadable: string; tooLarge: string; unsupportedImage: string; busy: string; unavailable: string; network: string };
+  };
   rateLimited: (seconds: number) => string;
   quota: string;
   saveFailed: string;
@@ -160,6 +172,7 @@ const es: IngestCopy = {
     no_structured_data: 'La página no traía datos estructurados de vacante; leímos su texto.',
     ats_fallback: 'La API del sistema de reclutamiento no respondió; leímos la página.',
     salary_partial: 'El sueldo no dice moneda o periodo; complétalos solo si los conoces.',
+    ocr_text: 'Este texto se leyó de una imagen con reconocimiento de texto y puede traer letras o cifras mal leídas. Compáralo con el original antes de guardar.',
   },
   failures: {
     unreadable: 'No pudimos leer esta vacante. Pégala o súbela como archivo.',
@@ -190,6 +203,25 @@ const es: IngestCopy = {
     tooLarge: 'El archivo pasa de 20 MB.',
     unreadable: 'No pudimos leer ese archivo. Pega el texto de la vacante.',
     pdfFailed: 'No pudimos abrir ese PDF. Si está protegido, copia el texto y pégalo.',
+  },
+  ocr: {
+    offerImage: 'Este archivo es una imagen. Podemos leer su texto con reconocimiento de texto.',
+    offerScanned: 'Este PDF no tiene texto seleccionable (parece escaneado). Podemos leer sus páginas con reconocimiento de texto.',
+    privacy:
+      'Para leerlo, tu navegador prepara una copia reducida de cada página y la envía al servicio de lectura de documentos de MADFAM, que corre en nuestra propia infraestructura. Ahí se lee y se descarta: no se guarda la imagen ni el texto, y no interviene ningún servicio externo ni modelo de IA. Tú revisas el resultado antes de guardar nada.',
+    confirm: 'Leer el texto de la imagen',
+    cancel: 'Cancelar',
+    preparing: 'Preparando las páginas…',
+    progress: (page, of) => `Leyendo la página ${page} de ${of}…`,
+    partial: (read, total) => `Leímos las primeras ${read} de ${total} páginas. Si falta texto, agrégalo en la revisión.`,
+    errors: {
+      unreadable: 'No encontramos texto legible en esa imagen. Prueba con una foto más nítida y derecha, o pega el texto.',
+      tooLarge: 'No pudimos reducir esa página lo suficiente para leerla. Recórtala a la parte de la vacante o pega el texto.',
+      unsupportedImage: 'Tu navegador no pudo abrir esa imagen. Guárdala como PNG o JPG e inténtalo de nuevo, o pega el texto.',
+      busy: 'El servicio de lectura está ocupado. Intenta de nuevo en un momento.',
+      unavailable: 'La lectura de imágenes no está disponible en este momento. Pega el texto de la vacante.',
+      network: 'No pudimos enviar la página. Revisa tu conexión e inténtalo de nuevo.',
+    },
   },
   rateLimited: (s) => `Hiciste muchas lecturas seguidas. Intenta de nuevo en ${Math.ceil(s / 60)} min.`,
   quota: 'Llegaste al máximo de vacantes guardadas. Archiva o borra alguna para agregar otra.',
@@ -293,6 +325,7 @@ const en: IngestCopy = {
     no_structured_data: 'The page had no structured job data; we read its text.',
     ats_fallback: 'The recruiting system’s API did not answer; we read the page.',
     salary_partial: 'The salary states no currency or period; fill them in only if you know them.',
+    ocr_text: 'This text was read from an image by text recognition and may contain misread letters or figures. Compare it with the original before saving.',
   },
   failures: {
     unreadable: 'We could not read this posting. Paste it or upload it as a file.',
@@ -323,6 +356,25 @@ const en: IngestCopy = {
     tooLarge: 'The file is over 20 MB.',
     unreadable: 'We could not read that file. Paste the posting’s text.',
     pdfFailed: 'We could not open that PDF. If it is protected, copy the text and paste it.',
+  },
+  ocr: {
+    offerImage: 'This file is an image. We can read its text with text recognition.',
+    offerScanned: 'This PDF has no selectable text (it looks scanned). We can read its pages with text recognition.',
+    privacy:
+      'To read it, your browser prepares a reduced copy of each page and sends it to MADFAM’s document-reading service, which runs on our own infrastructure. It is read there and discarded: neither the image nor the text is stored, and no outside service or AI model is involved. You review the result before anything is saved.',
+    confirm: 'Read the text in the image',
+    cancel: 'Cancel',
+    preparing: 'Preparing the pages…',
+    progress: (page, of) => `Reading page ${page} of ${of}…`,
+    partial: (read, total) => `We read the first ${read} of ${total} pages. If text is missing, add it in the review.`,
+    errors: {
+      unreadable: 'We found no legible text in that image. Try a sharper, straighter photo, or paste the text.',
+      tooLarge: 'We could not reduce that page enough to read it. Crop it to the posting or paste the text.',
+      unsupportedImage: 'Your browser could not open that image. Save it as PNG or JPG and try again, or paste the text.',
+      busy: 'The reading service is busy. Try again in a moment.',
+      unavailable: 'Reading images is not available right now. Paste the posting’s text.',
+      network: 'We could not send the page. Check your connection and try again.',
+    },
   },
   rateLimited: (s) => `You made many reads in a row. Try again in ${Math.ceil(s / 60)} min.`,
   quota: 'You reached the most saved jobs. Archive or delete one to add another.',

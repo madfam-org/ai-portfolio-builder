@@ -144,8 +144,17 @@ edited. **Nothing is stored before «Guardar vacante»** (`POST /api/v1/jobs`, t
   suggestion; a pasted page's HTML or JSON-LD is read as a page.
 - **File**, read in the browser: PDF text layer (pdf.js, `pdfjs-dist`, Apache-2.0, loaded only when a PDF is picked,
   main-thread, no eval, no network), DOCX (`word/document.xml` only, with the W4-I ZIP reader), TXT, HTML (cv's own
-  tolerant parser, nothing executed). Only the resulting text is sent. Scanned PDFs and images: «Aún no leemos imágenes» (OCR belongs to tlacuilo,
-  not available to cv yet; typed seam in `ingest/seams.ts`).
+  tolerant parser, nothing executed). Only the resulting text is sent. Scanned PDFs and images: see «Reading images» below.
+- **Reading images (2026-11-14)**: a photo, a screenshot or a scanned PDF has no text the browser can read. When
+  the reading service is on, the page says what would be sent and waits for an explicit «Leer el texto de la imagen»;
+  only then does the browser draw each page on a canvas (at most 4 pages, each shrunk under 480 KiB; the original file
+  never leaves the browser) and send the pages one by one to `POST /api/v1/jobs/intake/ocr`. cv's server passes each
+  page to **tlacuilo**, MADFAM's own document-intelligence service (its `text_document` lane: a local engine and rules,
+  no AI model, no outside service, label `restricted`), and returns the lines. Neither cv nor tlacuilo stores the
+  image or the text. The joined text then goes through the ordinary text intake (`read: "ocr"`), and the preview
+  carries a note: recognised text can misread a letter or a figure, compare it with the original. A page with no
+  legible text is an honest failure, never a draft. When the service is off (the default until it is switched on):
+  «Aún no leemos imágenes», as before. cv ships no OCR engine of its own.
 - **«Capturar desde tu navegador»**: a bookmark (generated and served by cv-app itself) that, on the job page the
   person has open, reads that page's JobPosting JSON-LD, og:/description meta, JobPosting microdata and visible text,
   and opens `/empleos/capturar` with the data in the URL FRAGMENT (never sent to a server; cleared from the address bar
@@ -181,7 +190,7 @@ exists.
 
 Rejected for now, with reasons in the W5-J report: crawling or searching boards, any login to a
 board, e-mail forward-in (Angelia has no inbound mail), a PWA share target (shares a link only, which the blocked boards
-do not serve), OCR in cv, AI parsing (Selva's restricted tier answers 503; typed seam, off).
+do not serve), an OCR engine inside cv (reading images is tlacuilo's job, above), AI parsing (Selva's restricted tier answers 503; typed seam, off).
 
 ## API (cv-api.madfam.io, bearer Janua token of audience `cv-api`)
 
@@ -201,7 +210,8 @@ do not serve), OCR in cv, AI parsing (Selva's restricted tier answers 503; typed
 | `POST /api/v1/profile/items/batch` `{items: [{kind, content, tags?}] (≤300), profile?: {displayName?, headline?, summary?, contact?}}` | W4-I import: every item validated per kind, appended after the existing ones, chosen header fields applied (contact links added by URL), ONE transaction: all or none |
 | `GET /api/v1/me/export[?format=full\|json-resume]` | W4-I «Descargar mis datos»: everything the owner holds (`schema: "madfam-cv-export"`, `version: 1`; share state included; never the owner key) or the profile as JSON Resume v1.0.0; `Content-Disposition: attachment`, `no-store` |
 | `DELETE /api/v1/me` `{confirm: "delete-all-my-data"}` | W4-I «Eliminar mis datos»: every row of the owner in ONE transaction (published pages stop at once); the Janua account is not touched |
-| `POST /api/v1/jobs/intake` `{source:"url", url}` · `{source:"text", kind?, text}` · `{source:"capture", kind?, capture}` | W5-J: a PREVIEW of a job (`{draft}`: fields with their provenance, the posting text, notes); nothing stored. 422 `intake_failed` with a `reason` (`capture_only` + `board`, `robots_disallowed`, `private_address`, `blocked_by_site` + `status`, `unreadable` …); 429 `rate_limited` (`retryAfter`) or `quota_exceeded` (checked before any fetch) |
+| `GET /api/v1/jobs/intake/ocr` · `POST /api/v1/jobs/intake/ocr` (raw `image/jpeg` or `image/png`, one page, ≤ 480 KiB) | reading images: `{enabled, maxPages, maxBytes, mediaTypes}` · `{page: {lines, confidence, verdict, source, truncated}}`; nothing stored. 503 `not_configured` while dormant; 415 / 413 / 400 `invalid_image` before tlacuilo is asked; 422 `ocr_unreadable` / `ocr_too_large`; 503 `ocr_busy` / `ocr_timeout` / `ocr_unavailable` with `Retry-After`; 429 `rate_limited` or `quota_exceeded` |
+| `POST /api/v1/jobs/intake` `{source:"url", url}` · `{source:"text", kind?, read?, text}` · `{source:"capture", kind?, capture}` | W5-J: a PREVIEW of a job (`{draft}`: fields with their provenance, the posting text, notes); nothing stored. 422 `intake_failed` with a `reason` (`capture_only` + `board`, `robots_disallowed`, `private_address`, `blocked_by_site` + `status`, `unreadable` …); 429 `rate_limited` (`retryAfter`) or `quota_exceeded` (checked before any fetch) |
 
 Abuse ceilings (`apps/web/src/server/api/limits.ts`; not product tiers, the owner may tune them): a request body is at
 most 256 KiB (413 `body_too_large`; the server never buffers more than 512 KiB of any body, `next.config.ts`), and one
