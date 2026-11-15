@@ -1,15 +1,19 @@
-/* One stylesheet, system fonts only (no external font or script), light and dark themes, no inline styles. */
+/*
+ * One stylesheet; light and dark themes; no inline styles; no external font or script. DESIGN.md is the reference: «The
+ * Tailor's Atelier». Typefaces are self-hosted (src/fonts): Newsreader for names and titles, Instrument Sans for the rest.
+ */
 
 :root {
-  --bg: #f6f4ee;
-  --surface: #ffffff;
-  --ink: #17201b;
-  --muted: #4c5a52;
-  --line: #d9dccf;
+  --bg: #f7f4ec;
+  --surface: #fffdf9;
+  --ink: #141a16;
+  --muted: #4b5650;
+  --line: #dcd8cb;
   --brand: #1f5c45;
   --brand-ink: #ffffff;
-  --accent: #e3a83b;
-  --tag-bg: #eef0e6;
+  --accent: #a7802f;
+  --accent-ink: #141a16;
+  --tag-bg: #eeebe0;
   --live-bg: #dcefe4;
   --live-ink: #134131;
   --focus: #b4530a;
@@ -20,14 +24,15 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #121614;
-    --surface: #1b211e;
-    --ink: #edf0ea;
-    --muted: #b3bdb6;
-    --line: #2e3833;
-    --brand: #7fd1ac;
+    --bg: #121513;
+    --surface: #1a1f1c;
+    --ink: #eeefe9;
+    --muted: #b4bdb6;
+    --line: #2d3631;
+    --brand: #86d3b0;
     --brand-ink: #0d1f17;
-    --accent: #f0bf5f;
+    --accent: #d7b06a;
+    --accent-ink: #141a16;
     --tag-bg: #26302b;
     --live-bg: #1f3d30;
     --live-ink: #bdebd5;
@@ -50,7 +55,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
-  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
   font-size: 1.0625rem;
   line-height: 1.6;
   min-height: 100vh;
@@ -80,15 +85,32 @@ h3 {
   line-height: 1.15;
   letter-spacing: -0.01em;
   margin: 0 0 0.6rem;
+  text-wrap: balance;
+}
+
+/* The serif voice: titles. Weight comes from size and the face, not from heaviness. */
+h1,
+h2 {
+  font-family: var(--font-serif), 'Iowan Old Style', Georgia, serif;
+  font-weight: 540;
+  letter-spacing: -0.015em;
 }
 
 h1 {
   font-size: clamp(2.1rem, 5vw, 3.4rem);
-  font-weight: 760;
+  line-height: 1.08;
 }
 
 h2 {
   font-size: clamp(1.5rem, 3vw, 2rem);
+}
+
+h3 {
+  font-weight: 650;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--brand) 22%, transparent);
 }
 
 h3 {
@@ -139,9 +161,12 @@ p {
 }
 
 .wordmark {
-  font-weight: 760;
-  letter-spacing: -0.01em;
-  font-size: 1.1rem;
+  font-family: var(--font-serif), 'Iowan Old Style', Georgia, serif;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  font-size: 1.2rem;
+  text-decoration: none;
+  color: var(--ink);
 }
 
 .lang {

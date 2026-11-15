@@ -91,8 +91,9 @@
   padding: 0.55rem 0.95rem;
   border-radius: 999px;
   background: var(--accent);
-  color: var(--ink);
-  font-weight: 700;
+  /* Dark ink on the brass in both themes (the theme's own ink is light in dark mode). */
+  color: var(--accent-ink);
+  font-weight: 600;
   text-decoration: none;
   cursor: grab;
   border: 2px dashed var(--ink);

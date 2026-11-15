@@ -2,7 +2,7 @@
  * W4-T templates: typography and density over the SAME semantic markup the `base` renderers draw (render.module.css).
  * Each class sits on the sheet (ArtifactView) and reaches the document through elements and `data-part` hooks, so a
  * template never changes structure: every CV stays one column of real text under h1–h3, no layout tables, no images.
- * System fonts only (the nonce CSP loads no web font). Print keeps base's rules (A4 / Letter named pages, entries and
+ * CV's own typefaces only (src/fonts, served from cv's origin; DESIGN.md «Typography»). Print keeps base's rules (A4 / Letter named pages, entries and
  * cards never split, headings never end a page) and adds the template's own sizes; nothing is clipped (no fixed
  * heights, no overflow hidden outside the slide, which base already sizes per page).
  */
@@ -71,7 +71,7 @@
 /* ---- cv/clasico: traditional serif hierarchy, one column ---------------------------------------------------- */
 .cvClasico > article,
 .letterFormal > article {
-  font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, 'Times New Roman', serif;
+  font-family: var(--font-serif), 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
 }
 
 .cvClasico > article header {
@@ -135,10 +135,11 @@
 
 /* ---- presentation/contraste: dark slides, larger left-aligned titles ---------------------------------------- */
 .presentationContraste > article [data-part='slide'] {
-  background: #111;
-  color: #f5f5f5;
-  border-color: #111;
-  border-top: 0.4rem solid #f2c94c;
+  /* DESIGN.md: ink ground, brass rule, forest links — fixed in both themes because the slide is always dark. */
+  background: #141a16;
+  color: #eeefe9;
+  border-color: #141a16;
+  border-top: 0.4rem solid #d7b06a;
   text-align: left;
   justify-content: flex-start;
 }
@@ -146,22 +147,22 @@
 .presentationContraste > article [data-part='slide'] h1,
 .presentationContraste > article [data-part='slide'] h2 {
   font-size: clamp(1.6rem, 4.2vw, 2.7rem);
-  font-weight: 800;
-  line-height: 1.15;
+  font-weight: 600;
+  line-height: 1.12;
 }
 
 .presentationContraste > article [data-part='slide'] [data-part='headline'],
 .presentationContraste > article [data-part='slide'] [data-part='dates'],
 .presentationContraste > article [data-part='slide'] [data-part='entry-line'] {
-  color: #d0d0d0;
+  color: #c9cfc9;
 }
 
 .presentationContraste > article [data-part='slide'] a {
-  color: #b8e0ff;
+  color: #86d3b0;
 }
 
 .presentationContraste > article [data-part='slide'] a:focus-visible {
-  outline: 3px solid #f2c94c;
+  outline: 3px solid #d7b06a;
   outline-offset: 2px;
 }
 

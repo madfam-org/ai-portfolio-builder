@@ -46,8 +46,8 @@ export const TEMPLATE_REGISTRY: Readonly<Record<ArtifactKind, readonly TemplateI
       id: 'base',
       label: { es: 'Básica', en: 'Basic' },
       description: {
-        es: 'Una columna, letra del sistema y espacio generoso. La opción más segura para postular en línea.',
-        en: 'One column, system fonts and generous spacing. The safest choice for online applications.',
+        es: 'Una columna, letra sin remates y espacio generoso. La opción más segura para postular en línea.',
+        en: 'One column, sans-serif type and generous spacing. The safest choice for online applications.',
       },
       ats: ATS_FIRST,
     },
@@ -115,8 +115,8 @@ export const TEMPLATE_REGISTRY: Readonly<Record<ArtifactKind, readonly TemplateI
       id: 'base',
       label: { es: 'Básica', en: 'Basic' },
       description: {
-        es: 'Carta sencilla con la letra del sistema y tu nombre como encabezado.',
-        en: 'A plain letter in system fonts with your name as the heading.',
+        es: 'Carta sencilla, letra sin remates y tu nombre como encabezado.',
+        en: 'A plain letter in sans-serif type with your name as the heading.',
       },
       ats: ATS_FIRST,
     },
