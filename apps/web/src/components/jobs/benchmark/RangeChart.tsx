@@ -29,6 +29,10 @@ export function RangeChart({ p10, p25, p50, p75, p90, posting, label, format, te
   const span = hi - lo || 1;
   const x = (v: number) => PAD + ((v - lo) / span) * (W - 2 * PAD);
   const tails = p10 !== null && p90 !== null;
+  // A centred label at either end of the axis runs out of the drawing (longer currency prefixes made it visible).
+  const EDGE = 64;
+  const anchor = (v: number): 'start' | 'middle' | 'end' => (x(v) < EDGE ? 'start' : x(v) > W - EDGE ? 'end' : 'middle');
+  const at = (v: number) => (anchor(v) === 'start' ? Math.max(4, x(v) - 12) : anchor(v) === 'end' ? Math.min(W - 4, x(v) + 12) : x(v));
 
   return (
     <svg className={s.chart} viewBox={`0 0 ${W} 96`} role="img" aria-label={label} data-testid={testId}>
@@ -36,13 +40,13 @@ export function RangeChart({ p10, p25, p50, p75, p90, posting, label, format, te
       {tails ? <line className={s.whisker} x1={x(p10)} x2={x(p90)} y1={44} y2={44} /> : null}
       <rect className={s.box} x={x(p25)} y={30} width={Math.max(2, x(p75) - x(p25))} height={28} rx={4} />
       <line className={s.median} x1={x(p50)} x2={x(p50)} y1={26} y2={62} />
-      <text className={s.tick} x={x(p25)} y={84} textAnchor="middle">
+      <text className={s.tick} x={at(p25)} y={84} textAnchor={anchor(p25)}>
         {format(p25)}
       </text>
-      <text className={s.tick} x={x(p75)} y={84} textAnchor="middle">
+      <text className={s.tick} x={at(p75)} y={84} textAnchor={anchor(p75)}>
         {format(p75)}
       </text>
-      <text className={s.tickStrong} x={x(p50)} y={18} textAnchor="middle">
+      <text className={s.tickStrong} x={at(p50)} y={18} textAnchor={anchor(p50)}>
         {format(p50)}
       </text>
       {posting !== null ? (

@@ -195,7 +195,10 @@ p {
   display: inline-block;
   background: var(--brand);
   color: var(--brand-ink);
+  /* A <button> does not inherit the page's face or size by default; the same class on a link does. */
+  font: inherit;
   font-weight: 650;
+  cursor: pointer;
   text-decoration: none;
   padding: 0.8rem 1.3rem;
   border-radius: 999px;
