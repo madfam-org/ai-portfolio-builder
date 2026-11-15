@@ -335,3 +335,12 @@ personal data changes this file in the same pull request, and `version` moves**.
 (`REQUIRED_SECTION_IDS`) stay present in both languages (`test/privacy-notice.test.ts`). The only mailbox in it is
 `privacy@madfam.io`. No vendor, engine or service name appears in it. The Spanish text governs. CI minimum after this
 PR: `e2e` ≥ 95 passing (was 93).
+
+## Rehearsal walk-through (2026-11-15)
+
+`apps/web/rehearsal/journey.spec.ts` (config `playwright.rehearsal.config.ts`, workflow `.github/workflows/rehearsal.yml`,
+`pnpm --filter @cv/web rehearsal`) walks the whole signed-in journey as a synthetic persona on a desktop and a phone
+viewport and saves a full-page screenshot of every screen plus `report.json` (console errors, CSP violations, page
+errors, 5xx). It is **for looking, not a gate**: it runs on demand (`workflow_dispatch`) or when its own files change,
+never in `ci.yml`, and `pnpm test:e2e` does not include it. Synthetic content only. When a screen is added to the
+journey, add it to the walk.
