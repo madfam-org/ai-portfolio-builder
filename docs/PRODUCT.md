@@ -108,6 +108,15 @@ stopwords; a tag scores 3 when all its words appear in the posting and each othe
 scores 1; items are ranked by score, then position. It also lists the posting's most frequent words that no item
 covers. It calls no network and no model. Assisted writing through Selva arrives in W6.
 
+### Privacy notice (2026-11-15)
+
+cv's own aviso de privacidad is public at `cv.madfam.io/privacidad` (English at `/en/privacidad`; the Spanish text
+governs), linked from every page's footer and from «Primeros pasos». It opens with the simplified notice («En breve»)
+and then gives the full one: who is responsible, the data processed, the purposes (all necessary for the service; no
+secondary ones), how to limit use or disclosure, that nothing is transferred, how long data is kept, the ARCO rights
+(in the app itself, or by writing to privacy@madfam.io) and how changes are announced. It is a **draft until the owner
+rules on it** and says so, listing what is pending. Source: `apps/web/src/lib/copy/privacy.ts`.
+
 ### Data portability and data rights (W4-I)
 
 - **Import** on `/perfil`: the person's OWN LinkedIn data export ZIP («Download your data»,

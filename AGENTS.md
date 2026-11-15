@@ -320,3 +320,18 @@ ordinary text intake and its preview, with the `ocr_text` note; a page with no l
 draft; the 512 KiB request buffer (`next.config.ts`, W4-S) is not raised for this; the interface never names the
 service or its engine. The infra wiring (ExternalSecret, env, egress) is a separate activation PR that merges only
 after the machine client exists. CI minimum after this PR: `e2e` ≥ 93 passing (was 89).
+
+## Privacy notice (2026-11-15)
+
+cv has its own aviso de privacidad at `cv.madfam.io/privacidad` (`/en/privacidad`), linked from the footer of every
+page and from «Primeros pasos». Text, version and status live in `apps/web/src/lib/copy/privacy.ts`; the page is
+`src/app/h/landing/[locale]/privacidad/`. Law: the Ley Federal de Protección de Datos Personales en Posesión de los
+Particulares of 2025 (a new law: never cite an article of the 2010 one; the authority is the Secretaría
+Anticorrupción y Buen Gobierno).
+
+Rules: the notice is a **draft until the owner rules on it** (`PRIVACY_NOTICE.status`, with `pending` shown on the
+page); only the owner moves it to `approved`. It states only what the code does: **a change to what cv does with
+personal data changes this file in the same pull request, and `version` moves**. The six elements the law requires
+(`REQUIRED_SECTION_IDS`) stay present in both languages (`test/privacy-notice.test.ts`). The only mailbox in it is
+`privacy@madfam.io`. No vendor, engine or service name appears in it. The Spanish text governs. CI minimum after this
+PR: `e2e` ≥ 95 passing (was 93).

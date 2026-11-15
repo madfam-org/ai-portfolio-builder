@@ -64,6 +64,7 @@ export function sitemapXml(config: Config): string {
   const pairs: readonly (readonly [string, string])[] = [
     ['/', '/en'],
     ['/lector', '/en/lector'],
+    ['/privacidad', '/en/privacidad'],
   ];
   const url = (loc: string, es: string, en: string) =>
     [
