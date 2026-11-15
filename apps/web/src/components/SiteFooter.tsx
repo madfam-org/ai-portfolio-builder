@@ -1,13 +1,15 @@
 import { CONTACT_MAILBOX, LEGAL_ENTITY, MADFAM_SITE, PRODUCT_LABEL, SOURCE_URL } from '@/lib/brand';
 import { getConfig } from '@/lib/config';
 import { COPY } from '@/lib/copy/landing';
+import { PRIVACY_COPY, privacyPath } from '@/lib/copy/privacy';
 import { READER_COPY, readerPath } from '@/lib/copy/reader';
 import type { Locale } from '@/lib/routing';
 
 /**
  * The product footer (messaging house §10, §13): product name first, Innovaciones MADFAM endorses here
- * and only here; the legal line is the canon entity (R37/R47); legal links go to madfam.io until the
- * product has its own notices (R71). No social links, no phone, no newsletter.
+ * and only here; the legal line is the canon entity (R37/R47); the privacy link is the product's own
+ * notice (lib/copy/privacy.ts), the other legal links go to madfam.io until the product has its own
+ * (R71). No social links, no phone, no newsletter.
  */
 export function SiteFooter({ locale }: { locale: Locale }) {
   const t = COPY[locale].footer;
@@ -23,9 +25,7 @@ export function SiteFooter({ locale }: { locale: Locale }) {
           </a>
         </p>
         <nav aria-label="Legal" className="footer-links">
-          <a href={`${legal}/privacy`} rel="noopener">
-            {t.privacy}
-          </a>
+          <a href={`https://${getConfig().hosts.landing}${privacyPath(locale)}`}>{PRIVACY_COPY[locale].footerLink}</a>
           <a href={`${legal}/terms`} rel="noopener">
             {t.terms}
           </a>

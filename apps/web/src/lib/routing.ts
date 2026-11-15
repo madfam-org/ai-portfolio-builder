@@ -81,6 +81,9 @@ function htmlPages(role: 'landing' | 'app', path: string): Decision | null {
 export const LANDING_PAGES: Readonly<Record<string, { internal: string; locale: Locale }>> = {
   '/lector': { internal: '/h/landing/es/lector', locale: 'es' },
   '/en/lector': { internal: '/h/landing/en/lector', locale: 'en' },
+  // cv's own privacy notice (lib/copy/privacy.ts); the footer of every page links to it.
+  '/privacidad': { internal: '/h/landing/es/privacidad', locale: 'es' },
+  '/en/privacidad': { internal: '/h/landing/en/privacidad', locale: 'en' },
 };
 
 /** The pages host: `/<slug>` and `/l/<token>` only. Reserved slugs (health, ready, l, ...) never match. */

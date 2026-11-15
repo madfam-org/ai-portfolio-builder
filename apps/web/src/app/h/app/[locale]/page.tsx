@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { AppFrame } from '@/components/app/AppFrame';
 import { appMetadata, pageLocale, type LocaleParams } from '@/components/app/page-helpers';
+import { getConfig } from '@/lib/config';
+import { privacyPath } from '@/lib/copy/privacy';
 import { FirstRunGuide } from '@/components/onboarding/FirstRunGuide';
 import { LinkCards, PageHeader } from '@/components/ui/Layout';
 import { appPath } from '@/lib/app-routes';
@@ -22,7 +24,7 @@ export default async function AppHome({ params }: LocaleParams) {
       {() => (
         <>
           <PageHeader title={a.routes.home} description={a.homeIntro} />
-          <FirstRunGuide locale={locale} />
+          <FirstRunGuide locale={locale} privacyHref={`https://${getConfig().hosts.landing}${privacyPath(locale)}`} />
           <LinkCards cards={a.homeCards.map((c) => ({ href: appPath[c.name](locale), title: a.routes[c.name], body: c.body }))} />
         </>
       )}

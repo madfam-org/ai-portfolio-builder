@@ -5,6 +5,7 @@ import { ButtonLink } from '@/components/ui/Button';
 import { api } from '@/lib/client/api';
 import { appPath } from '@/lib/app-routes';
 import { ONBOARDING_COPY } from '@/lib/copy/onboarding';
+import { PRIVACY_COPY } from '@/lib/copy/privacy';
 import type { Locale } from '@/lib/routing';
 import s from './onboarding.module.css';
 
@@ -15,9 +16,10 @@ const IMPORT_ANCHOR = 'perfil-importar';
  * The first-run guide (B1): shown on the app home to a signed-in person whose profile is still empty (no header and
  * no items, read through the same-origin data layer). Two steps: build the profile (import, or by hand), then save the
  * first job (W5-J intake). Renders nothing while loading, on any error or once the profile has anything in it: the
- * home's own cards stay the way in. No new data: «empty» is read from the profile itself.
+ * home's own cards stay the way in. No new data: «empty» is read from the profile itself. `privacyHref` is the
+ * privacy notice on the landing host (the server page builds it; this component cannot read the host table).
  */
-export function FirstRunGuide({ locale }: { locale: Locale }) {
+export function FirstRunGuide({ locale, privacyHref }: { locale: Locale; privacyHref: string }) {
   const copy = ONBOARDING_COPY[locale];
   const [empty, setEmpty] = useState(false);
 
@@ -59,7 +61,10 @@ export function FirstRunGuide({ locale }: { locale: Locale }) {
           </div>
         </li>
       </ol>
-      <p className={s.privacy}>{copy.privacy}</p>
+      <p className={s.privacy}>
+        {copy.privacy} {PRIVACY_COPY[locale].appLine}
+        <a href={privacyHref}>{PRIVACY_COPY[locale].footerLink}</a>.
+      </p>
     </section>
   );
 }
