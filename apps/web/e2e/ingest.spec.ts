@@ -140,8 +140,12 @@ test('the «Capturar vacante» bookmark on a job page opens cv-app with the post
 test('files are read in the browser: DOCX and a text PDF preview; a scanned PDF and an image say «aún no leemos imágenes»', async ({ page, context }) => {
   const violations = cspViolations(page);
   const intakeCalls: string[] = [];
+  // Anything sent to the OCR route other than the «is it on?» read would be a page image leaving the browser.
+  const ocrSends: string[] = [];
   page.on('request', (r) => {
-    if (r.url().includes('/api/v1/jobs/intake')) intakeCalls.push(r.postData() ?? '');
+    const path = new URL(r.url()).pathname;
+    if (path === '/api/v1/jobs/intake') intakeCalls.push(r.postData() ?? '');
+    if (path === '/api/v1/jobs/intake/ocr' && r.method() !== 'GET') ocrSends.push(r.method());
   });
   await signIn(context, OWNER_A);
   await page.goto(url('app', '/empleos/nuevo'));
@@ -172,6 +176,7 @@ test('files are read in the browser: DOCX and a text PDF preview; a scanned PDF 
   await expect(file.getByRole('alert')).toContainText('Aún no leemos imágenes');
   await shot(page, 'es-7-image');
   expect(intakeCalls, 'a scanned PDF and an image are never sent').toHaveLength(2);
+  expect(ocrSends, 'with reading images off, no page image is sent either').toEqual([]);
   expect(violations).toEqual([]);
 });
 
