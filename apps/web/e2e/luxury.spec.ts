@@ -173,7 +173,7 @@ test.describe.serial('luxury retail beta journey (synthetic persona)', () => {
     const reminder = page.getByTestId('discretion-reminder');
     await expect(reminder).toContainText('Búsqueda confidencial');
     await expect(reminder).toContainText('Cualquier persona con el enlace podrá ver este documento');
-    await expect(reminder).toContainText(`El título «CV · ${JOB_TITLE} · Maison Ejemplo» aparece en la pestaña del navegador`);
+    await expect(reminder).toContainText(`El título «CV · ${JOB_TITLE} · Maison Ejemplo» es solo para ti: no aparece en la página que compartes`);
     await shot(page, '6-discretion-link');
     await page.getByLabel('Público').check();
     await expect(reminder).toContainText('los buscadores podrán encontrarla si marcas la casilla de indexación');
@@ -184,7 +184,7 @@ test.describe.serial('luxury retail beta journey (synthetic persona)', () => {
     await page.goto(url('app', `/en/documentos/${docs.en}`));
     await page.getByRole('radio', { name: 'Link', exact: true }).check();
     await expect(page.getByTestId('discretion-reminder')).toContainText('Confidential job search');
-    await expect(page.getByTestId('discretion-reminder')).toContainText('(English)” shows in the browser tab');
+    await expect(page.getByTestId('discretion-reminder')).toContainText('(English)” is only for you: it does not appear on the page you share');
 
     const after = (await apiAs(VALERIA, 'GET', `/api/v1/artifacts?job_id=${jobId}`)).json!.artifacts as Json[];
     expect(after.every((a) => a.visibility === 'private' && a.shareToken === null && a.slug === null)).toBe(true);

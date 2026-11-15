@@ -5,6 +5,7 @@
  */
 import { cache } from 'react';
 import { SHARE_TOKEN, isAllowedSlug } from '@/lib/api-routes';
+import { APP_COPY } from '@/lib/copy/app';
 import type { Locale } from '@/lib/routing';
 import { getSharedDb } from '@/server/db/client';
 import { getLinkArtifactByToken, getPublicArtifactBySlug, type PublicArtifact } from '@/server/db/repository';
@@ -25,6 +26,13 @@ export function pageLocale(data: PublicArtifact): Locale {
   return data.artifact.locale === 'en' ? 'en' : 'es';
 }
 
+/**
+ * The browser tab and a shared link's preview: the person and the kind of document. Never the document's own title:
+ * that is the owner's private label and often names the employer applied to.
+ */
 export function pageTitle(data: PublicArtifact): string {
-  return data.profile.displayName ? `${data.artifact.title} · ${data.profile.displayName}` : data.artifact.title;
+  const kinds = APP_COPY[pageLocale(data)].kinds as Record<string, string>;
+  const kind = kinds[data.artifact.kind] ?? kinds.cv!;
+  const name = data.profile.displayName?.trim();
+  return name ? `${name} · ${kind}` : kind;
 }

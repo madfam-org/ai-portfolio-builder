@@ -187,12 +187,6 @@
   margin: 0 0 0.75rem;
 }
 
-.slideLead {
-  font-size: 1.25rem;
-  font-weight: 600;
-  margin: 0;
-}
-
 .deckControls {
   display: flex;
   flex-wrap: wrap;

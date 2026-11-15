@@ -89,7 +89,7 @@ test('presentation/base: a title slide, then one <section> per slide (own slides
   const html = render(
     data('presentation', { items: [{ itemId: 'e1', override: { title: 'Líder de datos' } }], slides: [{ title: 'Por qué yo', body: 'Porque sí', itemIds: ['e1'] }, { title: 'Habilidades clave', itemIds: ['s1', 'l1'] }] }, { contact: CONTACT }),
   );
-  assert.deepEqual(headings(html), ['h1:Documento presentation', 'h2:Por qué yo', 'h3:Líder de datos', 'h2:Habilidades clave', 'h2:Contacto']);
+  assert.deepEqual(headings(html), ['h1:Ana Prueba', 'h2:Por qué yo', 'h3:Líder de datos', 'h2:Habilidades clave', 'h2:Contacto']);
   assert.equal((html.match(/<section class="slide/g) ?? []).length, 4);
   assert.match(html, /data-enhanced="false"/, 'the server render shows every slide (no script needed)');
   assert.ok(html.includes('paperSlides') && html.includes('data-paper="slides"'));
@@ -121,7 +121,8 @@ test('user text is inert in every kind and every field; an empty document prints
     assertSafe(html);
     const empty = render({ artifact: { kind, title: 'Vacío', locale: 'es-MX', template: 'base', content: {} }, profile: { displayName: '', headline: '', summary: '' }, items: [] });
     assertSafe(empty);
-    assert.match(empty, /<h1[^>]*>Vacío<\/h1>/, `${kind}: without a name the title is the heading`);
+    assert.doesNotMatch(empty, /Vacío/, `${kind}: the private title is never printed`);
+    assert.match(empty, /<h1[^>]*>(CV|Portafolio|Presentación|Carta de presentación)<\/h1>/, `${kind}: without a name the kind is the heading`);
   }
 });
 
@@ -145,4 +146,21 @@ test('english documents use english labels and dates', () => {
   assert.deepEqual(headings(html).filter((h) => h.startsWith('h2:')), ['h2:Summary', 'h2:Experience', 'h2:Skills']);
   assert.match(html, /Jan 2022 – Present/);
   assert.match(html, /lang="en"/);
+});
+
+test('the document\'s private title is never rendered: every kind heads with the person, or with the kind when there is no name', () => {
+  const SECRET = 'CV · Empresa Confidencial Ejemplo';
+  for (const kind of ['cv', 'portfolio', 'presentation', 'cover_letter'] as const) {
+    const withName = data(kind, { items: [] });
+    withName.artifact.title = SECRET;
+    const named = render(withName);
+    assert.ok(!named.includes('Empresa Confidencial'), `${kind}: the title does not appear`);
+    assert.ok(headings(named)[0]?.startsWith('h1:Ana'), `${kind}: headed with the person`);
+    const noName = data(kind, { items: [] });
+    noName.artifact.title = SECRET;
+    noName.profile.displayName = '';
+    const anonymous = render(noName);
+    assert.ok(!anonymous.includes('Empresa Confidencial'), `${kind}: no title even without a name`);
+    assert.match(headings(anonymous)[0] ?? '', /^h1:(CV|Portafolio|Presentación|Carta de presentación)$/, `${kind}: headed with the kind`);
+  }
 });

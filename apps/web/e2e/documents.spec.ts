@@ -85,7 +85,7 @@ test('the detail page: title and status saved; the content summary; preview and 
 const EXPECTED: Record<keyof typeof ids, string[]> = {
   cv: ['Ana Prueba', 'Perfil profesional', 'Experiencia', 'Líder de backend', 'Educación', 'Ingeniería', 'Habilidades', 'Por qué Acme'],
   portfolio: ['Ana Prueba', 'Experiencia', 'Líder de backend', 'Educación', 'Ingeniería', 'Habilidades'],
-  presentation: [`Presentación ${RUN}`, 'Quién soy', 'Experiencia clave', 'Líder de backend', 'Herramientas'],
+  presentation: ['Ana Prueba', 'Quién soy', 'Experiencia clave', 'Líder de backend', 'Herramientas'],
   cover_letter: ['Ana Prueba', 'Experiencia relevante', 'Backend'],
 };
 
