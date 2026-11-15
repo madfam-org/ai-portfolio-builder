@@ -23,10 +23,19 @@ export interface SignedInPerson {
  * The frame of every app page (cv-app.madfam.io). Three honest states, decided on the server:
  * - sign-in not configured (the dormant default): the pre-launch notice, «aún no disponible»; nothing is stored;
  * - configured, signed out: «Iniciar sesión», which returns to THIS page after Janua (redirect_to = its path);
- * - signed in: the section nav, who is signed in, «Cambiar de cuenta» / «Entrar como otra persona» / «Cerrar sesión»
- *   (R44), and the page (`children` receives the person).
+ * - signed in: the section nav, the account menu in the top bar (who is signed in, «Cambiar de cuenta» / «Entrar como
+ *   otra persona» / «Cerrar sesión», R44), and the page (`children` receives the person). The menu is a native
+ *   <details>: no script under the nonce CSP, keyboard-operable, and the page's own title is the first thing below the
+ *   bar on a phone (it used to be three account buttons).
  * Every control is a plain link or form POST (no script needed). Pages own their content; this file is W3-1's.
  */
+/** What the menu shows closed: the first name, or the start of the address, never more than fits a phone bar. */
+function shortName(person: SignedInPerson): string {
+  const full = (person.name ?? '').trim();
+  const label = full ? full.split(/\s+/)[0]! : (person.email ?? person.sub).split('@')[0]!;
+  return label.length > 18 ? `${label.slice(0, 17)}…` : label;
+}
+
 export async function AppFrame({
   locale,
   route,
@@ -73,6 +82,26 @@ export async function AppFrame({
               links={APP_NAV.map((name) => ({ href: appPath[name](locale), label: a.routes[name], current: name === section }))}
             />
           ) : null}
+          {person ? (
+            <details className="account-menu" data-testid="account-menu">
+              <summary>
+                <span className="visually-hidden">{a.accountLabel}: </span>
+                <span className="account-name">{shortName(person)}</span>
+              </summary>
+              <div className="account-panel" role="group" aria-label={a.accountLabel}>
+                <p className="muted small">
+                  {a.signedInAs} <strong>{person.name ?? person.email ?? person.sub}</strong>
+                </p>
+                {signInForm(a.switchAccount, 'select_account', 'secondary')}
+                {signInForm(a.otherPerson, 'login', 'secondary')}
+                <form className="inline-form" method="post" action="/auth/salir">
+                  <button className="button button-secondary" type="submit">
+                    {a.signOut}
+                  </button>
+                </form>
+              </div>
+            </details>
+          ) : null}
           <a className="lang" href={appPathFor(route, other, id)} hrefLang={COPY[other].htmlLang} lang={COPY[other].htmlLang}>
             <span className="visually-hidden">{t.footer.switchLabel}: </span>
             {t.footer.switchTo}
@@ -106,20 +135,6 @@ export async function AppFrame({
           </>
         ) : (
           <ToastProvider dismissLabel={a.states.dismiss}>
-            <section aria-label={a.accountLabel} className="account">
-              <p className="muted small">
-                {a.signedInAs} <strong>{person.name ?? person.email ?? person.sub}</strong>
-              </p>
-              <div className="actions">
-                {signInForm(a.switchAccount, 'select_account', 'secondary')}
-                {signInForm(a.otherPerson, 'login', 'secondary')}
-                <form className="inline-form" method="post" action="/auth/salir">
-                  <button className="button button-secondary" type="submit">
-                    {a.signOut}
-                  </button>
-                </form>
-              </div>
-            </section>
             {children(person)}
           </ToastProvider>
         )}
