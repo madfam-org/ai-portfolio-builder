@@ -1,0 +1,91 @@
+# The rehearsal walk-through: NOT a gate. On demand (or when its own files change in a pull request) it builds cv,
+# starts it over a throwaway Postgres exactly as the e2e job does, walks the whole signed-in journey as a synthetic
+# persona on a desktop and a phone viewport (apps/web/rehearsal/journey.spec.ts), and uploads a full-page screenshot
+# of every screen plus a report of console errors, CSP violations and 5xx answers. For looking at what a beta person
+# will see before they do. PUBLIC repository: GitHub-hosted runner, read-only token, actions pinned by SHA, no secrets.
+
+name: Rehearsal walk-through
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - apps/web/rehearsal/**
+      - apps/web/playwright.rehearsal.config.ts
+      - .github/workflows/rehearsal.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rehearsal-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rehearsal:
+    name: Walk the journey and save every screen
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:16-alpine@sha256:deb28ee471183cb0c303113dac9b2433c51eeeeb678def7af9a9ec5820367815
+        env:
+          POSTGRES_USER: cv_owner
+          POSTGRES_DB: cv_test
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cv_owner -d cv_test"
+          --health-interval 2s --health-timeout 5s --health-retries 30
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      CV_TEST_OWNER_URL: postgres://cv_owner@127.0.0.1:5432/cv_test
+      CV_TEST_APP_URL: postgres://cv_app@127.0.0.1:5432/cv_test
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+      - name: pnpm from corepack
+        run: |
+          set -euo pipefail
+          corepack enable
+          pnpm --version
+      - name: Install (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+      - name: The runtime role, as Enclii onboarding creates it
+        run: |
+          set -euo pipefail
+          psql "$CV_TEST_OWNER_URL" -v ON_ERROR_STOP=1 \
+            -c "create role cv_app login nosuperuser nobypassrls noinherit connection limit 8" \
+            -c "grant connect on database cv_test to cv_app"
+      - name: Next.js production build (standalone output)
+        run: pnpm build
+      - name: Chromium for Playwright (the version @playwright/test pins)
+        working-directory: apps/web
+        run: npx playwright install --with-deps chromium
+      - name: Walk the journey (desktop and phone)
+        id: walk
+        working-directory: apps/web
+        run: npx playwright test --config playwright.rehearsal.config.ts
+      - name: Read-proof (screens saved)
+        if: ${{ !cancelled() }}
+        working-directory: apps/web
+        run: |
+          set -euo pipefail
+          count=$(find rehearsal-output -name '*.png' | wc -l | tr -d ' ')
+          echo "rehearsal: screenshots=$count"
+          cat rehearsal-output/*/report.json 2>/dev/null || echo "rehearsal: no report written"
+          if [ "$count" -lt 1 ]; then echo "rehearsal: FAIL (nothing was saved)"; exit 1; fi
+      - name: Upload the screens and the report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: rehearsal-screens
+          path: apps/web/rehearsal-output/
+          retention-days: 7
+          if-no-files-found: error

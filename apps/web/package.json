@@ -16,7 +16,8 @@
     "test:pg": "node --test --test-concurrency=1 --test-reporter=spec \"test-pg/**/*.pg.test.ts\"",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node scripts/migrate.ts",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "rehearsal": "playwright test --config playwright.rehearsal.config.ts"
   },
   "dependencies": {
     "drizzle-orm": "0.45.4",

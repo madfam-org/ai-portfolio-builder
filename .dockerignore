@@ -14,3 +14,5 @@ infra
 .env*
 apps/web/e2e
 apps/web/playwright.config.ts
+apps/web/rehearsal
+apps/web/playwright.rehearsal.config.ts
