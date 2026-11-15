@@ -25,8 +25,13 @@ test('signed in as A: the nav, the account controls, and no placeholder left on 
   await page.goto(url('app', '/'));
   const nav = page.getByRole('navigation', { name: 'Secciones de la app' });
   await expect(nav.getByRole('link')).toHaveText(['Inicio', 'Perfil', 'Empleos', 'Documentos', 'Ajustes']);
-  await expect(page.getByText(OWNER_A.name)).toBeVisible();
+  // The account controls live in the top bar's menu (one native disclosure), closed until opened.
+  const menu = page.getByTestId('account-menu');
+  await expect(menu.locator('summary')).toContainText('Ana');
+  await expect(page.getByRole('button', { name: 'Cerrar sesión' })).toBeHidden();
+  await menu.locator('summary').click();
   for (const name of ['Cambiar de cuenta', 'Entrar como otra persona', 'Cerrar sesión']) await expect(page.getByRole('button', { name })).toBeVisible();
+  await expect(menu).toContainText('Sesión iniciada como Ana Prueba');
   for (const path of ROUTES) {
     const res = await page.goto(url('app', path));
     expect(res?.status(), path).toBe(200);

@@ -1,5 +1,5 @@
 /*
- * The artifact renderers (W3-4). System fonts, real text, no images, no inline styles. Screen uses the app's colour
+ * The artifact renderers (W3-4). CV's own typefaces (src/fonts; serif in «Clásica»), real text, no images, no inline styles. Screen uses the app's colour
  * tokens; print is black on white with A4 / Letter named pages (the print view's paper toggle) and, for the
  * presentation, one 13.333 × 7.5 in slide per page.
  */
@@ -60,10 +60,13 @@
   margin-top: 1.5rem;
 }
 
+/* DESIGN.md «Typography»: the name speaks in the serif; section titles are the working voice, small sans capitals. */
 .sectionTitle {
-  font-size: 1.15rem;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.86rem;
+  font-weight: 650;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.09em;
   border-bottom: 1px solid var(--line);
   padding-bottom: 0.2rem;
   margin: 0 0 0.75rem;
@@ -225,6 +228,13 @@
   margin: 0;
   color: var(--muted);
   font-size: 0.9rem;
+}
+
+/* The hint names keys; a touch screen without a keyboard uses the buttons, so it is not shown there. */
+@media (pointer: coarse) and (hover: none) {
+  .deckHint {
+    display: none;
+  }
 }
 
 /* print */

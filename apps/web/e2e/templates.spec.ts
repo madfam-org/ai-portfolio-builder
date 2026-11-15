@@ -118,7 +118,7 @@ test('presentation/contraste: dark slides on screen, white when printed, one 13.
   await signIn(page.context(), OWNER_A);
   await page.goto(url('app', `/documentos/${ids['presentation/contraste']}/vista-previa`));
   const slide = page.locator('[data-template="contraste"] [data-part="slide"]').first();
-  await expect(slide).toHaveCSS('background-color', 'rgb(17, 17, 17)');
+  await expect(slide).toHaveCSS('background-color', 'rgb(20, 26, 22)');
   await page.goto(url('app', `/documentos/${ids['presentation/contraste']}/imprimir`));
   await page.emulateMedia({ media: 'print' });
   await expect(page.locator('[data-template="contraste"] [data-part="slide"]').first()).toHaveCSS('background-color', 'rgb(255, 255, 255)');

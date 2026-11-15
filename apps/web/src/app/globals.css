@@ -1,15 +1,19 @@
-/* One stylesheet, system fonts only (no external font or script), light and dark themes, no inline styles. */
+/*
+ * One stylesheet; light and dark themes; no inline styles; no external font or script. DESIGN.md is the reference: «The
+ * Tailor's Atelier». Typefaces are self-hosted (src/fonts): Newsreader for names and titles, Instrument Sans for the rest.
+ */
 
 :root {
-  --bg: #f6f4ee;
-  --surface: #ffffff;
-  --ink: #17201b;
-  --muted: #4c5a52;
-  --line: #d9dccf;
+  --bg: #f7f4ec;
+  --surface: #fffdf9;
+  --ink: #141a16;
+  --muted: #4b5650;
+  --line: #dcd8cb;
   --brand: #1f5c45;
   --brand-ink: #ffffff;
-  --accent: #e3a83b;
-  --tag-bg: #eef0e6;
+  --accent: #a7802f;
+  --accent-ink: #141a16;
+  --tag-bg: #eeebe0;
   --live-bg: #dcefe4;
   --live-ink: #134131;
   --focus: #b4530a;
@@ -20,14 +24,15 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #121614;
-    --surface: #1b211e;
-    --ink: #edf0ea;
-    --muted: #b3bdb6;
-    --line: #2e3833;
-    --brand: #7fd1ac;
+    --bg: #121513;
+    --surface: #1a1f1c;
+    --ink: #eeefe9;
+    --muted: #b4bdb6;
+    --line: #2d3631;
+    --brand: #86d3b0;
     --brand-ink: #0d1f17;
-    --accent: #f0bf5f;
+    --accent: #d7b06a;
+    --accent-ink: #141a16;
     --tag-bg: #26302b;
     --live-bg: #1f3d30;
     --live-ink: #bdebd5;
@@ -50,7 +55,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--ink);
-  font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
   font-size: 1.0625rem;
   line-height: 1.6;
   min-height: 100vh;
@@ -80,15 +85,32 @@ h3 {
   line-height: 1.15;
   letter-spacing: -0.01em;
   margin: 0 0 0.6rem;
+  text-wrap: balance;
+}
+
+/* The serif voice: titles. Weight comes from size and the face, not from heaviness. */
+h1,
+h2 {
+  font-family: var(--font-serif), 'Iowan Old Style', Georgia, serif;
+  font-weight: 540;
+  letter-spacing: -0.015em;
 }
 
 h1 {
   font-size: clamp(2.1rem, 5vw, 3.4rem);
-  font-weight: 760;
+  line-height: 1.08;
 }
 
 h2 {
   font-size: clamp(1.5rem, 3vw, 2rem);
+}
+
+h3 {
+  font-weight: 650;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--brand) 22%, transparent);
 }
 
 h3 {
@@ -139,9 +161,12 @@ p {
 }
 
 .wordmark {
-  font-weight: 760;
-  letter-spacing: -0.01em;
-  font-size: 1.1rem;
+  font-family: var(--font-serif), 'Iowan Old Style', Georgia, serif;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  font-size: 1.2rem;
+  text-decoration: none;
+  color: var(--ink);
 }
 
 .lang {
@@ -159,6 +184,11 @@ p {
   align-items: center;
 }
 
+.hero h1 {
+  font-size: clamp(2.1rem, 5vw, 3.4rem);
+  max-width: 20ch;
+}
+
 .hero-art {
   width: 100%;
   height: auto;
@@ -166,16 +196,24 @@ p {
   justify-self: center;
 }
 
+/* A status line: one short fact before a page title (DESIGN.md «Do's and Don'ts»), plain text, never a pill. */
 .badge {
-  display: inline-block;
-  font-size: 0.85rem;
-  font-weight: 650;
-  letter-spacing: 0.02em;
-  color: var(--live-ink);
-  background: var(--live-bg);
-  border-radius: 999px;
-  padding: 0.25rem 0.8rem;
-  margin-bottom: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--muted);
+  margin: 0 0 0.9rem;
+}
+
+.badge::before {
+  content: '';
+  flex: none;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--brand);
 }
 
 .lead {
@@ -229,42 +267,51 @@ p {
   border-top: 1px solid var(--line);
 }
 
-.cards {
+/* Landing lists: rows divided by a thread line, the state set to the right in small type (not cards). */
+.ledger {
   list-style: none;
   padding: 0;
-  margin: 1.5rem 0 0;
+  margin: 1.75rem 0 0;
+  border-top: 1px solid var(--line);
+}
+
+.ledger-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
-  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.25rem 2rem;
+  align-items: baseline;
+  padding: 1.1rem 0;
+  border-bottom: 1px solid var(--line);
 }
 
-.card {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  padding: 1.25rem 1.25rem 0.5rem;
+.ledger-row h3 {
+  margin: 0 0 0.3rem;
 }
 
-.card p {
+.ledger-row p {
+  margin: 0;
+  max-width: 44rem;
   color: var(--muted);
 }
 
-.tag {
-  display: inline-block;
-  font-size: 0.78rem;
-  font-weight: 650;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--muted);
-  background: var(--tag-bg);
-  border-radius: 6px;
-  padding: 0.15rem 0.5rem;
-  margin-bottom: 0.75rem;
+.ledger-row .ledger-state {
+  font-size: 0.92rem;
+  white-space: nowrap;
 }
 
-.tag-live {
-  color: var(--live-ink);
-  background: var(--live-bg);
+.ledger-row .ledger-state-live {
+  color: var(--brand);
+  font-weight: 600;
+}
+
+@media (max-width: 760px) {
+  .ledger-row {
+    grid-template-columns: 1fr;
+  }
+
+  .ledger-row .ledger-state {
+    order: -1;
+  }
 }
 
 .status {
@@ -307,6 +354,10 @@ p {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem 1.2rem;
+}
+
+.pages-credit a {
+  color: inherit;
 }
 
 .footer-brand strong {
@@ -399,30 +450,100 @@ p {
   color: var(--ink);
 }
 
-/* App frame (W3-1): the section nav sits in the top bar; the account row opens every signed-in page. */
+/* App frame (W3-1): the section nav and the account menu sit in the top bar. */
 .topbar-inner nav {
   flex: 1 1 auto;
 }
-.account {
-  display: flex;
-  flex-wrap: wrap;
+
+/* The account menu: a native <details>; its panel opens below the bar, aligned to its right edge. */
+.account-menu {
+  position: relative;
+}
+.account-menu summary {
+  list-style: none;
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem 1rem;
-  border-bottom: 1px solid var(--line);
-  padding-bottom: 0.75rem;
-  margin-bottom: 1.5rem;
+  gap: 0.45rem;
+  min-height: 2.75rem;
+  padding: 0.3rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-weight: 600;
+  cursor: pointer;
 }
-.account p {
-  margin: 0;
+.account-menu summary::-webkit-details-marker {
+  display: none;
 }
-.account .actions {
-  margin: 0;
+/* A drawn chevron (two borders), turned when open. */
+.account-menu summary::after {
+  content: '';
+  width: 0.45rem;
+  height: 0.45rem;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-0.12rem) rotate(45deg);
+  transition: transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
 }
-.account .button {
-  min-height: 2.25rem;
-  padding: 0.3rem 0.8rem;
-  font-size: 0.95rem;
+.account-menu[open] summary::after {
+  transform: translateY(0.12rem) rotate(-135deg);
+}
+.account-menu summary:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.account-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.5rem);
+  z-index: 20;
+  display: grid;
+  gap: 0.5rem;
+  width: max-content;
+  max-width: min(20rem, calc(100vw - 2.5rem));
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px -12px rgb(0 0 0 / 0.28);
+}
+.account-panel p {
+  margin: 0 0 0.25rem;
+}
+.account-panel .inline-form,
+.account-panel .button {
+  display: block;
+  width: 100%;
+}
+.account-panel .button {
+  min-height: 2.75rem;
+  text-align: left;
+}
+
+/* Phones: one top row (name, account, language), then the sections as ONE row that scrolls sideways. */
+@media (max-width: 760px) {
+  .topbar-inner {
+    padding: 0.6rem 1rem;
+    gap: 0.5rem 0.75rem;
+  }
+  .topbar-inner .wordmark {
+    margin-right: auto;
+  }
+  .topbar-inner nav {
+    order: 3;
+    flex: 1 0 100%;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    margin: 0 -1rem;
+    padding: 0 1rem 0.15rem;
+  }
+  .topbar-inner nav::-webkit-scrollbar {
+    display: none;
+  }
+  .topbar-inner nav a {
+    flex: none;
+    white-space: nowrap;
+  }
 }
 
 /* User pages (W3-1 minimal renderer; W3-4 owns the templates). */
@@ -444,7 +565,7 @@ p {
 @media print {
   .topbar,
   .footer,
-  .account,
+  .account-menu,
   .skip {
     display: none;
   }

@@ -211,7 +211,7 @@ textarea.input {
 }
 .navLink[aria-current='page'] {
   background: var(--tag-bg);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .toasts {

@@ -24,7 +24,6 @@ export interface Copy {
   cta: string;
   ctaSubject: string;
   ctaNote: string;
-  source: string;
   buildingTitle: string;
   buildingIntro: string;
   building: Item[];
@@ -68,7 +67,6 @@ export const COPY: Record<Locale, Copy> = {
     ctaSubject: 'Lista de espera: {name}',
     ctaNote:
       'El botón abre tu correo con un mensaje para hola@madfam.io. Esta página no tiene formularios, cookies ni analítica.',
-    source: 'Ver el código',
     buildingTitle: 'Lo que ya hace y lo que falta',
     buildingIntro: 'Lo marcado «En beta privada» ya funciona para las personas invitadas. Lo marcado «Próximamente» todavía no existe.',
     building: [
@@ -87,6 +85,12 @@ export const COPY: Record<Locale, Copy> = {
       {
         title: 'Un CV, un portafolio y una presentación por vacante',
         body: 'Para cada vacante preparas versiones a la medida que destacan lo que esa vacante pide. Compártelas con un enlace privado o publícalas; nada se publica sin tu aprobación.',
+        tag: beta.es,
+        live: true,
+      },
+      {
+        title: 'Discreción por defecto',
+        body: 'Nada de lo que preparas se ve hasta que tú lo publicas, tus datos de contacto quedan fuera salvo que decidas incluirlos, y puedes retirar un enlace cuando quieras.',
         tag: beta.es,
         live: true,
       },
@@ -159,7 +163,6 @@ export const COPY: Record<Locale, Copy> = {
     cta: 'Join the waitlist',
     ctaSubject: 'Waitlist: {name}',
     ctaNote: 'The button opens your email with a message to hola@madfam.io. This page has no forms, cookies or analytics.',
-    source: 'View the code',
     buildingTitle: 'What it does today and what is missing',
     buildingIntro: 'Items marked “In private beta” already work for invited people. Items marked “Coming soon” do not exist yet.',
     building: [
@@ -178,6 +181,12 @@ export const COPY: Record<Locale, Copy> = {
       {
         title: 'A CV, a portfolio and a presentation per job',
         body: 'For each job you prepare tailored versions that highlight what that job asks for. Share them with a private link or publish them; nothing is published without your approval.',
+        tag: beta.en,
+        live: true,
+      },
+      {
+        title: 'Discreet by default',
+        body: 'Nothing you prepare can be seen until you publish it, your contact details stay out unless you choose to include them, and you can withdraw a link whenever you want.',
         tag: beta.en,
         live: true,
       },
