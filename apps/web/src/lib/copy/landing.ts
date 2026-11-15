@@ -1,6 +1,7 @@
 /**
  * Every visible string, es-MX (the source) and en. Truth rules for this copy (R85, R29, R32/R36, R57):
- * no users, metrics, logos or testimonials; anything not built says so; the incubating CTA is a waitlist;
+ * no users, metrics, logos or testimonials; anything not built says so; what invited people can already use says
+ * «beta privada» (invite-only, owner ruling 2026-10-22) and nothing more; the incubating CTA is a waitlist;
  * no licence named by hand. `{name}` renders PRODUCT_LABEL.
  */
 import type { Locale } from '../routing.ts';
@@ -47,42 +48,47 @@ export interface Copy {
 
 const soon = { es: 'Próximamente', en: 'Coming soon' };
 const today = { es: 'Hoy', en: 'Today' };
+/** Built and in use by invited people only (the beta is invite-only; the gate lives in Janua). */
+const beta = { es: 'En beta privada', en: 'In private beta' };
 
 export const COPY: Record<Locale, Copy> = {
   es: {
     htmlLang: 'es-MX',
     meta: {
-      title: '{name}: un perfil, un CV a la medida de cada vacante (próximamente)',
+      title: '{name}: un perfil, un CV a la medida de cada vacante (beta privada)',
       description:
-        'Un constructor de CV y portafolios que Innovaciones MADFAM está desarrollando: capturas tu perfil una vez y, para cada vacante, preparas un CV, un portafolio y una presentación a la medida, que tú revisas y publicas. Lista de espera abierta.',
+        'Un constructor de CV y portafolios que Innovaciones MADFAM está desarrollando: capturas tu perfil una vez y, para cada vacante, preparas un CV, un portafolio y una presentación a la medida, que tú revisas y publicas. Beta privada por invitación; lista de espera abierta.',
       appTitle: '{name}: la app todavía no está abierta',
     },
     skip: 'Saltar al contenido',
-    badge: 'En incubación · próximamente',
+    badge: 'Beta privada · por invitación',
     headline: 'Un solo perfil. Un CV, un portafolio y una presentación a la medida de cada vacante.',
-    lead: 'Estamos construyendo {name}. Capturas tu trayectoria una sola vez —experiencia, estudios, proyectos y habilidades— y, para cada vacante a la que te postulas, te ayudará a preparar un CV, un portafolio y una presentación a la medida, que tú revisas, editas y publicas.',
+    lead: 'Capturas tu trayectoria una sola vez —experiencia, estudios, proyectos y habilidades— y, para cada vacante a la que te postulas, preparas un CV, un portafolio y una presentación a la medida, que tú revisas, editas y publicas. {name} está en beta privada: por ahora se entra solo con invitación.',
     cta: 'Unirme a la lista de espera',
     ctaSubject: 'Lista de espera: {name}',
     ctaNote:
-      'El botón abre tu correo con un mensaje para hola@madfam.io. Este sitio no tiene formularios, cookies ni analítica.',
+      'El botón abre tu correo con un mensaje para hola@madfam.io. Esta página no tiene formularios, cookies ni analítica.',
     source: 'Ver el código',
-    buildingTitle: 'Lo que estamos construyendo',
-    buildingIntro: 'Nada de esto está disponible todavía. Así lo estamos diseñando:',
+    buildingTitle: 'Lo que ya hace y lo que falta',
+    buildingIntro: 'Lo marcado «En beta privada» ya funciona para las personas invitadas. Lo marcado «Próximamente» todavía no existe.',
     building: [
       {
         title: 'Un perfil central',
         body: 'Tu experiencia, estudios, proyectos y habilidades en un solo lugar, para no reescribirlos en cada postulación.',
-        tag: soon.es,
+        tag: beta.es,
+        live: true,
       },
       {
         title: 'Tus vacantes, una por una',
         body: 'Guarda el texto de cada vacante que te interesa y lleva el seguimiento de tus postulaciones.',
-        tag: soon.es,
+        tag: beta.es,
+        live: true,
       },
       {
         title: 'Un CV, un portafolio y una presentación por vacante',
         body: 'Para cada vacante preparas versiones a la medida que destacan lo que esa vacante pide. Compártelas con un enlace privado o publícalas; nada se publica sin tu aprobación.',
-        tag: soon.es,
+        tag: beta.es,
+        live: true,
       },
       {
         title: 'Redacción asistida, con tu revisión',
@@ -91,8 +97,9 @@ export const COPY: Record<Locale, Copy> = {
       },
       {
         title: 'Tu información, bajo tu control',
-        body: 'Lo diseñamos para que puedas editar, exportar o borrar lo que subas.',
-        tag: soon.es,
+        body: 'Desde la propia app puedes editar, descargar o borrar todo lo que captures.',
+        tag: beta.es,
+        live: true,
       },
     ],
     ecosystemTitle: 'Hecho sobre el ecosistema MADFAM',
@@ -100,8 +107,9 @@ export const COPY: Record<Locale, Copy> = {
     ecosystem: [
       {
         title: 'Inicio de sesión con Janua',
-        body: 'Janua es el servicio de identidad de MADFAM. Tu cuenta vivirá ahí; esta aplicación no guardará contraseñas.',
-        tag: soon.es,
+        body: 'Janua es el servicio de identidad de MADFAM. Tu cuenta vive ahí; esta aplicación no guarda contraseñas.',
+        tag: today.es,
+        live: true,
       },
       {
         title: 'Infraestructura que opera MADFAM',
@@ -118,7 +126,7 @@ export const COPY: Record<Locale, Copy> = {
     ],
     statusTitle: 'Estado',
     status:
-      'En incubación. Todavía no hay cuentas, precios ni fecha de lanzamiento. Si te anotas en la lista de espera, te escribiremos cuando haya novedades.',
+      'Beta privada, solo por invitación. Todavía no hay registro abierto, precios ni fecha de lanzamiento. Si te anotas en la lista de espera, te escribiremos cuando haya novedades.',
     app: {
       badge: 'Antes del lanzamiento',
       headline: 'La app todavía no está abierta.',
@@ -139,36 +147,39 @@ export const COPY: Record<Locale, Copy> = {
   en: {
     htmlLang: 'en',
     meta: {
-      title: '{name}: one profile, a CV tailored to every job (coming soon)',
+      title: '{name}: one profile, a CV tailored to every job (private beta)',
       description:
-        'A CV and portfolio builder in development by Innovaciones MADFAM: you enter your profile once and, for every job, prepare a tailored CV, portfolio and presentation that you review and publish. Waitlist open.',
+        'A CV and portfolio builder in development by Innovaciones MADFAM: you enter your profile once and, for every job, prepare a tailored CV, portfolio and presentation that you review and publish. Invite-only private beta; waitlist open.',
       appTitle: '{name}: the app is not open yet',
     },
     skip: 'Skip to content',
-    badge: 'Incubating · coming soon',
+    badge: 'Private beta · invite only',
     headline: 'One profile. A tailored CV, portfolio and presentation for every job you apply to.',
-    lead: 'We are building {name}. You enter your career once —experience, education, projects and skills— and, for every job you apply to, it will help you prepare a tailored CV, portfolio and presentation that you review, edit and publish.',
+    lead: 'You enter your career once —experience, education, projects and skills— and, for every job you apply to, you prepare a tailored CV, portfolio and presentation that you review, edit and publish. {name} is in private beta: for now, access is by invitation only.',
     cta: 'Join the waitlist',
     ctaSubject: 'Waitlist: {name}',
-    ctaNote: 'The button opens your email with a message to hola@madfam.io. This site has no forms, cookies or analytics.',
+    ctaNote: 'The button opens your email with a message to hola@madfam.io. This page has no forms, cookies or analytics.',
     source: 'View the code',
-    buildingTitle: 'What we are building',
-    buildingIntro: 'None of this is available yet. This is how we are designing it:',
+    buildingTitle: 'What it does today and what is missing',
+    buildingIntro: 'Items marked “In private beta” already work for invited people. Items marked “Coming soon” do not exist yet.',
     building: [
       {
         title: 'One core profile',
         body: 'Your experience, education, projects and skills in one place, so you never rewrite them for each application.',
-        tag: soon.en,
+        tag: beta.en,
+        live: true,
       },
       {
         title: 'Your jobs, one by one',
         body: 'Save the text of each job you are interested in and keep track of your applications.',
-        tag: soon.en,
+        tag: beta.en,
+        live: true,
       },
       {
         title: 'A CV, a portfolio and a presentation per job',
         body: 'For each job you prepare tailored versions that highlight what that job asks for. Share them with a private link or publish them; nothing is published without your approval.',
-        tag: soon.en,
+        tag: beta.en,
+        live: true,
       },
       {
         title: 'Assisted writing, with your review',
@@ -177,8 +188,9 @@ export const COPY: Record<Locale, Copy> = {
       },
       {
         title: 'Your information, under your control',
-        body: 'We are designing it so you can edit, export or delete whatever you upload.',
-        tag: soon.en,
+        body: 'From the app itself you can edit, download or delete everything you enter.',
+        tag: beta.en,
+        live: true,
       },
     ],
     ecosystemTitle: 'Built on the MADFAM ecosystem',
@@ -186,8 +198,9 @@ export const COPY: Record<Locale, Copy> = {
     ecosystem: [
       {
         title: 'Sign in with Janua',
-        body: 'Janua is MADFAM’s identity service. Your account will live there; this application will not store passwords.',
-        tag: soon.en,
+        body: 'Janua is MADFAM’s identity service. Your account lives there; this application does not store passwords.',
+        tag: today.en,
+        live: true,
       },
       {
         title: 'Infrastructure MADFAM operates',
@@ -204,7 +217,7 @@ export const COPY: Record<Locale, Copy> = {
     ],
     statusTitle: 'Status',
     status:
-      'Incubating. There are no accounts, prices or launch date yet. If you join the waitlist, we will write to you when there is news.',
+      'Private beta, by invitation only. There is no open sign-up, price or launch date yet. If you join the waitlist, we will write to you when there is news.',
     app: {
       badge: 'Pre-launch',
       headline: 'The app is not open yet.',

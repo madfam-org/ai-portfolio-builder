@@ -1,6 +1,6 @@
 # ai-portfolio-builder (MADFAM CV) — agent operating guide
 
-> Last Updated: 2026-10-22
+> Last Updated: 2026-11-14
 
 <!-- MADFAM-AGENTS-CANONICAL v1 -->
 

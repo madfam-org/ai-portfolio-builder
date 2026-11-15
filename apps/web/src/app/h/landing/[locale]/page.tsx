@@ -70,7 +70,7 @@ export default async function Landing({ params }: Props) {
           <ul className="cards">
             {t.building.map((item) => (
               <li key={item.title} className="card">
-                <span className="tag">{item.tag}</span>
+                <span className={item.live ? 'tag tag-live' : 'tag'}>{item.tag}</span>
                 <h3>{item.title}</h3>
                 <p>{fill(item.body, name)}</p>
               </li>
