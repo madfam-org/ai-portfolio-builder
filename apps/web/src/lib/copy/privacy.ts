@@ -8,19 +8,20 @@
  * Secretaría Anticorrupción y Buen Gobierno). The section ids below map to art. 15's fractions; a unit test keeps
  * every one of them present in both languages.
  *
- * STATUS: a DRAFT until the owner rules on it. `PRIVACY_NOTICE.pending` lists what is still open, and the page shows
- * it. Every statement describes code that exists (R85); when the product changes what it does with personal data,
+ * STATUS: APPROVED by the owner on 2026-11-15 (version 2026-11-15.3; text unchanged from .2). A later change to the
+ * text returns it to `draft` with what is pending, until the owner approves again; the page shows either state.
+ * Every statement describes code that exists (R85); when the product changes what it does with personal data,
  * this file changes in the same pull request and `version` moves.
  */
 import type { Locale } from '../routing.ts';
 
 export const PRIVACY_NOTICE = {
-  version: '2026-11-15.2',
-  status: 'draft' as 'draft' | 'approved',
+  version: '2026-11-15.3',
+  status: 'approved' as 'draft' | 'approved',
   updated: '2026-11-15',
   mailbox: 'privacy@madfam.io',
   /** Open points, by key; the copy below names each in both languages. Empty when approved. */
-  pending: ['owner_ruling'] as readonly string[],
+  pending: [] as readonly string[],
 } as const;
 
 /** art. 15: I responsable, II datos, III finalidades, IV limitar, V arco, VI cambios. The rest is context. */

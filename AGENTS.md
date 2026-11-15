@@ -329,8 +329,8 @@ page and from «Primeros pasos». Text, version and status live in `apps/web/src
 Particulares of 2025 (a new law: never cite an article of the 2010 one; the authority is the Secretaría
 Anticorrupción y Buen Gobierno).
 
-Rules: the notice is a **draft until the owner rules on it** (`PRIVACY_NOTICE.status`, with `pending` shown on the
-page); only the owner moves it to `approved`. It states only what the code does: **a change to what cv does with
+Rules: the owner **approved** the notice on 2026-11-15 (`PRIVACY_NOTICE.status`, version 2026-11-15.3). A change to its
+text sets it back to `draft` with `pending` shown on the page; only the owner moves it to `approved`. It states only what the code does: **a change to what cv does with
 personal data changes this file in the same pull request, and `version` moves**. The six elements the law requires
 (`REQUIRED_SECTION_IDS`) stay present in both languages (`test/privacy-notice.test.ts`). The only mailbox in it is
 `privacy@madfam.io`. No vendor, engine or service name appears in it. The Spanish text governs. CI minimum after this
