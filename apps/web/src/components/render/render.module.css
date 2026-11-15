@@ -230,6 +230,13 @@
   font-size: 0.9rem;
 }
 
+/* The hint names keys; a touch screen without a keyboard uses the buttons, so it is not shown there. */
+@media (pointer: coarse) and (hover: none) {
+  .deckHint {
+    display: none;
+  }
+}
+
 /* print */
 @page cvLetter {
   size: letter;
