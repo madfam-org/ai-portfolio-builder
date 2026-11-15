@@ -140,6 +140,11 @@ spec:
             # /api/v1/oauth/token. Dormant (503 not_configured) until HCM_CLIENT_ID/SECRET exist (cv-hcm-client).
             - name: HCM_API_URL
               value: https://hcm-api.madfam.io
+            # Reading images: tlacuilo's API, in-cluster only by design (it has no public hostname). Plain http to its
+            # Service; the hop is covered by NetworkPolicy on both sides and every call carries a Janua bearer.
+            # Off (the page says «aún no leemos imágenes») until TLACUILO_CLIENT_ID/SECRET exist (cv-tlacuilo-client).
+            - name: TLACUILO_API_URL
+              value: http://tlacuilo.tlacuilo.svc.cluster.local
           # AUTH_SECRET, AUTH_JANUA_CLIENT_ID, AUTH_JANUA_CLIENT_SECRET (ExternalSecret cv-web-auth, Vault secret/cv).
           envFrom:
             - secretRef:
@@ -148,6 +153,10 @@ spec:
             # missing pair leaves the benchmark dormant and never stops the pods.
             - secretRef:
                 name: cv-hcm-client
+                optional: true
+            # TLACUILO_CLIENT_ID, TLACUILO_CLIENT_SECRET (ExternalSecret cv-tlacuilo-client). Optional, like the pair above.
+            - secretRef:
+                name: cv-tlacuilo-client
                 optional: true
           volumeMounts:
             - name: tmp

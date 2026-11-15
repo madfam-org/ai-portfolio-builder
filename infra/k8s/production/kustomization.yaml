@@ -21,6 +21,7 @@ resources:
 - migrate-job.yaml
 - externalsecret-web-auth.yaml
 - externalsecret-hcm-client.yaml
+- externalsecret-tlacuilo-client.yaml
 
 # Image digest: pinned by the Build & Deploy workflow (Enclii's reusable build-publish runs
 # `kustomize edit set image <image>=<image>@sha256:...`, commits the pin to main, and the GitOps sync rolls it).
