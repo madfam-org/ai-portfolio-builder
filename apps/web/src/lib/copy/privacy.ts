@@ -15,12 +15,12 @@
 import type { Locale } from '../routing.ts';
 
 export const PRIVACY_NOTICE = {
-  version: '2026-11-15.1',
+  version: '2026-11-15.2',
   status: 'draft' as 'draft' | 'approved',
   updated: '2026-11-15',
   mailbox: 'privacy@madfam.io',
   /** Open points, by key; the copy below names each in both languages. Empty when approved. */
-  pending: ['owner_ruling', 'backup_retention'] as readonly string[],
+  pending: ['owner_ruling'] as readonly string[],
 } as const;
 
 /** art. 15: I responsable, II datos, III finalidades, IV limitar, V arco, VI cambios. The rest is context. */
@@ -80,7 +80,6 @@ export const PRIVACY_COPY: Record<Locale, PrivacyCopy> = {
     pendingTitle: 'Qué falta para que este aviso sea definitivo',
     pending: {
       owner_ruling: 'La revisión y aprobación de este texto por la dirección de Innovaciones MADFAM.',
-      backup_retention: 'Confirmar por cuánto tiempo las copias de seguridad de la plataforma conservan datos ya borrados, para decirlo aquí con una cifra.',
     },
     sections: [
       {
@@ -156,6 +155,7 @@ export const PRIVACY_COPY: Record<Locale, PrivacyCopy> = {
         title: 'Cuánto tiempo los conservamos',
         body: [
           'Conservamos tus datos mientras tengas contenido en {name}. «Eliminar mis datos», en «Ajustes», borra en ese momento todo tu perfil, tus vacantes y tus documentos de la base de datos del servicio, y tus páginas publicadas dejan de existir.',
+          'Las copias de seguridad de la plataforma, que están cifradas y solo sirven para recuperar el servicio ante una falla, pueden conservar datos ya borrados hasta por ocho semanas; después se eliminan solas.',
           'Tu cuenta de Janua no se borra desde aquí: se administra en Janua.',
         ],
       },
@@ -203,7 +203,6 @@ export const PRIVACY_COPY: Record<Locale, PrivacyCopy> = {
     pendingTitle: 'What is missing before this notice is final',
     pending: {
       owner_ruling: 'Review and approval of this text by the management of Innovaciones MADFAM.',
-      backup_retention: 'Confirming how long the platform’s backups keep data that has already been deleted, so this notice can state a figure.',
     },
     sections: [
       {
@@ -279,6 +278,7 @@ export const PRIVACY_COPY: Record<Locale, PrivacyCopy> = {
         title: 'How long we keep it',
         body: [
           'We keep your data while you have content in {name}. “Delete my data”, in “Settings”, deletes your whole profile, your postings and your documents from the service’s database at that moment, and your published pages cease to exist.',
+          'The platform’s backups, which are encrypted and serve only to recover the service after a failure, may keep data that has already been deleted for up to eight weeks; after that they are removed automatically.',
           'Your Janua account is not deleted from here: it is managed in Janua.',
         ],
       },

@@ -59,6 +59,9 @@ test('what the notice promises is what the product does: no ads, no sale, no AI 
   assert.match(es, /sin inteligencia artificial/, 'the match is keyword overlap');
   assert.match(es, /«Eliminar mis datos»/);
   assert.match(es, /«Descargar mis datos»/);
+  // The platform keeps seven weekly full backups and thirty days of daily dumps: eight weeks bounds both.
+  assert.match(es, /copias de seguridad.*hasta por ocho semanas/);
+  assert.match(text('en'), /backups.*up to eight weeks/);
   assert.doesNotMatch(es + text('en'), /tlacuilo|tesseract|Hetzner|Cloudflare|Postgres/i, 'no service, engine or vendor names');
 });
 
