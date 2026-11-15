@@ -25,7 +25,7 @@ const render = (d: any) => renderToStaticMarkup(createElement(ArtifactView, { da
 test('without translations, every kind × template × locale renders the markup main rendered (read-proof)', () => {
   const now = renderMatrix(render, templatesFor);
   if (process.env.CV_WRITE_RENDER_BASELINE === '1') {
-    writeFileSync(BASELINE, `${JSON.stringify({ source: 'main@f1ca3530 (before W7-B4)', hashes: now }, null, 2)}\n`);
+    writeFileSync(BASELINE, `${JSON.stringify({ source: 'main@f1ca3530 (before W7-B4); presentation title slide re-baselined 2026-11-15 (it heads with the person, never the private title)', hashes: now }, null, 2)}\n`);
     return;
   }
   const { hashes } = JSON.parse(readFileSync(BASELINE, 'utf8')) as { hashes: Record<string, string> };

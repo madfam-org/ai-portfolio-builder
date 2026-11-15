@@ -63,8 +63,11 @@ export interface DocModel {
   kind: ArtifactKind;
   template: string;
   locale: Locale;
+  /** The owner's private label for the document. NEVER rendered: it often names the employer applied to. */
   title: string;
   name: string | null;
+  /** What the document is headed with: the person's name, or the kind of document when there is no name. */
+  heading: string;
   headline: string | null;
   summary: string | null;
   intro: string | null;
@@ -309,6 +312,7 @@ export function buildDocModel(raw: RenderData): DocModel {
     locale,
     title: data.artifact.title,
     name: str(data.profile.displayName),
+    heading: str(data.profile.displayName) ?? APP_COPY[locale].kinds[artifactKind(data.artifact.kind)],
     headline: str(data.profile.headline),
     summary,
     intro: str(c.intro) ?? summary,

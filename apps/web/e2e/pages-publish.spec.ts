@@ -74,6 +74,11 @@ test('link: copy, change the link (the old one stops), unpublish (the page is go
   await page.getByLabel('Con enlace').check();
   await page.getByRole('button', { name: 'Publicar' }).click();
   await expect(shared(page)).toHaveValue(/^https:\/\/cv-p\.madfam\.io\/l\/[A-Za-z0-9_-]{43}$/);
+  // The result is said beside the link: what it is, who can open it, how to take it back.
+  const state = page.getByTestId('share-state');
+  await expect(state).toContainText('Compartido con enlace.');
+  await expect(state).toContainText('Solo quien tenga este enlace puede abrirlo. Los buscadores no lo muestran.');
+  await expect(state).toContainText('Puedes retirarlo en cualquier momento con «Despublicar».');
   const first = new URL(await shared(page).inputValue()).pathname;
   const res = await raw('pages', 'GET', first);
   expect(res.status).toBe(200);
@@ -108,6 +113,10 @@ test('the pages host renders every kind; the presentation\'s keys work under the
     const res = await page.goto(url('pages', `/l/${pub.json?.artifact.shareToken}`));
     expect(res?.status()).toBe(200);
     await expect(page.locator(`article[data-kind="${kind}"]`)).toBeVisible();
+    // The owner's private title (`<kind> <run>`) is nowhere: not in the tab, not on the page. The person leads.
+    await expect(page).toHaveTitle(kind === 'presentation' ? /^Ana Prueba · Presentación/ : /^Ana Prueba · Carta de presentación/);
+    await expect(page.locator('body')).not.toContainText(RUN);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Ana Prueba');
     await expect(page.getByRole('link', { name: /Repórtalo/ })).toHaveAttribute('href', /^mailto:legal@madfam\.io\?subject=/);
     if (kind === 'presentation') {
       await expect(page.getByTestId('slide-position')).toHaveText('Diapositiva 1 de 3');

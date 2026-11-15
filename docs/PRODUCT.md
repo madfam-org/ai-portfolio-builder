@@ -106,7 +106,8 @@ A deterministic, AI-free score of each profile item against a job posting (`keyw
 `apps/web/src/server/api/match.ts`): Spanish and English text is lower-cased and stripped of accents and
 stopwords; a tag scores 3 when all its words appear in the posting and each other matching word of the item
 scores 1; items are ranked by score, then position. It also lists the posting's most frequent words that no item
-covers. It calls no network and no model. Assisted writing through Selva arrives in W6.
+covers, leaving out what is not about the work (the employer's name, the place, posting boilerplate). Words are shown
+as the posting writes them («inglés», «comisiones»), never as the matcher's normalised tokens. It calls no network and no model. Assisted writing through Selva arrives in W6.
 
 ### Privacy notice (2026-11-15)
 
@@ -295,8 +296,11 @@ A posting that is **no longer open** but still answers 200 (Workday `postingAvai
   « (Español)» in its title. `/documentos/:id` keeps its own per-document language.
 - **Templates:** the «Clásica» CV description says it suits luxury houses; nothing is chosen automatically.
 - **Discretion:** before a document becomes link-shared or public, the publish panel shows «Búsqueda confidencial»:
-  who will see it, that a link can be forwarded, that indexing stays off unless ticked, and the document's current
-  title (shown in the browser tab and when shared), with where to change it. cv sends no e-mail about jobs or
+  who will see it, that a link can be forwarded, that indexing stays off unless ticked, and that the document's title
+  is only for its owner. Since 2026-11-15 a document's title never appears on a shared page: every kind is headed with
+  the person's name (or the kind of document when there is no name) and the browser tab reads «name · kind», because a
+  title usually names the employer applied to. Once shared, the state is said beside the link: what it is, who can open
+  it, and how to withdraw it; the whole address is shown, wrapped. cv sends no e-mail about jobs or
   documents; the public reads carry the document, the profile header and the chosen items, never the job.
 - **General market, said out loud (W7)**: the general figure carries «Mercado general: todas las empresas y tiendas de
   esta ocupación, de cualquier giro y tamaño».

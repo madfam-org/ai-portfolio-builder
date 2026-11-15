@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/Dialog';
-import { CheckboxField, TextField } from '@/components/ui/Field';
+import { CheckboxField, TextAreaField, TextField } from '@/components/ui/Field';
 import { Notice } from '@/components/ui/States';
 import { useToast } from '@/components/ui/Toast';
 import { isAllowedSlug } from '@/lib/api-routes';
@@ -137,13 +137,19 @@ export function PublishPanel({ locale, artifact, pagesHost }: { locale: Locale; 
       ) : null}
       {offline && !suspended ? <Notice tone="warning">{d.publishOffline}</Notice> : null}
       {url && !suspended ? (
-        <div className={css.share}>
-          <TextField id="share-url" label={d.shareUrl} value={url} readOnly onFocus={(e) => e.target.select()} />
+        <div className={css.share} data-testid="share-result">
+          {/* The result of publishing, said where the link is: what state it is in and exactly who can open it. */}
+          <p className={css.shareState} data-testid="share-state">
+            <strong>{current.visibility === 'link' ? d.sharedLinkTitle : d.sharedPublicTitle}</strong>{' '}
+            {current.visibility === 'link' ? d.sharedLinkWho : `${d.sharedPublicWho} ${current.indexable ? d.sharedIndexed : d.sharedNotIndexed}`} {d.sharedWithdraw}
+          </p>
+          {/* A text area so the whole address is visible and wraps: a 43-character token never fits one line on a phone. */}
+          <TextAreaField id="share-url" label={d.shareUrl} value={url} readOnly rows={2} spellCheck={false} onFocus={(e) => e.target.select()} />
           <div className={css.toolbar}>
-            <Button variant="secondary" size="small" onClick={() => void copy()}>
+            <Button size="small" onClick={() => void copy()}>
               {d.copy}
             </Button>
-            <ButtonLink variant="ghost" size="small" href={url} target="_blank" rel="noopener noreferrer">
+            <ButtonLink variant="secondary" size="small" href={url} target="_blank" rel="noopener noreferrer">
               {d.open}
             </ButtonLink>
             {current.visibility === 'link' ? (
@@ -199,6 +205,7 @@ export function PublishPanel({ locale, artifact, pagesHost }: { locale: Locale; 
         {problem ? (
           <Notice tone="danger">{problem}</Notice>
         ) : null}
+        {unchanged && current.visibility === 'private' && !suspended ? <p className="muted small">{d.publishChooseHint}</p> : null}
         <p className="muted small">{d.limitHint}</p>
         <Button type="submit" disabled={locked || unchanged || (offline && choice !== 'private')}>
           {choice === 'private' && current.visibility !== 'private' ? d.unpublish : current.visibility === 'private' ? d.publish : d.update}

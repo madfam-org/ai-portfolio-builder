@@ -13,7 +13,7 @@ export function PortfolioView({ model }: { model: DocModel }) {
   return (
     <article className={`${s.doc} ${s.portfolio}`} lang={model.locale === 'en' ? 'en' : 'es-MX'} data-kind="portfolio">
       <header className={`${s.header} ${s.hero}`}>
-        <h1 className={s.name}>{model.name ?? model.title}</h1>
+        <h1 className={s.name}>{model.heading}</h1>
         {model.headline ? <p className={s.headline} data-part="headline">{model.headline}</p> : null}
         <Paragraphs text={model.intro} className={s.lead} />
       </header>

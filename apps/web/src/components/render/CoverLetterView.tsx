@@ -14,7 +14,7 @@ export function CoverLetterView({ model }: { model: DocModel }) {
   return (
     <article className={`${s.doc} ${s.letter}`} lang={model.locale === 'en' ? 'en' : 'es-MX'} data-kind="cover_letter">
       <header className={s.header}>
-        <h1 className={s.name}>{model.name ?? model.title}</h1>
+        <h1 className={s.name}>{model.heading}</h1>
         {model.headline ? <p className={s.headline} data-part="headline">{model.headline}</p> : null}
         {model.contact ? <ContactLine contact={model.contact} /> : null}
       </header>

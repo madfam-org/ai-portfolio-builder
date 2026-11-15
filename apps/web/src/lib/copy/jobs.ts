@@ -196,7 +196,7 @@ export const JOBS_COPY: Record<Locale, JobsCopy> = {
     match: {
       explain:
         'Comparamos las palabras del anuncio con las etiquetas y el texto de cada elemento de tu perfil. Una etiqueta que aparece completa en el anuncio suma 3 puntos; cada otra palabra que coincide suma 1. Es una regla fija y transparente ({algorithm}), no una evaluación de tu candidatura ni una predicción.',
-      normalised: 'Las palabras se comparan en minúsculas, sin acentos y sin la «s» final del plural; por eso algunas se ven recortadas.',
+      normalised: 'Las palabras se comparan sin distinguir mayúsculas, acentos ni plurales. Aquí las ves como las escribe el anuncio.',
       coverage: 'El anuncio tiene {jobTerms} términos distintos; tu perfil cubre {coveredTerms}.',
       ranked: 'Tus elementos, de mayor a menor coincidencia',
       point: '{n} punto',
@@ -340,7 +340,7 @@ export const JOBS_COPY: Record<Locale, JobsCopy> = {
     match: {
       explain:
         'We compare the words of the posting with the tags and the text of each item of your profile. A tag that appears in full in the posting adds 3 points; every other matching word adds 1. It is a fixed, transparent rule ({algorithm}), not an assessment of your application and not a prediction.',
-      normalised: 'Words are compared in lower case, without accents and without a final plural «s»; that is why some look cut short.',
+      normalised: 'Words are compared ignoring capitals, accents and plurals. Here you see them as the posting writes them.',
       coverage: 'The posting has {jobTerms} distinct terms; your profile covers {coveredTerms}.',
       ranked: 'Your items, from most to least matching',
       point: '{n} point',

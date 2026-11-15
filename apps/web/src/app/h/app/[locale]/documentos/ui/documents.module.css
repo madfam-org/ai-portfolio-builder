@@ -85,6 +85,20 @@
   margin: 1rem 0;
 }
 
+/* The sentence beside the link: the state in the page's own ink, never a tinted box. */
+.shareState {
+  margin: 0;
+  max-width: 65ch;
+}
+
+/* The whole address, wrapped; it is data to copy, so it breaks anywhere and does not resize. */
+.share textarea {
+  resize: none;
+  overflow-wrap: anywhere;
+  word-break: break-all;
+  font-variant-numeric: tabular-nums;
+}
+
 .toolbar {
   display: flex;
   flex-wrap: wrap;

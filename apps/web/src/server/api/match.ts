@@ -11,6 +11,12 @@
  *    content token found in the job terms scores 1. Content tokens come from the item's string fields.
  * 4. Items are ranked by score, then by their own position, then by id (stable and reproducible).
  * 5. `missingTerms`: the job's most frequent terms that no item covers (up to 20), as a checklist for the person.
+ *    Words that are not about the work are left out of this list only (never out of the score): the employer's own
+ *    name, the place, and the boilerplate verbs and nouns of a posting («buscamos», «ofrecemos», «requisitos»).
+ *
+ * WHAT IS SHOWN. Comparison uses the normalised tokens, but `matchedTerms` and `missingTerms` carry each word as the
+ * POSTING writes it (lower-cased, accents and plural kept: «inglés», «comisiones»), never the token («ingle»,
+ * «comisione»). A person reads their own language, not the matcher's.
  */
 const STOPWORDS = new Set(
   (
@@ -24,6 +30,26 @@ const STOPWORDS = new Set(
     'nuestras usted ustedes ellos ellas el ella hay tiene tienen debe deben sera seran desde hasta tambien'
   ).split(' '),
 );
+
+/** Posting boilerplate: never a skill, so never a «missing term». Normalised forms (see `normalise`). */
+const POSTING_FILLER = new Set(
+  (
+    'busca buscamo buscar buscando ofrece ofrecemo ofrecer requisito vacante puesto empresa sueldo salario prestacione ' +
+    'ejemplo interesado interesada postulate postula enviar envia cv curriculum ' +
+    'seeking looking offer offering requirement position company salary benefit job role apply candidate'
+  ).split(' '),
+);
+
+/** token → the word as first written in `text` (lower-cased; accents and plural kept). */
+export function surfaceForms(text: string): Map<string, string> {
+  const forms = new Map<string, string>();
+  for (const word of text.match(/[\p{L}\p{N}+#.]+/gu) ?? []) {
+    const tokens = normalise(word);
+    if (tokens.length !== 1 || forms.has(tokens[0]!)) continue;
+    forms.set(tokens[0]!, word.replace(/^[.]+|[.]+$/g, '').toLowerCase());
+  }
+  return forms;
+}
 
 export function normalise(text: string): string[] {
   const plain = text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -61,8 +87,12 @@ export interface MatchResult {
   missingTerms: string[];
 }
 
-export function matchItems(job: { title: string; sourceText: string }, items: MatchItemInput[]): MatchResult {
-  const jobTokens = normalise(`${job.title}\n${job.sourceText}`);
+export function matchItems(job: { title: string; sourceText: string; company?: string | null; location?: string | null }, items: MatchItemInput[]): MatchResult {
+  const jobText = `${job.title}\n${job.sourceText}`;
+  const jobTokens = normalise(jobText);
+  const shown = surfaceForms(jobText);
+  const show = (token: string) => shown.get(token) ?? token;
+  const notAboutTheWork = new Set([...POSTING_FILLER, ...normalise(`${job.company ?? ''} ${job.location ?? ''}`)]);
   const freq = new Map<string, number>();
   for (const t of jobTokens) freq.set(t, (freq.get(t) ?? 0) + 1);
   const covered = new Set<string>();
@@ -84,15 +114,15 @@ export function matchItems(job: { title: string; sourceText: string }, items: Ma
 
   scored.sort((a, b) => b.score - a.score || a.position - b.position || a.itemId.localeCompare(b.itemId));
   const missingTerms = [...freq.entries()]
-    .filter(([t]) => !covered.has(t))
+    .filter(([t]) => !covered.has(t) && !notAboutTheWork.has(t))
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
     .slice(0, 20)
-    .map(([t]) => t);
+    .map(([t]) => show(t));
   return {
     algorithm: 'keyword-overlap-v1',
     jobTerms: freq.size,
     coveredTerms: covered.size,
-    items: scored.map(({ position: _position, ...rest }) => rest),
+    items: scored.map(({ position: _position, matchedTerms, ...rest }) => ({ ...rest, matchedTerms: matchedTerms.map(show).sort() })),
     missingTerms,
   };
 }

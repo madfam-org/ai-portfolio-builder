@@ -125,7 +125,9 @@ test('presentation/contraste: dark slides on screen, white when printed, one 13.
   const pdf = readPdf(await page.pdf({ preferCSSPageSize: true }));
   expect(pdf.pages).toBe(2);
   for (const s of pdf.sizes) expect(s.map(Math.round)).toEqual([960, 540]);
-  expect(flat(pdf.text)).toContain(flat(`Presentación contraste ${RUN}`));
+  // The title slide heads with the person; the document's private title is not printed.
+  expect(flat(pdf.text)).toContain(flat('Tere Plantilla'));
+  expect(flat(pdf.text)).not.toContain(flat(`Presentación contraste ${RUN}`));
   expect(flat(pdf.text)).toContain(flat('Quién soy'));
 });
 

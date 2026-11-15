@@ -344,3 +344,15 @@ viewport and saves a full-page screenshot of every screen plus `report.json` (co
 errors, 5xx). It is **for looking, not a gate**: it runs on demand (`workflow_dispatch`) or when its own files change,
 never in `ci.yml`, and `pnpm test:e2e` does not include it. Synthetic content only. When a screen is added to the
 journey, add it to the walk.
+
+## Design fixes from the critique, batch two (2026-11-15)
+
+- **A document's title is private.** `DocModel.heading` (the person's name, or the kind of document) is what every
+  renderer prints; `model.title` is never rendered, and `pageTitle` (pages host) reads «name · kind». Do not print an
+  artifact's title on any shared surface: it usually names the employer applied to (`test/render-html.test.ts` pins it).
+  A change to renderer markup moves `test/fixtures/bilingual/render-baseline.json`: regenerate it with
+  `CV_WRITE_RENDER_BASELINE=1` and check that only the intended cases changed.
+- **The match shows words, not tokens.** `matchedTerms` / `missingTerms` carry the posting's own spelling
+  (`surfaceForms`); the gaps list leaves out the company, the place and posting boilerplate. The score is unchanged.
+- **Sharing says its state beside the link** (`share-state` in `PublishPanel`): what it is, who can open it, how to
+  withdraw. The address is a wrapped, read-only text area.

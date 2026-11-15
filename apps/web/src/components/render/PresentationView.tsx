@@ -5,16 +5,16 @@ import { RENDER_COPY, slidePosition } from '../../lib/copy/render.ts';
 import s from './render.module.css';
 
 /**
- * `presentation/base`: HTML slides, one <section> per slide. The title slide (the artifact's title, the person), then
+ * `presentation/base`: HTML slides, one <section> per slide. The title slide (the person and their headline; never
+ * the document's private title, which often names the employer applied to), then
  * the artifact's own slides (title, body, referenced items) or, without any, one slide per section of the selection
  * and per text block; a contact slide only when the contact is shown. Print: one 13.333 × 7.5 in slide per page.
  */
 export function PresentationView({ model }: { model: DocModel }) {
   const t = RENDER_COPY[model.locale];
   const slides = [
-    <section key="title" className={`${s.slide} ${s.titleSlide}`} aria-label={model.title} data-part="slide">
-      <h1 className={s.slideTitle}>{model.title}</h1>
-      {model.name ? <p className={s.slideLead}>{model.name}</p> : null}
+    <section key="title" className={`${s.slide} ${s.titleSlide}`} aria-label={model.heading} data-part="slide">
+      <h1 className={s.slideTitle}>{model.heading}</h1>
       {model.headline ? <p className={s.headline} data-part="headline">{model.headline}</p> : null}
     </section>,
     ...model.slides.map((slide, i) => (
