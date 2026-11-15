@@ -5,6 +5,13 @@
   padding: clamp(2rem, 6vw, 4rem) 1.25rem clamp(1.5rem, 4vw, 3rem);
 }
 
+/* Read mode (DESIGN.md «Typography»): keep running text to a comfortable measure; the column itself stays wider for code. */
+.page > p,
+.section > p,
+.list {
+  max-width: 68ch;
+}
+
 .section {
   margin-top: 2.25rem;
   padding-top: 1.75rem;

@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { HeroArt } from '@/components/HeroArt';
 import { LangSwitch, SiteFooter, waitlistHref } from '@/components/SiteFooter';
-import { PRODUCT_LABEL, SOURCE_URL } from '@/lib/brand';
+import { PRODUCT_LABEL } from '@/lib/brand';
 import { getConfig } from '@/lib/config';
 import { COPY, fill, isLocale } from '@/lib/copy/landing';
 
@@ -48,18 +48,16 @@ export default async function Landing({ params }: Props) {
       <main id="main">
         <section className="hero" aria-labelledby="headline">
           <div className="hero-copy">
-            <p className="badge">{t.badge}</p>
             <h1 id="headline">{t.headline}</h1>
             <p className="lead">{fill(t.lead, name)}</p>
             <div className="actions">
               <a className="button" href={waitlistHref(locale)}>
                 {t.cta}
               </a>
-              <a className="button button-secondary" href={SOURCE_URL} rel="noopener">
-                {t.source}
-              </a>
             </div>
-            <p className="muted small">{t.ctaNote}</p>
+            <p className="muted small">
+              {t.badge}. {t.ctaNote}
+            </p>
           </div>
           <HeroArt />
         </section>
@@ -67,12 +65,14 @@ export default async function Landing({ params }: Props) {
         <section className="band" aria-labelledby="building">
           <h2 id="building">{t.buildingTitle}</h2>
           <p className="muted">{t.buildingIntro}</p>
-          <ul className="cards">
+          <ul className="ledger">
             {t.building.map((item) => (
-              <li key={item.title} className="card">
-                <span className={item.live ? 'tag tag-live' : 'tag'}>{item.tag}</span>
-                <h3>{item.title}</h3>
-                <p>{fill(item.body, name)}</p>
+              <li key={item.title} className="ledger-row">
+                <div>
+                  <h3>{item.title}</h3>
+                  <p>{fill(item.body, name)}</p>
+                </div>
+                <p className={item.live ? 'ledger-state ledger-state-live' : 'ledger-state'}>{item.tag}</p>
               </li>
             ))}
           </ul>
@@ -81,12 +81,14 @@ export default async function Landing({ params }: Props) {
         <section className="band" aria-labelledby="ecosystem">
           <h2 id="ecosystem">{t.ecosystemTitle}</h2>
           <p className="muted">{fill(t.ecosystemIntro, name)}</p>
-          <ul className="cards cards-3">
+          {/* Everything here is already the case today, so the rows carry no state. */}
+          <ul className="ledger ledger-plain">
             {t.ecosystem.map((item) => (
-              <li key={item.title} className="card">
-                <span className={item.live ? 'tag tag-live' : 'tag'}>{item.tag}</span>
-                <h3>{item.title}</h3>
-                <p>{fill(item.body, name)}</p>
+              <li key={item.title} className="ledger-row">
+                <div>
+                  <h3>{item.title}</h3>
+                  <p>{fill(item.body, name)}</p>
+                </div>
               </li>
             ))}
           </ul>

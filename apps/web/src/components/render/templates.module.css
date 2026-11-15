@@ -94,6 +94,7 @@
 }
 
 .cvClasico > article h2 {
+  font-family: inherit;
   font-size: 1.1rem;
   font-weight: 600;
   text-transform: none;
@@ -197,6 +198,7 @@
 }
 
 .letterFormal > article h2 {
+  font-family: inherit;
   font-size: 1rem;
   font-weight: 600;
   text-transform: none;

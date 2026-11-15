@@ -60,10 +60,13 @@
   margin-top: 1.5rem;
 }
 
+/* DESIGN.md «Typography»: the name speaks in the serif; section titles are the working voice, small sans capitals. */
 .sectionTitle {
-  font-size: 1.15rem;
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.86rem;
+  font-weight: 650;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.09em;
   border-bottom: 1px solid var(--line);
   padding-bottom: 0.2rem;
   margin: 0 0 0.75rem;

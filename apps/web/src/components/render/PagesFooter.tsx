@@ -15,10 +15,10 @@ export function PagesFooter({ locale, page }: { locale: Locale; page: { share: '
   return (
     <footer className="footer">
       <div className="footer-inner">
-        <p className="small">
+        {/* One quiet line under the person's document: the document is the page, the product only signs it. */}
+        <p className="small muted pages-credit">
           <a href={`https://${config.hosts.landing}${locale === 'en' ? '/en' : '/'}`}>{fill(t.madeWith, PRODUCT_LABEL)}</a>
-        </p>
-        <p className="small">
+          <span aria-hidden="true"> · </span>
           <a href={href}>{t.report}</a>
         </p>
       </div>
