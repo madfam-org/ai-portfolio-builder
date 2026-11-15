@@ -207,3 +207,22 @@ test('the route: POST /jobs/intake is an authed route that does not collide with
   assert.deepEqual(matchRoute(['jobs', 'intake']), { kind: 'authed', name: 'job-intake', ids: [], methods: ['POST'] });
   assert.equal(matchRoute(['jobs', 'intake', 'x']), null);
 });
+
+test('text read by OCR: the same text intake, with a note on top that says to compare it with the original', async () => {
+  const text = ['Vacante: Asesora de ventas bilingue', 'Empresa: Boutique Ejemplo', 'Ubicacion: Ciudad de Mexico', 'Atencion a clientes en espanol e ingles, seguimiento de cartera y metas de venta mensuales.'].join('\n');
+  const lines: Record<string, unknown>[] = [];
+  const deps: IntakeDeps = { parseLimiter: new RateLimiter([{ max: 10, ms: 1000 }]), log: (l) => lines.push(l) };
+  const ocr = await runIntake('owner', { source: 'text', kind: 'file', read: 'ocr', text }, deps);
+  assert.ok(ocr.ok);
+  assert.equal(ocr.draft.notes[0], 'ocr_text');
+  assert.equal(ocr.draft.sourceKind, 'file');
+  assert.equal(ocr.draft.fields.company?.value, 'Boutique Ejemplo');
+  const plain = await runIntake('owner', { source: 'text', kind: 'file', text }, deps);
+  assert.ok(plain.ok);
+  assert.ok(!plain.draft.notes.includes('ocr_text'), 'typed or pasted text carries no OCR note');
+  assert.deepEqual(plain.draft.fields, ocr.draft.fields, 'the reading path changes nothing else');
+  assert.equal(lines[0]!.read, 'ocr');
+  assert.equal(lines[1]!.read, undefined);
+  const bad = await runIntake('owner', { source: 'text', read: 'image', text }, deps);
+  assert.equal(bad.ok, false);
+});

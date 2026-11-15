@@ -40,7 +40,15 @@ const captureSchema = z
 
 export const intakeBody = z.discriminatedUnion('source', [
   z.object({ source: z.literal('url'), url: z.string().trim().min(1).max(2000) }).strict(),
-  z.object({ source: z.literal('text'), kind: z.enum(['paste', 'pdf', 'docx', 'file']).default('paste'), text: z.string().min(1).max(SOURCE_TEXT_MAX * 2) }).strict(),
+  z
+    .object({
+      source: z.literal('text'),
+      kind: z.enum(['paste', 'pdf', 'docx', 'file']).default('paste'),
+      /** `ocr`: the text was read from page images by tlacuilo (POST /jobs/intake/ocr); the preview says so. */
+      read: z.enum(['text', 'ocr']).default('text'),
+      text: z.string().min(1).max(SOURCE_TEXT_MAX * 2),
+    })
+    .strict(),
   z.object({ source: z.literal('capture'), kind: z.enum(['capture', 'file']).default('capture'), capture: captureSchema }).strict(),
 ]);
 export type IntakeBody = z.input<typeof intakeBody>;
@@ -148,7 +156,9 @@ export async function runIntake(owner: string, input: unknown, deps: IntakeDeps 
   const body = parsed.data;
   if (body.source === 'url') return fromUrl(owner, body.url, deps);
   const draft = body.source === 'text' ? draftFromText(body.text, body.kind) : draftFromCapture(body.capture, body.kind);
-  (deps.log ?? defaultLog)({ evt: 'cv-intake', source: body.source, kind: body.kind, outcome: draft ? 'ok' : 'unreadable' });
+  // Recognised text can misread a letter or a figure: the preview says so before anything is saved.
+  if (draft && body.source === 'text' && body.read === 'ocr') draft.notes.unshift('ocr_text');
+  (deps.log ?? defaultLog)({ evt: 'cv-intake', source: body.source, kind: body.kind, ...(body.source === 'text' && body.read === 'ocr' ? { read: 'ocr' } : {}), outcome: draft ? 'ok' : 'unreadable' });
   return draft ? { ok: true, draft } : fail('unreadable');
 }
 

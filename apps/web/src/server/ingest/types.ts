@@ -37,7 +37,8 @@ export type IntakeNote =
   | 'title_missing'
   | 'no_structured_data'
   | 'ats_fallback'
-  | 'salary_partial';
+  | 'salary_partial'
+  | 'ocr_text';
 
 export interface IntakeDraft {
   sourceKind: SourceKind;

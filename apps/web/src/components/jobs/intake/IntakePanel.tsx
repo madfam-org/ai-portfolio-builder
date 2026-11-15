@@ -15,14 +15,25 @@ import { BookmarkletLink } from './BookmarkletLink';
 import { IntakePreview } from './IntakePreview';
 import { postIntake } from './client';
 import { intakeFailureMessage } from './messages';
+import { ocrStatus, readWithOcr, type OcrError, type OcrLimits } from './ocr-pages';
 import s from './intake.module.css';
 
 type Method = 'link' | 'paste' | 'file';
+/** A picked image or scanned PDF waiting for the person's go-ahead to be read through tlacuilo. */
+interface PendingOcr {
+  file: File;
+  kind: 'image' | 'pdf';
+  limits: OcrLimits;
+}
 
 /**
  * `/empleos/nuevo` (W5-J): four ways to bring a posting — a link (read once on the server, on this explicit action),
  * a paste, a file read in the browser (PDF text layer, DOCX, TXT, HTML) and the «Capturar vacante» bookmark for sites
  * that forbid server reads — all ending in the same preview (IntakePreview) before anything is saved.
+ *
+ * An image or a scanned PDF has no text to read in the browser. When reading images is on (tlacuilo configured) the
+ * panel says what would be sent and waits for an explicit click; only then are the page images sent, one by one
+ * (ocr-pages.ts). When it is off, the panel says «aún no leemos imágenes», as before.
  */
 export function IntakePanel({ locale }: { locale: Locale }) {
   const t = INGEST_COPY[locale];
@@ -33,6 +44,9 @@ export function IntakePanel({ locale }: { locale: Locale }) {
   const [url, setUrl] = useState('');
   const [text, setText] = useState('');
   const [fileInput, setFileInput] = useState(0);
+  const [pendingOcr, setPendingOcr] = useState<PendingOcr | null>(null);
+  const [ocrProgress, setOcrProgress] = useState<string | null>(null);
+  const [ocrNote, setOcrNote] = useState<string | null>(null);
 
   async function run(method: Method, body: IntakeInput) {
     setBusy(method);
@@ -41,6 +55,44 @@ export function IntakePanel({ locale }: { locale: Locale }) {
     setBusy(null);
     if (out.ok) setDraft(out.draft);
     else setError({ method, message: intakeFailureMessage(locale, out), capture: out.reason === 'capture_only' || out.reason === 'blocked_by_site' || out.reason?.startsWith('robots') === true });
+  }
+
+  function ocrErrorMessage(error: OcrError): string {
+    const e = t.ocr.errors;
+    if (error.code === 'rate_limited') return t.rateLimited(error.retryAfter ?? 60);
+    if (error.code === 'quota_exceeded') return t.quota;
+    if (error.code === 'ocr_unreadable') return e.unreadable;
+    if (error.code === 'page_too_large' || error.code === 'ocr_too_large' || error.code === 'body_too_large') return e.tooLarge;
+    if (error.code === 'unsupported_image' || error.code === 'invalid_image') return e.unsupportedImage;
+    if (error.code === 'ocr_busy' || error.code === 'ocr_timeout') return e.busy;
+    if (error.code === 'network') return e.network;
+    return e.unavailable;
+  }
+
+  /** An image or a scanned PDF: offer the reading when it is on, otherwise say honestly that cv cannot read it. */
+  async function offerOcr(file: File, kind: 'image' | 'pdf', unavailable: string) {
+    const status = await ocrStatus();
+    setBusy(null);
+    if (!status.enabled) return setError({ method: 'file', message: unavailable, capture: false });
+    setPendingOcr({ file, kind, limits: { maxPages: status.maxPages, maxBytes: status.maxBytes } });
+  }
+
+  async function onOcrConfirm() {
+    const pending = pendingOcr;
+    if (!pending) return;
+    setPendingOcr(null);
+    setError(null);
+    setOcrNote(null);
+    setBusy('file');
+    setOcrProgress(t.ocr.preparing);
+    const out = await readWithOcr(pending.file, pending.kind, pending.limits, (done, of) => setOcrProgress(t.ocr.progress(done + 1, of)));
+    setOcrProgress(null);
+    if (!out.ok) {
+      setBusy(null);
+      return setError({ method: 'file', message: ocrErrorMessage(out.error), capture: false });
+    }
+    if (out.totalPages > out.pages) setOcrNote(t.ocr.partial(out.pages, out.totalPages));
+    await run('file', { source: 'text', kind: pending.kind === 'pdf' ? 'pdf' : 'file', read: 'ocr', text: out.text });
   }
 
   function onLink(e: FormEvent<HTMLFormElement>) {
@@ -62,12 +114,14 @@ export function IntakePanel({ locale }: { locale: Locale }) {
       setError({ method: 'file', message, capture: false });
     };
     setError(null);
+    setPendingOcr(null);
+    setOcrNote(null);
     if (file.size > FILE_MAX_BYTES) return fail(t.fileErrors.tooLarge);
     setBusy('file');
     const head = new Uint8Array(await file.slice(0, 16).arrayBuffer());
     const kind = fileKind(file.name, file.type, head);
     try {
-      if (kind === 'image') return fail(t.fileErrors.image);
+      if (kind === 'image') return await offerOcr(file, 'image', t.fileErrors.image);
       if (kind === 'unsupported') return fail(t.fileErrors.unsupported);
       if (kind === 'html') return await run('file', htmlFileToInput(decodeTextFile(new Uint8Array(await file.arrayBuffer()))));
       if (kind === 'text') return await run('file', { source: 'text', kind: 'file', text: decodeTextFile(new Uint8Array(await file.arrayBuffer())) });
@@ -77,7 +131,8 @@ export function IntakePanel({ locale }: { locale: Locale }) {
         const { text: pdfText } = await readPdfText(file);
         return await run('file', { source: 'text', kind: 'pdf', text: pdfText });
       } catch (err) {
-        return fail(err instanceof ScannedPdfError ? t.fileErrors.scanned : t.fileErrors.pdfFailed);
+        if (err instanceof ScannedPdfError) return await offerOcr(file, 'pdf', t.fileErrors.scanned);
+        return fail(t.fileErrors.pdfFailed);
       }
     } catch (err) {
       return fail(err instanceof NotDocxError ? t.fileErrors.unsupported : t.fileErrors.unreadable);
@@ -86,15 +141,19 @@ export function IntakePanel({ locale }: { locale: Locale }) {
 
   if (draft) {
     return (
-      <IntakePreview
-        locale={locale}
-        draft={draft}
-        onSaved={(job) => router.push(appPath.job(locale, job.id))}
-        onDiscard={() => {
-          setDraft(null);
-          setError(null);
-        }}
-      />
+      <>
+        {ocrNote ? <Notice tone="info">{ocrNote}</Notice> : null}
+        <IntakePreview
+          locale={locale}
+          draft={draft}
+          onSaved={(job) => router.push(appPath.job(locale, job.id))}
+          onDiscard={() => {
+            setDraft(null);
+            setError(null);
+            setOcrNote(null);
+          }}
+        />
+      </>
     );
   }
 
@@ -149,9 +208,24 @@ export function IntakePanel({ locale }: { locale: Locale }) {
         <p className="muted small">{t.file.body}</p>
         <TextField key={fileInput} id="intake-file-input" label={t.file.label} hint={t.file.hint} type="file" accept={FILE_ACCEPT} onChange={(e) => void onFile(e)} disabled={busy !== null} />
         {busy === 'file' ? (
-          <p className="muted" role="status">
-            {t.file.reading}
+          <p className="muted" role="status" data-testid="intake-file-status">
+            {ocrProgress ?? t.file.reading}
           </p>
+        ) : null}
+        {pendingOcr ? (
+          <div className="stack" data-testid="intake-ocr-offer">
+            <Notice tone="info" title={pendingOcr.kind === 'pdf' ? t.ocr.offerScanned : t.ocr.offerImage}>
+              {t.ocr.privacy}
+            </Notice>
+            <div className={s.row}>
+              <Button type="button" onClick={() => void onOcrConfirm()} disabled={busy !== null}>
+                {t.ocr.confirm}
+              </Button>
+              <Button type="button" variant="secondary" onClick={() => setPendingOcr(null)} disabled={busy !== null}>
+                {t.ocr.cancel}
+              </Button>
+            </div>
+          </div>
         ) : null}
         {errorFor('file')}
       </section>

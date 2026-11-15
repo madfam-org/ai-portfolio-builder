@@ -297,3 +297,26 @@ sign-in links never create accounts for this client. cv asks Janua's hosted page
 shows «Primeros pasos» to a signed-in person whose profile is empty (`src/components/onboarding/`,
 `src/lib/copy/onboarding.ts`, `e2e/onboarding.spec.ts`): import or start by hand, then save the first job, plus
 the privacy line. The guide reads only the existing profile. It adds no data model and no flag.
+
+## Reading images through tlacuilo (2026-11-14)
+
+Owner directive (2026-11-14): cv integrates deeply with tlacuilo, the ecosystem's document-intelligence service, for
+OCR. A photo, a screenshot or a scanned PDF of a posting is read through tlacuilo's `text_document` lane
+([`docs/PRODUCT.md`](docs/PRODUCT.md) «Reading images», [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) «Reading images
+through tlacuilo»).
+
+| Path | What it is |
+|---|---|
+| `apps/web/src/server/tlacuilo/config.ts` | the three settings and the dormancy rule (`TLACUILO_API_URL`, `TLACUILO_CLIENT_ID`, `TLACUILO_CLIENT_SECRET`); http only to loopback or a cluster Service name |
+| `apps/web/src/server/tlacuilo/client.ts` | client credentials (scope `tlacuilo:extract`), `POST /v1/extractions` sync with `document_type=text_document` and `X-Sensitivity: restricted`, zod-validated and bounded answer, circuit breaker for service failures only, no cache |
+| `apps/web/src/server/tlacuilo/route.ts` | `GET`/`POST /api/v1/jobs/intake/ocr`: one page image per call (≤ 480 KiB, signature checked against the declared type), the per-owner OCR ceiling, failures that keep their meaning |
+| `apps/web/src/components/jobs/intake/ocr-pages.ts` | the browser side: pages drawn to a canvas and shrunk to fit, sent one by one, text joined |
+| `apps/web/test-support/tlacuilo-fake.ts`, `test/tlacuilo-*.test.ts`, `test/ocr-pages.test.ts`, `e2e/ocr.spec.ts` | the synthetic service, the unit tests, and the browser journey (dormant on the real route; switched on with the route answered by the test) |
+
+Rules: cv never ships an OCR engine, a model or a provider key; the original file never leaves the browser, only page
+images the person agreed to send, and only to cv's own API; nothing is stored by cv or by tlacuilo, and no log line
+carries content or a file name; the label is always `restricted`; recognised text reaches a job only through the
+ordinary text intake and its preview, with the `ocr_text` note; a page with no legible text is a failure, never a
+draft; the 512 KiB request buffer (`next.config.ts`, W4-S) is not raised for this; the interface never names the
+service or its engine. The infra wiring (ExternalSecret, env, egress) is a separate activation PR that merges only
+after the machine client exists. CI minimum after this PR: `e2e` ≥ 93 passing (was 89).

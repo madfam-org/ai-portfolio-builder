@@ -82,6 +82,9 @@ Nothing reads these at import or build time; nothing throws at boot. The boot lo
 | `HCM_API_URL` = `https://hcm-api.madfam.io` | plain env (W5-H) | the job page's market range (Symbiosis HCM); https only (loopback http for local tests) |
 | `HCM_CLIENT_ID`, `HCM_CLIENT_SECRET` | Vault `secret/cv` `hcm_client_id` / `hcm_client_secret` (`enclii secrets provision oidc --platform cv-hcm-benchmarks`) → ExternalSecret `cv-hcm-client`, read `optional: true` | Janua client credentials for HCM (scope `hcm-benchmarks:read`); absent = benchmark dormant |
 | `HCM_TOKEN_URL`, `HCM_TIMEOUT_MS` | plain env, optional | token endpoint (default `${AUTH_JANUA_ISSUER}/api/v1/oauth/token`); per-call budget (default 3000 ms, 200-10000) |
+| `TLACUILO_API_URL` | plain env (reading images) | tlacuilo's API origin: https, or plain http to a cluster Service name (`*.svc`, `*.svc.cluster.local`); tlacuilo's API has no public hostname by design |
+| `TLACUILO_CLIENT_ID`, `TLACUILO_CLIENT_SECRET` | the Enclii secret intake → an ExternalSecret, read `optional: true` (added by the activation PR, after the client exists) | Janua client credentials for tlacuilo (scope `tlacuilo:extract`) |
+| `TLACUILO_TOKEN_URL`, `TLACUILO_TIMEOUT_MS` | plain env, optional | token endpoint (default `${AUTH_JANUA_ISSUER}/api/v1/oauth/token`); budget for one page (default 45000 ms, 1000-70000) |
 
 ### Sign-in shape
 
@@ -271,6 +274,30 @@ Activation (coordinator, in this order; each apply only after reading its own dr
 4. symbiosis-hcm: set `MARKET_BENCHMARK_CLIENT_IDS` to that client id (`api-deployment.yaml`).
 5. This repo: merge the W5-H PR (ExternalSecret `cv-hcm-client`, `HCM_API_URL`). Probe: a signed-in job page shows
    «Datos de la ENOE (INEGI), <quarter>, n = …»; `/ready` is unchanged.
+
+## Reading images through tlacuilo (2026-11-14)
+
+A photo, a screenshot or a scanned PDF of a posting is read by tlacuilo, the ecosystem's document-intelligence
+service ([`PRODUCT.md`](PRODUCT.md) «Reading images»). cv ships no OCR engine. **Dormant by default:** without the
+three `TLACUILO_*` values `GET /api/v1/jobs/intake/ocr` answers `{"enabled": false}`, the POST answers 503
+`not_configured`, and the page says «aún no leemos imágenes». A missing or failing tlacuilo never affects `/ready`.
+
+Order to switch it on (coordinator; each step only after the one before it is verified):
+
+1. tlacuilo serves its `text_document` lane and its API is launched (tlacuilo's own launch steps), and its consumer
+   NetworkPolicy admits the `cv` namespace.
+2. The machine client for this edge exists in Janua (audience `tlacuilo`, scope `tlacuilo:extract`,
+   `client_credentials` only) and its id and secret are in the secret store through the Enclii secret intake.
+3. This repo, one PR (the activation PR): the ExternalSecret for the pair, `TLACUILO_API_URL` on the Deployment, and
+   an egress rule from cv's pods to tlacuilo's API pods on their container port. Never merge it before step 2: an
+   ExternalSecret whose keys do not exist leaves the app Degraded.
+4. Probe: signed in, `GET /api/v1/jobs/intake/ocr` → `{"enabled": true, …}`; pick a screenshot of a posting on
+   `/empleos/nuevo`, agree, and the preview shows its text with the OCR note. The request log line `cv-ocr` carries
+   the outcome, bytes and milliseconds, never content.
+
+Limits (abuse bounds, the owner may tune them; `apps/web/src/server/tlacuilo/route.ts`): one page per request, at most
+480 KiB (the browser shrinks each page; the 512 KiB request buffer of `next.config.ts` is unchanged), 4 pages per
+document, and per person 16 pages per 10 minutes and 60 per day, in memory per pod.
 
 ## Beta access: invite-only accounts (B1)
 
