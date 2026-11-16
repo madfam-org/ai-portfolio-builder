@@ -2,9 +2,19 @@
 # GitHub opens them as soon as an advisory lands. Ecosystems: npm (the pnpm workspace's one root lockfile),
 # the Dockerfile base image digest, and the pinned actions.
 version: 2
+# Dependabot's update jobs reach only hosts on its egress allowlist; a host named only in `.npmrc` gets a 403 from
+# Dependabot's own proxy («egress not allowlisted npm.madfam.io») before any request leaves GitHub. Declaring the
+# registry here allowlists it. @pliego/* is world-readable there (root `.npmrc`), so no credential: no token, no secret.
+# No `scope` (the committed `.npmrc` already maps @pliego) and no `replaces-base` (every other package stays on npmjs).
+registries:
+  npm-madfam:
+    type: npm-registry
+    url: https://npm.madfam.io
 updates:
   - package-ecosystem: npm
     directory: /
+    registries:
+      - npm-madfam
     schedule:
       interval: weekly
       day: monday
