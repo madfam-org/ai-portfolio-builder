@@ -4,8 +4,9 @@
  *
  * Which files: LinkedIn's help page lists the export's data categories
  * (https://www.linkedin.com/help/linkedin/answer/a1339364): Profile, Positions, Education, Skills, Certifications,
- * Languages, Projects, Honors, Publications and Volunteering are the ones that describe a career, so they are the only
- * files opened. Every other file (Messages, Connections, Invitations, Ad Targeting, Inferences, ...) is never read:
+ * Languages, Projects, Honors, Publications and Volunteering are the ones that describe a career, plus
+ * Recommendations_Received (what others wrote about the person's work; only the ones the person shows on LinkedIn), so
+ * they are the only files opened. Every other file (Messages, Connections, Invitations, Ad Targeting, Inferences, ...) is never read:
  * only the archive's index (file names) is, and nothing of those files is decompressed or kept.
  *
  * Columns: LinkedIn does not publish its CSV headers, and they changed between export generations (e.g. Positions
@@ -49,9 +50,13 @@ const H = {
   publisher: ['publisher', 'editorial', 'publicacion', 'editor'],
   published: ['publishedon', 'date', 'fecha', 'fechadepublicacion', 'publicadoel'],
   cause: ['cause', 'causa'],
+  jobTitle: ['jobtitle', 'cargo', 'puesto', 'titulo', 'title'],
+  text: ['text', 'texto', 'recommendation', 'recomendacion'],
+  created: ['creationdate', 'createdon', 'date', 'fechadecreacion', 'fecha'],
+  status: ['status', 'estado', 'visibilidad'],
 } as const;
 
-type FileId = 'profile' | 'positions' | 'education' | 'skills' | 'certifications' | 'languages' | 'projects' | 'honors' | 'publications' | 'volunteering';
+type FileId = 'profile' | 'positions' | 'education' | 'skills' | 'certifications' | 'languages' | 'projects' | 'honors' | 'publications' | 'volunteering' | 'recommendations';
 
 /** The ONLY files opened, by lower-case base name. */
 export const LINKEDIN_FILES: Record<FileId, readonly string[]> = {
@@ -65,10 +70,11 @@ export const LINKEDIN_FILES: Record<FileId, readonly string[]> = {
   honors: ['honors.csv'],
   publications: ['publications.csv'],
   volunteering: ['volunteering.csv', 'volunteer experiences.csv', 'volunteer_experiences.csv'],
+  recommendations: ['recommendations_received.csv'],
 };
 
 /** The display names of the files read (copy: «leemos solo …»). */
-export const LINKEDIN_FILE_NAMES: readonly string[] = Object.values(LINKEDIN_FILES).map((names) => names[0]!.replace(/^\w/, (c) => c.toUpperCase()));
+export const LINKEDIN_FILE_NAMES: readonly string[] = Object.values(LINKEDIN_FILES).map((names) => names[0]!.replace(/(^|_)\w/g, (c) => c.toUpperCase()));
 
 const KIND: Partial<Record<FileId, ItemKind>> = {
   positions: 'experience',
@@ -80,6 +86,7 @@ const KIND: Partial<Record<FileId, ItemKind>> = {
   honors: 'award',
   publications: 'publication',
   volunteering: 'volunteering',
+  recommendations: 'recommendation',
 };
 
 /**
@@ -104,6 +111,22 @@ function websites(raw: string): { label?: string; url: string }[] {
 }
 
 const joinText = (...parts: string[]) => parts.filter(Boolean).join('\n\n');
+
+/**
+ * A recommendation's «Creation Date»: LinkedIn writes US month/day/two-digit year with a time («10/10/13, 6:20 AM»).
+ * The month is certain here (the export's own format), so it keeps year and month; anything else goes through the
+ * general reader.
+ */
+export function recommendationDate(raw: string): string {
+  const m = raw.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{2}|\d{4})(?:,|\s|$)/);
+  if (!m) return raw;
+  const month = Number(m[1]);
+  const year = m[3]!.length === 2 ? 2000 + Number(m[3]) : Number(m[3]);
+  return month >= 1 && month <= 12 ? `${year}-${String(month).padStart(2, '0')}` : String(year);
+}
+
+/** A recommendation the person hid on LinkedIn stays out of the import. */
+const HIDDEN = /^(hidden|oculta|oculto|no visible)$/i;
 
 /**
  * LinkedIn's export strips every line break from a description, so a bulleted description arrives as one line:
@@ -197,6 +220,23 @@ export function mapLinkedIn(files: Partial<Record<FileId, string>>, ignored = 0)
       endDate: pick(r, H.end),
       summary: joinText(pick(r, H.description), cause ? `(${cause})` : ''),
     };
+  });
+  const recommendations = table('recommendations', [H.firstName, H.lastName, H.text]);
+  const recFile = LINKEDIN_FILE_NAMES[Object.keys(LINKEDIN_FILES).indexOf('recommendations')]!;
+  recommendations?.rows.forEach((r, i) => {
+    if (HIDDEN.test(pick(r, H.status))) return;
+    makeItem(
+      result,
+      'recommendation',
+      {
+        name: [pick(r, H.firstName), pick(r, H.lastName)].filter(Boolean).join(' '),
+        role: pick(r, H.jobTitle),
+        organization: pick(r, H.company),
+        date: recommendationDate(pick(r, H.created)),
+        text: pick(r, H.text),
+      },
+      { file: recFile, row: i + 1 },
+    );
   });
   return result;
 }

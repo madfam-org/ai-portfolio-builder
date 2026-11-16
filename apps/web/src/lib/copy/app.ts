@@ -22,7 +22,8 @@ export type ItemKind =
   | 'publication'
   | 'volunteering'
   | 'award'
-  | 'link';
+  | 'link'
+  | 'recommendation';
 export type ArtifactKind = 'cv' | 'portfolio' | 'presentation' | 'cover_letter';
 export type ArtifactStatus = 'draft' | 'ready' | 'published';
 export type JobStatus = 'saved' | 'applying' | 'applied' | 'interview' | 'offer' | 'rejected' | 'archived';
@@ -161,6 +162,7 @@ export const APP_COPY: Record<Locale, AppCopy> = {
       volunteering: 'Voluntariado',
       award: 'Reconocimientos',
       link: 'Enlaces',
+      recommendation: 'Recomendaciones',
     },
     jobStatuses: {
       saved: 'Guardado',
@@ -258,6 +260,7 @@ export const APP_COPY: Record<Locale, AppCopy> = {
       volunteering: 'Volunteering',
       award: 'Awards',
       link: 'Links',
+      recommendation: 'Recommendations',
     },
     jobStatuses: {
       saved: 'Saved',

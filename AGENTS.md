@@ -329,7 +329,8 @@ page and from «Primeros pasos». Text, version and status live in `apps/web/src
 Particulares of 2025 (a new law: never cite an article of the 2010 one; the authority is the Secretaría
 Anticorrupción y Buen Gobierno).
 
-Rules: the owner **approved** the notice on 2026-11-15 (`PRIVACY_NOTICE.status`, version 2026-11-15.3). A change to its
+Rules: the owner **approved** the notice on 2026-11-16 (`PRIVACY_NOTICE.status`, version 2026-11-16.1, which adds
+recommendations received; 2026-11-15.3 was approved on 2026-11-15). A change to its
 text sets it back to `draft` with `pending` shown on the page; only the owner moves it to `approved`. It states only what the code does: **a change to what cv does with
 personal data changes this file in the same pull request, and `version` moves**. The six elements the law requires
 (`REQUIRED_SECTION_IDS`) stay present in both languages (`test/privacy-notice.test.ts`). The only mailbox in it is

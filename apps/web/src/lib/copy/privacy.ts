@@ -8,17 +8,18 @@
  * Secretaría Anticorrupción y Buen Gobierno). The section ids below map to art. 15's fractions; a unit test keeps
  * every one of them present in both languages.
  *
- * STATUS: APPROVED by the owner on 2026-11-15 (version 2026-11-15.3; text unchanged from .2). A later change to the
- * text returns it to `draft` with what is pending, until the owner approves again; the page shows either state.
+ * STATUS: APPROVED by the owner on 2026-11-16 (version 2026-11-16.1: the profile also holds recommendations received;
+ * 2026-11-15.3 was approved on 2026-11-15). A later change to the text returns it to `draft` with what is pending,
+ * until the owner approves again; the page shows either state.
  * Every statement describes code that exists (R85); when the product changes what it does with personal data,
  * this file changes in the same pull request and `version` moves.
  */
 import type { Locale } from '../routing.ts';
 
 export const PRIVACY_NOTICE = {
-  version: '2026-11-15.3',
+  version: '2026-11-16.1',
   status: 'approved' as 'draft' | 'approved',
-  updated: '2026-11-15',
+  updated: '2026-11-16',
   mailbox: 'privacy@madfam.io',
   /** Open points, by key; the copy below names each in both languages. Empty when approved. */
   pending: [] as readonly string[],
@@ -97,7 +98,7 @@ export const PRIVACY_COPY: Record<Locale, PrivacyCopy> = {
         body: ['Tratamos estos datos, y ninguno más:'],
         list: [
           'Datos de tu cuenta: el identificador, el nombre y el correo que entrega Janua, el servicio de identidad de MADFAM, cuando inicias sesión. Tu contraseña, si tienes una, vive en Janua; esta aplicación no la recibe.',
-          'Tu perfil profesional, tal como lo escribes o lo importas: nombre para mostrar, titular, resumen, datos de contacto que decidas incluir (correo, teléfono, lugar, enlaces), experiencia, estudios, habilidades, proyectos, certificaciones, idiomas, logros, publicaciones, voluntariado y reconocimientos.',
+          'Tu perfil profesional, tal como lo escribes o lo importas: nombre para mostrar, titular, resumen, datos de contacto que decidas incluir (correo, teléfono, lugar, enlaces), experiencia, estudios, habilidades, proyectos, certificaciones, idiomas, logros, publicaciones, voluntariado, reconocimientos y las recomendaciones que recibiste (el nombre, el puesto, la organización y las palabras de quien te recomienda, tal como las capturas o las importas).',
           'Las vacantes que guardas: el texto del anuncio, su enlace, los datos que leímos de él, el estado de tu postulación y tus notas.',
           'Los documentos que preparas (CV, portafolio, presentación, carta) y si cada uno es privado, compartido por enlace o público.',
           'Datos técnicos: una cookie de sesión en la aplicación, necesaria para mantenerte dentro; y, en las páginas públicas, la dirección IP de quien las visita, usada solo en memoria para limitar el abuso, sin guardarla. Los registros del servidor anotan la ruta, el resultado y la duración de cada solicitud, no su contenido.',
@@ -220,7 +221,7 @@ export const PRIVACY_COPY: Record<Locale, PrivacyCopy> = {
         body: ['We process this data and no other:'],
         list: [
           'Account data: the identifier, name and email that Janua, MADFAM’s identity service, provides when you sign in. Your password, if you have one, lives in Janua; this application never receives it.',
-          'Your professional profile, as you write or import it: display name, headline, summary, the contact details you choose to include (email, phone, place, links), experience, education, skills, projects, certifications, languages, achievements, publications, volunteering and awards.',
+          'Your professional profile, as you write or import it: display name, headline, summary, the contact details you choose to include (email, phone, place, links), experience, education, skills, projects, certifications, languages, achievements, publications, volunteering, awards and the recommendations you received (the name, job title, organisation and words of the person who recommends you, as you enter or import them).',
           'The job postings you save: the posting text, its link, the details we read from it, the status of your application and your notes.',
           'The documents you prepare (CV, portfolio, presentation, cover letter) and whether each is private, shared by link or public.',
           'Technical data: a session cookie in the application, needed to keep you signed in; and, on public pages, the visitor’s IP address, used only in memory to limit abuse and never stored. Server logs record the route, outcome and duration of each request, not its content.',

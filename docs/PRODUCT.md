@@ -16,7 +16,7 @@ One person (a Janua `sub`) has:
 | Table | What it holds | Rules |
 |---|---|---|
 | `profiles` | ONE core profile: display name (prefilled from Janua's `name` claim, editable), headline, summary, locale, contact (user-entered email, phone, location, links) | `unique (owner_sub)` |
-| `profile_items` | the building blocks: experience, education, skill, project, certification, achievement, language, publication, volunteering, award, link. Each has a `position`, a `content` validated per kind (dates live inside the content) and `tags` (keywords for matching) | composite FK `(profile_id, owner_sub)` |
+| `profile_items` | the building blocks: experience, education, skill, project, certification, achievement, language, publication, volunteering, award, link, recommendation (one received: the recommender's name, role, organisation, relationship, date and their words verbatim; never translated or overridden per job; migration `0004`). Each has a `position`, a `content` validated per kind (dates live inside the content) and `tags` (keywords for matching) | composite FK `(profile_id, owner_sub)` |
 | `jobs` | the jobs applied to: title, company, location, source URL, the posting text the person pastes (required, at most 50 000 characters), `parsed` (filled by Selva in W6; null now), status (saved → applying → applied → interview → offer / rejected / archived), notes | `unique (id, owner_sub)` |
 | `artifacts` | the tailored outputs: kind `cv`, `portfolio`, `presentation` or `cover_letter`; `job_id` null for a general artifact or set for one tailored to a job (several per job and kind are allowed: versions); `content` = ordered profile item ids + per-item overrides + free text blocks (+ slides for a presentation) | composite FK `(job_id, owner_sub)`; every referenced item id must belong to the same owner (checked in the same transaction) |
 
@@ -116,15 +116,16 @@ governs), linked from every page's footer and from «Primeros pasos». It opens 
 and then gives the full one: who is responsible, the data processed, the purposes (all necessary for the service; no
 secondary ones), how to limit use or disclosure, that nothing is transferred, how long data is kept, the ARCO rights
 (in the app itself, or by writing to privacy@madfam.io) and how changes are announced. **Approved by the owner on
-2026-11-15** (version 2026-11-15.3); a later change to the text returns it to a visible draft until approved again. Source: `apps/web/src/lib/copy/privacy.ts`.
+2026-11-16** (version 2026-11-16.1, which adds recommendations received); a later change to the text returns it to a visible draft until approved again. Source: `apps/web/src/lib/copy/privacy.ts`.
 
 ### Data portability and data rights (W4-I)
 
 - **Import** on `/perfil`: the person's OWN LinkedIn data export ZIP («Download your data»,
   <https://www.linkedin.com/help/linkedin/answer/50191>) or a JSON Resume `.json`, read **in the browser**
   (`src/components/import/`): from the ZIP only the index and the career files are opened (Profile, Positions,
-  Education, Skills, Certifications, Languages, Projects, Honors, Publications, Volunteering; categories per
-  <https://www.linkedin.com/help/linkedin/answer/a1339364>); messages, connections and every other file are never read.
+  Education, Skills, Certifications, Languages, Projects, Honors, Publications, Volunteering, Recommendations_Received
+  (only the recommendations the person shows; hidden ones stay out); categories per
+  <https://www.linkedin.com/help/linkedin/answer/a1339364>); JSON Resume `references` map to recommendations both ways; messages, connections and every other file are never read.
   LinkedIn does not publish its CSV headers, so each field is found by header aliases (English and Spanish). A grouped
   preview (duplicates of existing items unchecked, «ya existe») is sent only on confirmation, as one batch call. No AI,
   no scraping, no connection to LinkedIn.

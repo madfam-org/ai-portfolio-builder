@@ -96,6 +96,18 @@ export const ITEM_CONTENT: Record<(typeof PROFILE_ITEM_KINDS)[number], z.ZodType
   volunteering: z.object({ role: required(200), organization: required(200), ...span, summary: text(3000).optional() }).strict(),
   award: z.object({ title: required(200), issuer: text(200).optional(), date: partialDate.optional(), summary: text(3000).optional() }).strict(),
   link: link,
+  // A recommendation the person RECEIVED: the recommender's name, role and organisation, how they know the person, and
+  // their words verbatim (`text`: never translated, never overridden per job; components/render/model.ts).
+  recommendation: z
+    .object({
+      name: required(200),
+      role: text(200).optional(),
+      organization: text(200).optional(),
+      relationship: text(300).optional(),
+      date: partialDate.optional(),
+      text: required(3000),
+    })
+    .strict(),
 };
 
 export const itemCreateBody = z

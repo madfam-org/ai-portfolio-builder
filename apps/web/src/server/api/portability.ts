@@ -126,6 +126,8 @@ export function toJsonResume(data: OwnerData, now: Date, locale?: ContentLocale)
         roles: s(c, 'role') ? [s(c, 'role')] : undefined,
       })),
     ),
+    // JSON Resume keeps a reference's name and words only (the recommender's role, organisation and date stay in cv).
+    references: nonEmpty(of('recommendation').map(({ c }) => ({ name: s(c, 'name'), reference: s(c, 'text') }))),
     meta: { version: 'v1.0.0', lastModified: now.toISOString() },
   };
 }

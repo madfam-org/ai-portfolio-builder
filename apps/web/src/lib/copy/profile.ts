@@ -154,6 +154,12 @@ export const PROFILE_COPY: Record<Locale, ProfileCopy> = {
       publication: { add: 'Agregar publicación', newTitle: 'Nueva publicación', editTitle: 'Editar publicación', hint: 'Artículos, capítulos, ponencias, entradas de blog.' },
       volunteering: { add: 'Agregar voluntariado', newTitle: 'Nuevo voluntariado', editTitle: 'Editar voluntariado', hint: 'Trabajo no remunerado en organizaciones o comunidades.' },
       link: { add: 'Agregar enlace', newTitle: 'Nuevo enlace', editTitle: 'Editar enlace', hint: 'Muestras de trabajo que quieras elegir para cada vacante (un video, un caso, un repositorio).' },
+      recommendation: {
+        add: 'Agregar recomendación',
+        newTitle: 'Nueva recomendación',
+        editTitle: 'Editar recomendación',
+        hint: 'Lo que alguien escribió sobre tu trabajo. Copia su texto tal cual: lo imprimimos entre comillas, no se traduce y no se ajusta por vacante.',
+      },
     },
     fields: {
       role: 'Puesto',
@@ -180,6 +186,8 @@ export const PROFILE_COPY: Record<Locale, ProfileCopy> = {
       title: 'Título',
       publisher: 'Editorial o medio',
       label: 'Nombre del enlace',
+      relationship: 'Relación contigo',
+      text: 'Texto',
     },
     fieldOverrides: {
       education: { highlights: 'Logros destacados' },
@@ -192,6 +200,7 @@ export const PROFILE_COPY: Record<Locale, ProfileCopy> = {
       publication: { date: 'Fecha de publicación' },
       volunteering: { role: 'Actividad o rol', organization: 'Organización' },
       link: { url: 'Dirección (URL)' },
+      recommendation: { name: 'Quién te recomienda', role: 'Su puesto', organization: 'Su empresa u organización', relationship: 'Cómo te conoce', text: 'Recomendación, tal como la escribió' },
     },
     hints: {
       date: 'AAAA, AAAA-MM o AAAA-MM-DD; por ejemplo, 2021-03.',
@@ -309,6 +318,12 @@ export const PROFILE_COPY: Record<Locale, ProfileCopy> = {
       publication: { add: 'Add publication', newTitle: 'New publication', editTitle: 'Edit publication', hint: 'Articles, chapters, talks, blog posts.' },
       volunteering: { add: 'Add volunteering', newTitle: 'New volunteering', editTitle: 'Edit volunteering', hint: 'Unpaid work for organisations or communities.' },
       link: { add: 'Add link', newTitle: 'New link', editTitle: 'Edit link', hint: 'Work samples you want to pick for each job (a video, a case study, a repository).' },
+      recommendation: {
+        add: 'Add recommendation',
+        newTitle: 'New recommendation',
+        editTitle: 'Edit recommendation',
+        hint: 'What someone wrote about your work. Copy their text as it is: we print it in quotation marks, it is not translated and it is not adjusted per job.',
+      },
     },
     fields: {
       role: 'Job title',
@@ -335,6 +350,8 @@ export const PROFILE_COPY: Record<Locale, ProfileCopy> = {
       title: 'Title',
       publisher: 'Publisher or outlet',
       label: 'Link name',
+      relationship: 'Relationship to you',
+      text: 'Text',
     },
     fieldOverrides: {
       education: { highlights: 'Highlights' },
@@ -347,6 +364,7 @@ export const PROFILE_COPY: Record<Locale, ProfileCopy> = {
       publication: { date: 'Publication date' },
       volunteering: { role: 'Activity or role', organization: 'Organisation' },
       link: { url: 'Address (URL)' },
+      recommendation: { name: 'Who recommends you', role: 'Their job title', organization: 'Their company or organisation', relationship: 'How they know you', text: 'Recommendation, as they wrote it' },
     },
     hints: {
       date: 'YYYY, YYYY-MM or YYYY-MM-DD; for example, 2021-03.',

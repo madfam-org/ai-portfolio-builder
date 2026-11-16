@@ -29,6 +29,13 @@
       "when": 1792719704036,
       "tag": "0003_bilingual_profile_text",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794824364196,
+      "tag": "0004_recommendation_kind",
+      "breakpoints": true
     }
   ]
 }
