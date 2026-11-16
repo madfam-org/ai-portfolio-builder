@@ -75,7 +75,8 @@ test('a fresh person: honest empty state, why a rich profile matters, name from 
   const stored = (await apiAs(FRESH, 'GET', '/api/v1/profile')).json?.profile;
   expect(stored).toMatchObject({ displayName: FRESH.name, headline: 'Diseñadora de servicios', contact: { email: 'fer@example.test', links: [{ label: 'Sitio', url: 'https://example.test/fer' }] } });
   await page.goto(url('app', '/en/perfil'));
-  await expect(page.getByRole('heading', { name: 'Your career' })).toBeVisible();
+  // Batch 4: with no items yet, the kinds sit under «More sections» (the contents list appears once there are items).
+  await expect(page.getByRole('heading', { name: 'More sections' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Import your data' })).toBeVisible();
   await expect(page.getByLabel('Headline')).toHaveValue('Diseñadora de servicios');
   expect(violations).toEqual([]);
