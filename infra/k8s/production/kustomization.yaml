@@ -28,6 +28,6 @@ resources:
 # run unpinned before a real pin lands. The workload names the image with a `:latest` decoy that this block
 # rewrites to the digest (the rendered manifest carries no tag at all).
 images:
-- digest: sha256:cb8cdddcb6b084e2a7c7339f75c8da05f80b017ba146a2097ef7ce9c7827e1ae
+- digest: sha256:847a6951a25be93a8c0dae80adabfaa787ad6bccd77f78a99f598c2ffb2e03b9
   name: ghcr.io/madfam-org/cv
   newName: ghcr.io/madfam-org/cv
