@@ -115,8 +115,8 @@ cv's own aviso de privacidad is public at `cv.madfam.io/privacidad` (English at 
 governs), linked from every page's footer and from «Primeros pasos». It opens with the simplified notice («En breve»)
 and then gives the full one: who is responsible, the data processed, the purposes (all necessary for the service; no
 secondary ones), how to limit use or disclosure, that nothing is transferred, how long data is kept, the ARCO rights
-(in the app itself, or by writing to privacy@madfam.io) and how changes are announced. The owner approved version
-2026-11-15.3 on 2026-11-15; **version 2026-11-16.1** (recommendations received) is a visible draft until approved again. Source: `apps/web/src/lib/copy/privacy.ts`.
+(in the app itself, or by writing to privacy@madfam.io) and how changes are announced. **Approved by the owner on
+2026-11-16** (version 2026-11-16.1, which adds recommendations received); a later change to the text returns it to a visible draft until approved again. Source: `apps/web/src/lib/copy/privacy.ts`.
 
 ### Data portability and data rights (W4-I)
 
