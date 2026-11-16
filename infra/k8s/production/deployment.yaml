@@ -140,6 +140,10 @@ spec:
             # /api/v1/oauth/token. Dormant (503 not_configured) until HCM_CLIENT_ID/SECRET exist (cv-hcm-client).
             - name: HCM_API_URL
               value: https://hcm-api.madfam.io
+            # The LinkedIn profile PDF import on /perfil (lib/import-config.ts; dormant unless 1/true/on). On by the
+            # owner's ruling, 2026-11-16. Read per request: removing this line turns it off again on the next rollout.
+            - name: CV_IMPORT_LINKEDIN_PDF
+              value: "1"
           # AUTH_SECRET, AUTH_JANUA_CLIENT_ID, AUTH_JANUA_CLIENT_SECRET (ExternalSecret cv-web-auth, Vault secret/cv).
           envFrom:
             - secretRef:
