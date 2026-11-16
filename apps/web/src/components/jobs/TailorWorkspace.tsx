@@ -246,9 +246,24 @@ export function TailorWorkspace({ locale, jobId }: { locale: Locale; jobId: stri
             </p>
           ) : null}
           {docLocale !== profileLocale ? <p className="small muted">{BILINGUAL_COPY[locale].overridesPerLanguage(BILINGUAL_COPY[locale].inLanguage[docLocale])}</p> : null}
+          <div className="small muted" data-testid="tailor-languages-existing">
+            {existingLanguages.length === 0 ? (
+              lt.none
+            ) : (
+              <>
+                {lt.existing}
+                <ul>
+                  {existingLanguages.map((g) => (
+                    <li key={g.locale}>{lt.existingLine(lt.options[g.locale], g.kinds.map((k) => a.kinds[k]).join(', '))}</li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
         </fieldset>
         <CheckboxField id="tailor-contact" label={t.tailor.showContact} hint={t.tailor.showContactHint} checked={showContact} onChange={(e) => setShowContact(e.target.checked)} />
-        {/* Batch 4 (critique #10): the essentials above; the rest folds here and opens by itself on a problem inside. */}
+        {/* Batch 4 (critique #10): the essentials above (with the note on languages already created); the rest folds
+            here and opens by itself on a problem inside. */}
         <details className={s.more} open={moreProblem} data-testid="tailor-more">
           <summary>{t.tailor.more}</summary>
           <div className={s.moreBody}>
@@ -279,20 +294,6 @@ export function TailorWorkspace({ locale, jobId }: { locale: Locale; jobId: stri
                 <TextAreaField id="tailor-closing" label={t.tailor.closing} rows={2} value={closing} onChange={(e) => setClosing(e.target.value)} error={formProblem('closing')} />
               </>
             ) : null}
-            <div className="small muted" data-testid="tailor-languages-existing">
-              {existingLanguages.length === 0 ? (
-                lt.none
-              ) : (
-                <>
-                  {lt.existing}
-                  <ul>
-                    {existingLanguages.map((g) => (
-                      <li key={g.locale}>{lt.existingLine(lt.options[g.locale], g.kinds.map((k) => a.kinds[k]).join(', '))}</li>
-                    ))}
-                  </ul>
-                </>
-              )}
-            </div>
           </div>
         </details>
         <MissingTranslations
