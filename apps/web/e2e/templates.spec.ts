@@ -59,6 +59,8 @@ test.beforeAll(async () => {
 
 /** The print view on Carta, then A4: the size of EVERY page and the PDF text layer of each. */
 async function printBoth(page: Page, id: string) {
+  // A previous call leaves the page emulating print, which hides the view's controls: start from the screen.
+  await page.emulateMedia({ media: 'screen' });
   await page.goto(url('app', `/documentos/${id}/imprimir`));
   // The view's own estimate («Aprox. N páginas»), read before printing, per paper.
   const estimate = async () => Number(await page.getByTestId('print-pages').getAttribute('data-pages'));
