@@ -1,6 +1,6 @@
 # ai-portfolio-builder (MADFAM CV) — agent operating guide
 
-> Last Updated: 2026-11-14
+> Last Updated: 2026-11-16
 
 <!-- MADFAM-AGENTS-CANONICAL v1 -->
 
@@ -18,7 +18,9 @@ that wrote it. Pull request bodies end with the Claude Code line. Conventional c
 
 ## What this is
 
-An AI-assisted portfolio / CV builder from Innovaciones MADFAM, **incubating, pre-launch**. The
+An AI-assisted portfolio / CV builder from Innovaciones MADFAM, **incubating; invite-only private beta since
+2026-11** (what is live: [`README.md`](README.md) «What is live, honestly»; the rules: [`docs/PRODUCT.md`](docs/PRODUCT.md);
+the look: [`docs/DESIGN.md`](docs/DESIGN.md)). The
 product name is **not ruled**: the working label `MADFAM CV` renders from one constant
 (`apps/web/src/lib/brand.ts`), so a ruled brand is a one-line change. The repository name stays
 `ai-portfolio-builder`.
@@ -114,7 +116,7 @@ Kubernetes Service publishes 80; every `enclii.yaml` domain pins `port: 80`. Fla
 | `apps/web/src/auth.ts`, `src/app/api/auth/`, `src/app/auth/` | Auth.js with the Janua OIDC provider; sign-in, account switching (R44) and RP-logout |
 | `apps/web/src/lib/auth-env.ts`, `public-origin.ts`, `api-routes.ts` | the env contract and dormancy rules; the public-origin allow-list and CSRF guard; the API route table (shared by the proxy and the handler) |
 | `apps/web/src/server/` | `janua.ts` (RS256 JWKS verification), `db/` (schema, client, migrations runner, owner-scoped repository), `api/` (handler, zod bodies, the deterministic job match) |
-| `apps/web/drizzle/` | committed SQL migrations (`0001` grants the `cv_app` runtime role) |
+| `apps/web/drizzle/` | committed SQL migrations: `0001` grants the `cv_app` runtime role, `0002` typed job columns, `0003` bilingual `translations`, `0004` the `recommendation` item kind |
 | `apps/web/src/server/metrics*.ts` | observability (W4): the dependency-free registry, route-template labels, process metrics, and the internal `/metrics` listener on `CV_METRICS_PORT` (9090) plus the JSON request log, started from `src/instrumentation.ts` ([`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) "Observability") |
 | `apps/web/test-pg/`, `test-support/` | the real-Postgres suite (`pnpm test:pg`) and the local RS256/JWKS token fixture |
 | `janua.client.yaml` | names only: the `cv-api` resource server and the `cv-web` client the W2 code uses |
@@ -123,6 +125,11 @@ Kubernetes Service publishes 80; every `enclii.yaml` domain pins `port: 80`. Fla
 | `apps/web/src/server/read-limit.ts` | W6-A: the per-client token bucket on unauthenticated reads (pages host, cv-api public reads), keyed on `CF-Connecting-IP` only; settings `CV_READ_LIMIT_*` in `lib/config.ts` |
 | `apps/web/src/lib/copy/reader.ts`, `src/app/h/landing/[locale]/lector/` | W6-A: the job-link reader page (`/lector`, `/en/lector`); the reader's User-Agent links to it |
 | `apps/web/e2e/activation.spec.ts`, `test/{read-limit,activation}.test.ts` | W6-A: the reader page, the pages host under `cv-p.madfam.io`, the 429s, the 7-day session cookie |
+| `apps/web/src/components/jobs/tailoring.ts`, `SelectionEditor.tsx`, `TailorWorkspace.tsx` | the tailoring workspace: pre-selection in CV order, add-in-place, «Quitar todos», per-job overrides, the cover letter's visible greeting/closing defaults (`letterDefaults`); `test/jobs-tailoring.test.ts`, `e2e/jobs.spec.ts` |
+| `apps/web/src/components/jobs/document-edit.ts`, `src/app/h/app/[locale]/documentos/ui/DocumentContentEditor.tsx` | editing a document's content in place (same `SelectionEditor`; one PATCH that keeps what it does not show); `test/jobs-document-edit.test.ts`, `e2e/documents.spec.ts` |
+| `apps/web/src/components/paper/print-pages.ts`, `src/app/h/app/[locale]/documentos/ui/PrintView.tsx`, `src/components/render/template-classes.ts` | the print view's «Aprox. N páginas» (print rules re-scoped onto a hidden copy, paginated like print) and its «Usar Compacta» offer; `test/print-pages.test.ts`, `e2e/templates.spec.ts` (estimate = PDF pages) |
+| `apps/web/src/components/ui/useUnsavedGuard.ts` | asks before leaving a page with unsaved changes (profile header, document content) |
+| `apps/web/src/server/api/match.ts` | the AI-free job match, `keyword-overlap-v2`; `test/match.test.ts` |
 
 ## Commands
 
@@ -146,13 +153,14 @@ then open `http://cv.localhost:3000/` (browsers resolve `*.localhost` to loopbac
 
 ## CI lanes
 
-Public repository: every job runs on **GitHub-hosted** runners (R116). Top-level
+Public repository: every job runs on **GitHub-hosted** runners (R116). `ci.yml` runs on **every pull request,
+whatever its base** (a PR stacked on another PR's branch is checked too; since 2026-11-16) and on pushes to `main`. Top-level
 `permissions: contents: read`; every action pinned to a full commit SHA; no `secrets: inherit`; no
 `|| true` masks. `ci.yml`: `agent-docs` (required files and markers), `web` (frozen install, lint,
 typecheck, unit tests, build, standalone smoke), `pg` (the real-Postgres suite on a `postgres:16-alpine`
-service container, as the `cv_app` role; fails on fewer than 29 passing tests), `e2e` (Playwright on GitHub-hosted runners:
-`npx playwright install --with-deps chromium`, the built server, its own Postgres service; fails on fewer than 68
-passing specs or any failed, flaky or skipped), `guards` (file size, forbidden-domain grep),
+service container, as the `cv_app` role; fails on fewer than 39 passing tests), `e2e` (Playwright on GitHub-hosted runners:
+`npx playwright install --with-deps chromium`, the built server, its own Postgres service; fails on fewer than 104
+passing specs or any failed, flaky or skipped; raise the floor when a PR adds specs), `guards` (file size, forbidden-domain grep),
 `secrets` (gitleaks over every commit after the legacy base `7959f356`, plus the checked-out tree;
 the legacy history was scanned in full by the 2026-10-22 audit). `image.yml` builds the Dockerfile on
 pull requests that touch its inputs (no push) and smoke-tests it read-only as uid 1001 across all
@@ -175,6 +183,10 @@ MADFAM platform repo; **the owner confirms it at merge of the baseline pull requ
 - **Repository `homepage`**: set by the coordinator after go-live.
 - **Pages host label** (lane X §3): working label `cv-p.madfam.io`; inert until named. Abuse mailbox `legal@madfam.io`
   (recommended over `support@`; owner to confirm).
+- **Beta feedback channel** (2026-11-16): where «Enviar comentario» sends (email, the CRM, a form); nothing built until
+  ruled.
+- **Profile photo and pronouns**: not stored (a privacy and discrimination question in Mexican CVs).
+- **Assisted writing through Selva**: scope, where inference runs and the copy of «Sugerencias con IA (próximamente)».
 
 ## App routes and W3 directory ownership
 
@@ -201,13 +213,11 @@ directory. The API the three need already exists: profile and items (plus `POST 
 
 ## What comes next
 
-W2 (this code, dormant until configured): Janua sign-in on `cv-app.madfam.io` (Auth.js, callback
-`/api/auth/callback/janua`), the owner-scoped model of [`docs/PRODUCT.md`](docs/PRODUCT.md) (one profile, jobs,
-tailored CVs / portfolios / presentations per job) with cross-owner tests on a real Postgres, and the AI-free
-job match. It goes live after the provisioning order in `docs/DEPLOYMENT.md`. W3-1 (foundation): the route map, the
-app frame, UI primitives, the client data layer, the inert pages host with a minimal renderer, the Playwright harness.
-Then W3-2 / W3-3 / W3-4 in parallel (ownership table above), money on Dhanam, AI on Selva (W6), and the remaining
-seams.
+W2–W7 are live behind the beta invite gate (history in the sections below). Next, in order: a first-run checklist on
+«Inicio», a cover-letter body of its own, the remaining design critique (public pages typography, landing voice, the
+long profile on phones), the feedback channel once ruled, the first invitations; then Selva (AI), Dhanam (plans) and
+tlacuilo's activation. Symbiosis HCM classifies English job titles poorly («Engineering Director» → no occupation):
+the fix belongs in that repository, not here.
 
 ## Pliego paper data (W5-P, 2026-10-22)
 
@@ -357,3 +367,30 @@ journey, add it to the walk.
   (`surfaceForms`); the gaps list leaves out the company, the place and posting boilerplate. The score is unchanged.
 - **Sharing says its state beside the link** (`share-state` in `PublishPanel`): what it is, who can open it, how to
   withdraw. The address is a wrapped, read-only text area.
+
+## Beta readiness wave (2026-11-14 → 2026-11-16)
+
+Found by dogfooding the owner's own profile (a LinkedIn import of 91 items, translated to es-MX) against a real
+posting. Rules that now hold ([`docs/PRODUCT.md`](docs/PRODUCT.md) has the product side of each):
+
+- **Recommendations received** are an item kind (`recommendation`, migration `0004`): the recommender's words are
+  printed verbatim in quotation marks, never translated (`ITEM_TEXT_FIELDS` has only `role`, `relationship`) and never
+  overridden per job (`render/model.ts` ignores overrides; the tailoring editor hides them). They score 0 in the match.
+- **Match `keyword-overlap-v2`**: filler words of both languages are stopwords; an item's place, enums, codes and a
+  recommender's relationship never score. Bump the version name whenever the scoring changes (it is shown in the UI).
+- **The pre-selection follows CV reading order** (kind in `ITEM_KIND_ORDER`, then the person's own order), never the
+  score; the current job is always in. An added item lands in its CV place.
+- **A cover letter** prints at most three roles or projects (title, organisation, dates); its greeting and closing,
+  when left empty, are the texts shown as the fields' placeholders (`letterDefaults`): nothing is added unseen.
+- **Documents are editable in place**; an edit replaces only what the editor shows (blocks, a presentation's own
+  slides, `showContact` and a portfolio's `intro` are kept). Editing a published document changes its page at once.
+- **The print estimate must equal the PDF**: `e2e/templates.spec.ts` compares «Aprox. N páginas» with Chromium's PDF on
+  Carta and A4 for every CV template; a renderer or print-CSS change that breaks it is a regression.
+- **Render baseline**: markup changes rewrite `test/fixtures/bilingual/render-baseline.json` with
+  `CV_WRITE_RENDER_BASELINE=1` (say which cases changed in the commit); CSS-only changes leave it alone. The cover
+  letter's golden text is `e2e/fixtures/bilingual/cover-letter-es-formal.txt`.
+- **Stacked PRs**: after the parent is squash-merged, `git rebase --onto origin/main <parent-branch> <child>` and push
+  with `--force-with-lease` (own branches only).
+- **LinkedIn**: import only what the person downloads themselves (the data-export ZIP, «Save to PDF»); no LinkedIn API
+  integration (OIDC gives name and email only; the portability API is EEA-only; the profile API is partner-only) and no
+  bookmarklet on linkedin.com (User Agreement §8.2).

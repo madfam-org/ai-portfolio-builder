@@ -1,6 +1,6 @@
 # Deployment contract
 
-> Last Updated: 2026-10-22
+> Last Updated: 2026-11-16 (`CV_IMPORT_LINKEDIN_PDF` on in production; migration `0004`)
 >
 > Boundary: Enclii-first. This file names services, ports, hosts and secret **names**. Operator
 > gates and adapter-gap records live in MADFAM's private ops repository; the first-deploy section

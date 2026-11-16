@@ -88,7 +88,7 @@ components:
 
 # Design system: MADFAM CV
 
-> Last Updated: 2026-11-15. Written with the Impeccable skill's `document` step (scan mode) from the code on `main`
+> Last Updated: 2026-11-16 (components: compact lists, editors with a save button, print view). Written with the Impeccable skill's `document` step (scan mode) from the code on `main`
 > and the owner's answers of 2026-11-15. Tokens are normative; the stylesheet (`apps/web/src/app/globals.css`) is
 > their source of truth, and this file changes in the same pull request as any token.
 
@@ -165,6 +165,13 @@ the page — the account menu, toasts, the paper preview — and always has an o
   who is signed in and the three actions.
 - **Documents** (CV, portfolio, presentation, letter): one column, real text, no images; the person's name heads every
   kind; a document's own title is private and never rendered.
+- **Compact lists in documents** (skills, languages, links): wrapping lines with generous gaps, never one item per line
+  and never percentages or bars; still a real list for screen readers and the PDF text layer.
+- **Editors with a save button** (profile header, document content): a status line says «Sin cambios pendientes» /
+  «Tienes cambios sin guardar»; save and discard stay disabled while nothing changed; leaving with unsaved changes
+  asks first (the browser's own dialog, `useUnsavedGuard`).
+- **Print view**: the page estimate is a plain small line under the paper choice; an offer to switch template is one
+  secondary button beside its sentence, never a banner.
 
 ## Do's and Don'ts
 
