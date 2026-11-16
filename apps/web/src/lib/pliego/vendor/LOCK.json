@@ -31,7 +31,7 @@
         "project.json": "5aeff3058e4d5e12ff3e3f00613db18c41bdeef3"
       },
       "kernel": "pliego-kernel 0.3.0",
-      "sha256": "cdad6b5d5c0ec1e75f9342a4ed8e2e6c19b063c18342899b64e96442d2b92fc1"
+      "sha256": "a27b1e32ad5f1ccfc54635efa75653f58c69d05943e2b07a9ab40bd9b1a236c0"
     },
     {
       "path": "page-turn-deck.fold.json",

@@ -113,6 +113,34 @@ test('cover letter: the letter fold Pliego computes, per size and stock, never p
   expect(violations).toEqual([]);
 });
 
+test('cover letter: the sheet folds itself with Pliego\'s fold program and instructions; reduced motion, one fold per press', async ({ page }) => {
+  const violations = cspViolations(page);
+  await signIn(page.context(), OWNER_A);
+  await page.goto(url('app', `/documentos/${ids.cover_letter}/imprimir`));
+  const guide = page.getByRole('region', { name: 'Para doblarla en tres (tipo carta)' });
+  const caption = guide.getByTestId('fold-caption');
+  const figure = guide.locator('[data-fold-step]');
+  await expect(caption).toHaveText('La hoja extendida, con el texto hacia ti.');
+  await guide.getByRole('button', { name: 'Ver cómo se dobla' }).click();
+  // Pliego's own instruction for the first fold (the cartridge's step label), then its second.
+  await expect(caption).toHaveText('Dobla hacia dentro el panel angosto del extremo');
+  await expect(caption).toHaveText('Dobla encima el panel de la portada para cerrarlo', { timeout: 5_000 });
+  await expect(figure).toHaveAttribute('data-fold-step', 'done', { timeout: 5_000 });
+  await expect(caption).toHaveText('Doblada en tres, con el texto por dentro.');
+  await expect(guide.getByRole('button', { name: 'Verlo otra vez' })).toBeEnabled();
+
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.reload();
+  await guide.getByRole('button', { name: 'Ver cómo se dobla' }).click();
+  await expect(figure).toHaveAttribute('data-fold-step', '4');
+  await guide.getByRole('button', { name: 'Siguiente doblez' }).click();
+  await expect(figure).toHaveAttribute('data-fold-step', 'done');
+
+  await page.emulateMedia({ media: 'print' });
+  await expect(guide).toBeHidden();
+  expect(violations).toEqual([]);
+});
+
 test('preview: bond in light and dark; reduced motion turns the transition off; slides keep their plain frame', async ({ page }) => {
   const violations = cspViolations(page);
   await signIn(page.context(), OWNER_A);

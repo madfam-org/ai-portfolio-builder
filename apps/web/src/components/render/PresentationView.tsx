@@ -40,7 +40,7 @@ export function PresentationView({ model }: { model: DocModel }) {
   const positions = slides.map((_, i) => slidePosition(model.locale, i + 1, slides.length));
   return (
     <article className={`${s.doc} ${s.presentation}`} lang={model.locale === 'en' ? 'en' : 'es-MX'} data-kind="presentation">
-      <SlideDeck label={t.deckLabel} previous={t.previous} next={t.next} positions={positions} hint={t.keyboardHint}>
+      <SlideDeck label={t.deckLabel} previous={t.previous} next={t.next} positions={positions} hint={t.keyboardHint} touchHint={t.touchHint}>
         {slides}
       </SlideDeck>
     </article>

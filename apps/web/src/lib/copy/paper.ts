@@ -21,6 +21,12 @@ export interface PaperCopy {
   foldTuck: (mm: string, width: string, height: string) => string;
   foldScore: string;
   foldSource: (paperName: string) => string;
+  /** The folding sheet (Pliego's fold program played on a small page). */
+  foldPlay: string;
+  foldReplay: string;
+  foldNext: string;
+  foldRest: string;
+  foldDone: string;
 }
 
 export const PAPER_COPY: Record<Locale, PaperCopy> = {
@@ -40,6 +46,11 @@ export const PAPER_COPY: Record<Locale, PaperCopy> = {
     foldTop: (mm) => `Dobla hacia abajo la parte de arriba, a ${mm} mm del borde superior, sobre la anterior.`,
     foldTuck: (mm, width, height) => `La parte de abajo queda ${mm} mm más corta para que entre sin abultar; doblada mide ${width} × ${height} mm.`,
     foldScore: 'En cartulina, marca las dos líneas antes de doblar.',
+    foldPlay: 'Ver cómo se dobla',
+    foldReplay: 'Verlo otra vez',
+    foldNext: 'Siguiente doblez',
+    foldRest: 'La hoja extendida, con el texto hacia ti.',
+    foldDone: 'Doblada en tres, con el texto por dentro.',
     foldSource: (paperName) => `Medidas para ${paperName}, calculadas por Pliego (doblez tipo carta del cartucho «print-folds»).`,
   },
   en: {
@@ -58,6 +69,11 @@ export const PAPER_COPY: Record<Locale, PaperCopy> = {
     foldTop: (mm) => `Fold the top part down over it, ${mm} mm from the top edge.`,
     foldTuck: (mm, width, height) => `The bottom part ends ${mm} mm shorter so it tucks in flat; folded, it measures ${width} × ${height} mm.`,
     foldScore: 'On cardstock, score both lines before folding.',
+    foldPlay: 'Show the fold',
+    foldReplay: 'Show it again',
+    foldNext: 'Next fold',
+    foldRest: 'The sheet laid flat, text facing you.',
+    foldDone: 'Folded in three, text inside.',
     foldSource: (paperName) => `Measurements for ${paperName}, calculated by Pliego (the letter fold of its «print-folds» cartridge).`,
   },
 };

@@ -126,6 +126,101 @@
   padding-left: 1.25rem;
 }
 
+/*
+ * The folding sheet (FoldMotion): Pliego's fold program on a small page. The middle panel is the base; the cover
+ * (top) and tuck (bottom) panels hang from its edges and turn about them in 3-D. Each panel has a printed front and a
+ * blank verso (two faces, backface hidden). Sizes and turns are set through the CSSOM. Light paper in both themes.
+ */
+.motion {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem 1.75rem;
+  margin: 0.75rem 0 0;
+}
+
+.motionStage {
+  perspective: 900px;
+  perspective-origin: 50% 40%;
+  padding: 0.5rem 1rem;
+}
+
+.motionMiddle,
+.motionPanel {
+  position: relative;
+  transform-style: preserve-3d;
+}
+
+.motionPanel {
+  position: absolute;
+  left: 0;
+  width: 100%;
+}
+
+.motionTop {
+  bottom: 100%;
+  transform-origin: 50% 100%;
+}
+
+.motionBottom {
+  top: 100%;
+  transform-origin: 50% 0;
+}
+
+.motionMiddle::before,
+.motionPanel::before,
+.motionPanel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+}
+
+/* The printed side: faint lines of text on the page's paper. */
+.motionMiddle::before,
+.motionPanel::before {
+  background:
+    repeating-linear-gradient(to bottom, transparent 0 9px, #c9cdc4 9px 11px) 14% 12px / 70% calc(100% - 20px) no-repeat,
+    #fbfaf6;
+  box-shadow: inset 0 0 0 1px #d4d2c6;
+}
+
+/* The verso: blank paper, a touch darker, seen once a panel has turned over. */
+.motionPanel::after {
+  background: #f1efe7;
+  box-shadow: inset 0 0 0 1px #d4d2c6;
+  transform: rotateX(180deg);
+}
+
+.motionCaption {
+  display: grid;
+  gap: 0.6rem;
+  justify-items: start;
+  max-width: 22rem;
+}
+
+.motionButton {
+  min-height: 2.5rem;
+  padding: 0.4rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.motionButton:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.motionButton:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
 @media (max-width: 30rem) {
   .foldBody {
     grid-template-columns: 4.5rem 1fr;

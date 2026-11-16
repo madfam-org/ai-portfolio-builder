@@ -11,7 +11,7 @@ import { test } from 'node:test';
 import { bakePageTurn, DOC_URL, OUT_URL } from '../scripts/pliego-page-turn.ts';
 
 register('./render-loader.mjs', import.meta.url);
-const { sectionAt, stripPose, TURN_MS } = await import('../src/components/render/page-turn/turn.ts');
+const { sectionAt, stripPose, TURN_MS, dragFrame, commits } = await import('../src/components/render/page-turn/turn.ts');
 
 const committed = JSON.parse(readFileSync(OUT_URL, 'utf8')) as ReturnType<typeof bakePageTurn>;
 
@@ -49,4 +49,21 @@ test('the leaf starts flat, ends turned over the spine, and stays the same lengt
   }
   assert.ok(committed.maxStrain < 0.005, 'the engine kept stretch under 0.5 %');
   assert.equal(TURN_MS, 800);
+});
+
+test('a hand-turned leaf follows the drag across the drive frames only, both ways, clamped', () => {
+  const drive = committed.driveFrames;
+  assert.equal(dragFrame(0, true), 0);
+  assert.equal(dragFrame(1, true), drive);
+  assert.equal(dragFrame(0.5, true), drive / 2);
+  assert.equal(dragFrame(2, true), drive, 'past the width it stays turned');
+  assert.equal(dragFrame(-1, true), 0, 'dragging the wrong way does not lift it');
+  assert.equal(dragFrame(0, false), drive, 'backward starts turned over');
+  assert.equal(dragFrame(1, false), 0);
+});
+
+test('a released leaf completes past a third of the width or on a flick, otherwise falls back', () => {
+  assert.equal(commits(0.2, 0.1), false);
+  assert.equal(commits(0.34, 0), true);
+  assert.equal(commits(0.1, 0.6), true, 'a quick flick turns even a short drag');
 });

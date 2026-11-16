@@ -31,6 +31,8 @@ export interface RenderCopy {
   /** «Diapositiva {n} de {total}». */
   position: string;
   keyboardHint: string;
+  /** Touch screens: the leaf is turned by dragging it. */
+  touchHint: string;
 }
 
 export const RENDER_COPY: Record<Locale, RenderCopy> = {
@@ -59,6 +61,7 @@ export const RENDER_COPY: Record<Locale, RenderCopy> = {
     next: 'Siguiente',
     position: 'Diapositiva {n} de {total}',
     keyboardHint: 'Usa las flechas ← y →, la barra espaciadora, Inicio o Fin para moverte entre diapositivas.',
+    touchHint: 'Desliza la hoja hacia un lado para pasar de diapositiva.',
   },
   en: {
     intl: 'en-US',
@@ -85,6 +88,7 @@ export const RENDER_COPY: Record<Locale, RenderCopy> = {
     next: 'Next',
     position: 'Slide {n} of {total}',
     keyboardHint: 'Use the ← and → arrows, the space bar, Home or End to move between slides.',
+    touchHint: 'Slide the page sideways to move between slides.',
   },
 };
 

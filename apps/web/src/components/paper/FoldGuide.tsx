@@ -1,6 +1,7 @@
 import { mm, PAPER_COPY } from '@/lib/copy/paper';
 import type { LetterFoldView } from '@/lib/pliego/paper';
 import type { Locale } from '@/lib/routing';
+import { FoldMotion } from './FoldMotion';
 import css from './paper.module.css';
 
 /**
@@ -41,6 +42,7 @@ export function FoldGuide({ locale, fold, paperName }: { locale: Locale; fold: L
           {fold.treatment === 'score' ? <p className={css.foldNote}>{t.foldScore}</p> : null}
           <p className={css.source}>{t.foldSource(paperName)}</p>
         </div>
+        <FoldMotion key={`${fold.paper}/${fold.stock}`} locale={locale} fold={fold} />
       </div>
     </section>
   );

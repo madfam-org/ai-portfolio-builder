@@ -105,15 +105,28 @@ export interface LetterFoldView {
   treatment: 'crease' | 'score';
   /** The generated document's digest (Pliego's `pliego:meta.digest`), so anyone can re-derive these numbers. */
   digest: string;
+  /**
+   * The cartridge's own fold program, in order: which panel turns (`bottom` = the tuck, `top` = the cover), to what
+   * angle, over how long, and Pliego's instruction for the step. Both folds are valleys, so the text ends inside.
+   */
+  program: FoldStep[];
+}
+
+export interface FoldStep {
+  panel: 'top' | 'bottom';
+  toDeg: number;
+  ms: number;
+  label: { es: string; en: string };
 }
 
 interface FoldCase {
   paper: string;
   stock: string;
   sheet_mm: { fold_axis: number; across: number };
-  folds: { at_mm: number; treatment: string }[];
+  folds: { at_mm: number; treatment: string; name: string; assignment: string }[];
   panels_mm: number[];
   digest: string;
+  program: { fold: string; to_deg: number; ms: number; label: { es: string; en: string } }[];
 }
 
 export function letterFold(paper: Paper, stock: PaperStockId): LetterFoldView {
@@ -121,6 +134,14 @@ export function letterFold(paper: Paper, stock: PaperStockId): LetterFoldView {
   if (!c || c.folds.length !== 2 || c.panels_mm.length !== 3) throw new Error(`pliego: no letter fold for ${paper}/${stock}`);
   const [top, middle, bottom] = c.panels_mm as [number, number, number];
   const treatment = c.folds.every((f) => f.treatment === 'score') ? 'score' : 'crease';
+  // The crease nearer the top edge hinges the cover (top panel); the other hinges the tuck (bottom panel).
+  const [coverFold, tuckFold] = [c.folds[0]!, c.folds[1]!];
+  if (coverFold.assignment !== 'V' || tuckFold.assignment !== 'V') throw new Error(`pliego: ${paper}/${stock}: a letter fold is two valleys`);
+  const program: FoldStep[] = c.program.map((s) => {
+    const panel = s.fold === coverFold.name ? 'top' : s.fold === tuckFold.name ? 'bottom' : null;
+    if (!panel) throw new Error(`pliego: ${paper}/${stock}: the program turns an unknown crease ${s.fold}`);
+    return { panel, toDeg: s.to_deg, ms: s.ms, label: s.label };
+  });
   return {
     paper,
     stock,
@@ -130,7 +151,17 @@ export function letterFold(paper: Paper, stock: PaperStockId): LetterFoldView {
     tuckShorterByMm: Math.round((top - bottom) * 1e6) / 1e6,
     treatment,
     digest: c.digest,
+    program,
   };
+}
+
+/** Where Pliego's fold program has the two hinges (degrees) after `done` whole steps plus a fraction `t` of the next. */
+export function anglesAt(program: FoldStep[], done: number, t: number): { top: number; bottom: number } {
+  const at = { top: 0, bottom: 0 };
+  for (let i = 0; i < Math.min(done, program.length); i++) at[program[i]!.panel] = program[i]!.toDeg;
+  const next = program[done];
+  if (next && t > 0) at[next.panel] += (next.toDeg - at[next.panel]) * Math.min(1, t);
+  return at;
 }
 
 /** Every letter fold cv carries (each paper size × each stock), for the print view of a cover letter. */
