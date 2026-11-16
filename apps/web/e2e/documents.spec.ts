@@ -112,9 +112,18 @@ test('editing the content in place: remove, add, adjust the text, an emptied clo
   await editor.getByLabel('Despedida').fill('');
   await expect(editor.getByLabel('Despedida')).toHaveAttribute('placeholder', 'Atentamente,');
   await expect(editor.getByTestId('doc-content-state')).toHaveText('Tienes cambios sin guardar.');
+  // Leaving now would ask first (the browser's own dialog); once saved, it would not.
+  const asksBeforeLeaving = () =>
+    page.evaluate(() => {
+      const e = new Event('beforeunload', { cancelable: true });
+      window.dispatchEvent(e);
+      return e.defaultPrevented;
+    });
+  expect(await asksBeforeLeaving()).toBe(true);
   await editor.getByRole('button', { name: 'Guardar contenido' }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Contenido guardado.' })).toBeVisible();
   await expect(editor.getByTestId('doc-content-state')).toHaveText('Sin cambios pendientes.');
+  expect(await asksBeforeLeaving()).toBe(false);
 
   const after = (await apiAs(OWNER_A, 'GET', `/api/v1/artifacts/${id}`)).json!.artifact.content as Record<string, unknown>;
   expect(after.items).toEqual([{ itemId: exp, override: { summary: 'Solo en esta carta.' } }, { itemId: skill }]);

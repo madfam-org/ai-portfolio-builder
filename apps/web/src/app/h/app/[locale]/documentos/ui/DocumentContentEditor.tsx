@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { TextAreaField, TextField } from '@/components/ui/Field';
 import { ErrorState } from '@/components/ui/States';
 import { useToast } from '@/components/ui/Toast';
+import { useUnsavedGuard } from '@/components/ui/useUnsavedGuard';
 import { api, apiErrorMessage } from '@/lib/client/api';
 import type { ArtifactDto, ContentLocale, ItemDto } from '@/lib/client/types';
 import { APP_COPY } from '@/lib/copy/app';
@@ -67,6 +68,7 @@ export function DocumentContentEditor({ locale, artifact, job }: { locale: Local
   }, [jobId, locale, artifact.locale, a.states]);
 
   const changed = draftChanged(artifact.content, draft);
+  useUnsavedGuard(changed && !busy);
   const letter = artifact.kind === 'cover_letter';
   const defaults = letterDefaults(job?.company ?? '', artifact.locale);
 

@@ -67,12 +67,15 @@ async function printBoth(page: Page, id: string) {
   await expect(page.getByTestId('print-pages')).toBeVisible();
   const letterEstimate = await estimate();
   await page.emulateMedia({ media: 'print' });
+  // Fonts settled before each PDF: a late font swap reflows the sheet while Chromium paginates.
+  await page.evaluate(() => document.fonts.ready.then(() => undefined));
   const letter = readPdf(await page.pdf({ preferCSSPageSize: true }));
   await page.emulateMedia({ media: 'screen' });
   await page.getByLabel('A4').check();
   await expect(page.getByTestId('print-pages')).toContainText('A4');
   const a4Estimate = await estimate();
   await page.emulateMedia({ media: 'print' });
+  await page.evaluate(() => document.fonts.ready.then(() => undefined));
   const a4 = readPdf(await page.pdf({ preferCSSPageSize: true }));
   return { letter, a4, estimates: { letter: letterEstimate, a4: a4Estimate } };
 }
@@ -110,6 +113,15 @@ for (const template of CV_TEMPLATES) {
     else expect(style.size).toBe(template === 'clasico' ? '14.6667px' : '14px'); // 11pt, base 10.5pt
     if (template === 'clasico') expect(style.family).toMatch(/serif|Georgia|Palatino|Times|Iowan/);
     else expect(style.family).not.toMatch(/Palatino|Iowan/);
+    // The Compacta offer (A4 showing, back on screen): never for Compacta itself or under three pages; when shown, it
+    // promises fewer pages than now (it appears only when Compacta is actually shorter).
+    await page.emulateMedia({ media: 'screen' });
+    const offer = page.getByTestId('print-compact');
+    if (template === 'compacto' || estimates.a4 < 3) await expect(offer).toHaveCount(0);
+    else if ((await offer.count()) > 0) {
+      expect(Number(await offer.getAttribute('data-pages'))).toBeLessThan(estimates.a4);
+      await expect(offer.getByRole('button', { name: 'Usar Compacta' })).toBeEnabled();
+    }
     expect(violations).toEqual([]);
   });
 }

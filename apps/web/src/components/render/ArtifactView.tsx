@@ -9,6 +9,7 @@ import type { Paper } from '../../lib/copy/render.ts';
 import { templateIds } from '../../lib/templates.ts';
 import s from './render.module.css';
 import tpl from './templates.module.css';
+import { CV_TEMPLATE_CLASS } from './template-classes.ts';
 
 /**
  * The renderer registry: (kind, template) → component + the template's class, shared by the cv-app preview and print
@@ -33,7 +34,7 @@ interface Renderer {
 }
 
 const RENDERERS: Record<ArtifactKind, Record<string, Renderer>> = {
-  cv: { base: { View: CvView, className: '' }, compacto: { View: CvView, className: tpl.cvCompacto! }, clasico: { View: CvView, className: tpl.cvClasico! } },
+  cv: { base: { View: CvView, className: CV_TEMPLATE_CLASS.base! }, compacto: { View: CvView, className: CV_TEMPLATE_CLASS.compacto! }, clasico: { View: CvView, className: CV_TEMPLATE_CLASS.clasico! } },
   portfolio: { base: { View: PortfolioView, className: '' }, lista: { View: PortfolioView, className: tpl.portfolioLista! } },
   presentation: { base: { View: PresentationView, className: '' }, contraste: { View: PresentationView, className: tpl.presentationContraste! } },
   cover_letter: { base: { View: CoverLetterView, className: '' }, formal: { View: CoverLetterView, className: tpl.letterFormal! } },
