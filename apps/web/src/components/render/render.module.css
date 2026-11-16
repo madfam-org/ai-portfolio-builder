@@ -230,11 +230,28 @@
   font-size: 0.9rem;
 }
 
-/* The hint names keys; a touch screen without a keyboard uses the buttons, so it is not shown there. */
+/* The hint names keys; a touch screen without a keyboard turns the leaf by hand instead, and gets its own hint. */
+.deckTouchHint {
+  display: none;
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
 @media (pointer: coarse) and (hover: none) {
   .deckHint {
     display: none;
   }
+
+  .deckTouchHint {
+    display: block;
+  }
+}
+
+/* Sideways drags turn the leaf; up and down still scroll the page. */
+.deck[data-enhanced='true'] .slideFrame {
+  touch-action: pan-y;
 }
 
 /* print */

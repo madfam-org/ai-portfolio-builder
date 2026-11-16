@@ -8,7 +8,7 @@ print-folds cartridge of its commons (github.com/madfam-org/sheet-hyperobjects, 
 
 * `materials/<slug>.stock.json` — byte-for-byte copies of `materials/<slug>/stock.json`;
 * `print-folds-letter.json` — the letter fold (tri-fold, rolled in) of a Carta and an A4 sheet
-  for each stock, extracted from the documents Pliego's own kernel generates by running the
+  for each stock, with the cartridge's own fold program (its folding steps), extracted from the documents Pliego's own kernel generates by running the
   commons cartridge `print-folds` (style `letter`, presets `us-letter` and `a4`);
 * `page-turn-deck.fold.json` — the sheet document Pliego's kernel generates for the commons cartridge
   `page-turn` (one leaf hinged at its spine, bond 80) at the deck's 16:9 proportion, 300 × 168.75 mm (the
@@ -88,12 +88,28 @@ def letter_case(doc: dict, paper: str, preset: str, stock: str) -> dict:
     stocks = doc["pliego:stocks"]
     if len(folds) != 2 or set(stocks) != {stock}:
         raise SystemExit(f"pliego-sync: {preset}/{stock}: expected 2 creases on one {stock} sheet")
+    # The cartridge's exact fold program, folding steps only: a letter goes into its envelope folded, so the
+    # brochure's «open to display» steps (ids open-*) do not apply. Each step turns one named crease to an angle.
+    names = doc["pliego:edges_name"]
+    program = []
+    for step in doc["pliego:sequence"]["steps"]:
+        if not step["id"].startswith("fold-"):
+            continue
+        if len(step["targets"]) != 1:
+            raise SystemExit(f"pliego-sync: {preset}/{stock}: step {step['id']} moves more than one crease")
+        edge, angle = step["targets"][0]
+        program.append({"step": step["id"], "fold": names[edge], "to_deg": r6(angle),
+                        "ms": step["duration_ms"],
+                        "label": {"es": step["label"]["es"], "en": step["label"]["en"]}})
+    if not program or {p["fold"] for p in program} != {f["name"] for f in folds}:
+        raise SystemExit(f"pliego-sync: {preset}/{stock}: the fold program does not fold both creases")
     return {
         "paper": paper,
         "preset": preset,
         "stock": stock,
         "sheet_mm": {"fold_axis": r6(length), "across": r6(across)},
         "folds": folds,
+        "program": program,
         "panels_mm": [r6(b - a) for a, b in zip(cuts, cuts[1:])],
         "caliper_mm": r6(stocks[stock]["caliper_mm"]),
         "params": meta["params"],

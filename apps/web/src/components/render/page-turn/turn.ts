@@ -20,6 +20,7 @@ const FRAMES = bake.frames as number[][];
 const SAMPLES = bake.samples;
 const SCALE = bake.scale;
 const FPS = bake.fps;
+const DRIVE = bake.driveFrames;
 export const TURN_MS = Math.round(((FRAMES.length - 1) / FPS) * 1000);
 
 /** The leaf's cross-section at a (fractional) frame: [x, depth] per sample, as fractions of the leaf's width. */
@@ -58,11 +59,23 @@ export interface TurnRequest {
   forward: boolean;
 }
 
+/** A built turn layer: pose it at any frame (a finger scrubbing it), animate between frames, or end it. */
+export interface Turn {
+  /** Frames 0…`drive` are the leaf turning; `drive`…`last` it settles. */
+  readonly drive: number;
+  readonly last: number;
+  pose(frame: number): void;
+  /** Plays from one frame to another at the bake's own 60 Hz, then calls `done` (unless ended first). */
+  animate(from: number, to: number, done?: () => void): void;
+  end(): void;
+}
+
 /**
- * Plays one turn. Forward: the previous slide lifts from its fore-edge and turns over the spine, uncovering the new
- * one. Backward: the new slide comes back over the spine onto the previous one. Returns a function that ends it now.
+ * Builds the layer for one turn without playing it. Forward: the previous slide is the leaf, lifting from its
+ * fore-edge and turning over the spine to uncover the new one. Backward: the new slide is the leaf, coming back over
+ * the spine onto the previous one (frame `last` = turned over, frame 0 = at rest on the deck).
  */
-export function playTurn({ deck, target, from, forward }: TurnRequest): () => void {
+export function createTurn({ deck, target, from, forward }: TurnRequest): Turn {
   const box = target.getBoundingClientRect();
   const origin = deck.getBoundingClientRect();
   const width = box.width;
@@ -87,7 +100,7 @@ export function playTurn({ deck, target, from, forward }: TurnRequest): () => vo
     layer.append(under);
   }
   const leafSource = forward ? from : target.firstElementChild ?? target;
-  const strips: { el: HTMLElement; shade: HTMLElement; rest: number }[] = [];
+  const strips: { el: HTMLElement; shade: HTMLElement }[] = [];
   const step = width / (SAMPLES - 1);
   for (let k = 0; k < SAMPLES - 1; k++) {
     const strip = document.createElement('div');
@@ -109,11 +122,15 @@ export function playTurn({ deck, target, from, forward }: TurnRequest): () => vo
     back.className = css.back!;
     strip.append(front, back);
     layer.append(strip);
-    strips.push({ el: strip, shade, rest: left });
+    strips.push({ el: strip, shade });
   }
   deck.append(layer);
 
+  const last = FRAMES.length - 1;
+  let raf = 0;
+  let done = false;
   const pose = (frame: number) => {
+    if (done) return;
     const section = sectionAt(frame);
     for (let k = 0; k < strips.length; k++) {
       const { dx, depth, angle } = stripPose(section, k);
@@ -122,23 +139,53 @@ export function playTurn({ deck, target, from, forward }: TurnRequest): () => vo
       s.shade.style.opacity = (0.22 * Math.min(1, Math.abs(Math.sin(angle)))).toFixed(3);
     }
   };
-  const last = FRAMES.length - 1;
-  pose(forward ? 0 : last);
-  let raf = 0;
-  let done = false;
   const end = () => {
     if (done) return;
     done = true;
     cancelAnimationFrame(raf);
     layer.remove();
   };
-  const start = performance.now();
-  const tick = (now: number) => {
-    const f = ((now - start) / 1000) * FPS;
-    if (f >= last) return end();
-    pose(forward ? f : last - f);
+  const animate = (a: number, b: number, then?: () => void) => {
+    cancelAnimationFrame(raf);
+    const span = Math.abs(b - a);
+    const sign = b >= a ? 1 : -1;
+    const start = performance.now();
+    const tick = (now: number) => {
+      if (done) return;
+      const f = ((now - start) / 1000) * FPS;
+      if (f >= span) {
+        pose(b);
+        then?.();
+        return;
+      }
+      pose(a + sign * f);
+      raf = requestAnimationFrame(tick);
+    };
     raf = requestAnimationFrame(tick);
   };
-  raf = requestAnimationFrame(tick);
-  return end;
+  pose(forward ? 0 : last);
+  return { drive: DRIVE, last, pose, animate, end };
+}
+
+/** Plays one whole turn (keys and buttons). Returns a function that ends it now. */
+export function playTurn(req: TurnRequest): () => void {
+  const turn = createTurn(req);
+  if (req.forward) turn.animate(0, turn.last, turn.end);
+  else turn.animate(turn.last, 0, turn.end);
+  return turn.end;
+}
+
+/**
+ * Where a finger dragging the leaf puts it: `progress` 0 (not moved) … 1 (a full slide's width). Forward the leaf
+ * lifts from rest (frame 0); backward it starts turned over (frame `drive`) and comes back. Only the drive frames are
+ * scrubbed; the settle frames play on release.
+ */
+export function dragFrame(progress: number, forward: boolean): number {
+  const p = Math.max(0, Math.min(1, progress));
+  return forward ? p * DRIVE : DRIVE * (1 - p);
+}
+
+/** On release: complete the turn past a third of the width, or on a quick flick (px/ms) in the turn's direction. */
+export function commits(progress: number, velocity: number): boolean {
+  return progress > 1 / 3 || velocity > 0.45;
 }

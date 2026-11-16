@@ -4,13 +4,13 @@
 
 [Pliego](https://pliego.madfam.io) ([source](https://github.com/madfam-org/pliego)) is MADFAM's paper platform and
 **owns paper physics**. cv does not re-derive any of it: it consumes this small slice at build time, read only by
-`../paper.ts`, and uses it only on screen (the paper preview and the printing advice of `/documentos/:id/imprimir`).
+`../paper.ts`, and uses it only on screen (the paper preview, the printing advice and folding sheet of `/documentos/:id/imprimir`, and the deck's page turn, which a reader can also drag by hand).
 
 | File | What it is | Source |
 |---|---|---|
 | `materials/copy-80.stock.json` | stock card, bond 80 g/m² | byte-for-byte copy of Pliego `materials/copy-80/stock.json` |
 | `materials/cardstock-160.stock.json` | stock card, cartulina 160 g/m² | byte-for-byte copy of Pliego `materials/cardstock-160/stock.json` |
-| `print-folds-letter.json` | the letter fold (tri-fold, rolled in) of a Carta and an A4 sheet in each stock | extracted from the documents Pliego's kernel generates running the commons cartridge `print-folds` (style `letter`, presets `us-letter`, `a4`); each case keeps the document's `pliego:meta.digest` |
+| `print-folds-letter.json` | the letter fold (tri-fold, rolled in) of a Carta and an A4 sheet in each stock | extracted from the documents Pliego's kernel generates running the commons cartridge `print-folds` (style `letter`, presets `us-letter`, `a4`); each case keeps the document's `pliego:meta.digest` and the cartridge's own fold program (its folding steps: crease, angle, pace, Pliego's es/en instruction), which the print view plays on a small sheet (`components/paper/FoldMotion.tsx`) |
 | `page-turn-deck.fold.json` | one leaf of bond 80 hinged at its spine, 300 × 168.75 mm (the deck's 16:9), the source of the deck's page turn | byte-for-byte output of Pliego's kernel running the commons cartridge `page-turn`; `apps/web/scripts/pliego-page-turn.ts` turns it with `@pliego/engine` into `../generated/page-turn-deck.json` |
 | `LOCK.json` | the Pliego commit, the commons commit it pins, the git blob of each copy and of the cartridge sources, the sha256 of the generated file | written by the sync script |
 | `CERN-OHL-W-2.0.txt` | the licence text, identical to Pliego's `docs/licenses/CERN-OHL-W-2.0.txt` | |

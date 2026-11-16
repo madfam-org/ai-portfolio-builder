@@ -1,6 +1,7 @@
 'use client';
 
-import { Children, useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { Children, useCallback, useEffect, useRef, useState, useSyncExternalStore, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
+import { flushSync } from 'react-dom';
 import type * as TurnModuleNs from './page-turn/turn';
 import s from './render.module.css';
 
@@ -30,6 +31,15 @@ export function nextIndex(key: string, shift: boolean, current: number, total: n
   }
 }
 
+/** A mouse grabs the leaf only near its fore-edge or spine (the outer 15 % each side), so selecting text still works. */
+export const MOUSE_EDGE = 0.15;
+
+/** A drag becomes a turn once it has moved this far sideways and more sideways than up or down. */
+export const DRAG_SLOP = 10;
+
+/** The window (ms) over which the release speed is measured. */
+const RECENT_MS = 100;
+
 const FIELDS = ['INPUT', 'TEXTAREA', 'SELECT'];
 const ACTIVATES = ['BUTTON', 'A', 'SUMMARY'];
 
@@ -49,8 +59,12 @@ function ignored(key: string, target: EventTarget | null): boolean {
  * lazily and only for a deck of two or more slides when reduced motion is off). The slide changes and is announced at
  * once; the turn is a decorative, inert copy over it for about 0.8 s, then only real text remains. Reduced motion:
  * an instant change, and the module is never loaded.
+ *
+ * The leaf can also be turned by hand: a finger (or a mouse from the slide's outer edge) drags it, and the baked
+ * Pliego frames follow the drag; released past a third of the width or flicked, the turn completes, otherwise the
+ * leaf falls back and the slide returns. The destination is shown (and announced) when the drag starts, as with keys.
  */
-export function SlideDeck({ label, previous, next, positions, hint, children }: { label: string; previous: string; next: string; positions: string[]; hint: string; children: ReactNode }) {
+export function SlideDeck({ label, previous, next, positions, hint, touchHint, children }: { label: string; previous: string; next: string; positions: string[]; hint: string; touchHint: string; children: ReactNode }) {
   const slides = Children.toArray(children);
   const total = slides.length;
   const enhanced = useSyncExternalStore(noop, () => true, () => false);
@@ -59,6 +73,17 @@ export function SlideDeck({ label, previous, next, positions, hint, children }: 
   const turnRef = useRef<TurnModule | null>(null);
   const pending = useRef<{ from: Element; forward: boolean } | null>(null);
   const stopTurn = useRef<(() => void) | null>(null);
+  const drag = useRef<{
+    id: number;
+    x0: number;
+    y0: number;
+    /** Recent pointer samples (the last ~100 ms), for the release velocity. */
+    trail: { x: number; t: number }[];
+    width: number;
+    from: number;
+    forward: boolean | null;
+    turn: ReturnType<TurnModule['createTurn']> | null;
+  } | null>(null);
 
   useEffect(() => {
     if (!enhanced || total < 2 || reducedMotion()) return;
@@ -94,6 +119,83 @@ export function SlideDeck({ label, previous, next, positions, hint, children }: 
     stopTurn.current = turnRef.current.playTurn({ deck, target, from: turn.from, forward: turn.forward });
   }, [index]);
 
+  const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (!enhanced || total < 2 || !turnRef.current || reducedMotion() || e.button !== 0 || drag.current) return;
+    const el = e.target instanceof HTMLElement ? e.target : null;
+    if (el?.closest('a, button, input, select, textarea, summary, [contenteditable="true"]')) return;
+    const frame = deckRef.current?.querySelector<HTMLElement>(`[data-slide-index="${index}"]`);
+    if (!frame) return;
+    const box = frame.getBoundingClientRect();
+    const at = (e.clientX - box.left) / box.width;
+    if (e.pointerType === 'mouse' && at > MOUSE_EDGE && at < 1 - MOUSE_EDGE) return;
+    drag.current = { id: e.pointerId, x0: e.clientX, y0: e.clientY, trail: [{ x: e.clientX, t: e.timeStamp }], width: box.width, from: index, forward: null, turn: null };
+  };
+
+  const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const d = drag.current;
+    const m = turnRef.current;
+    if (!d || e.pointerId !== d.id || !m) return;
+    const dx = e.clientX - d.x0;
+    d.trail.push({ x: e.clientX, t: e.timeStamp });
+    while (d.trail.length > 2 && e.timeStamp - d.trail[0]!.t > RECENT_MS) d.trail.shift();
+    if (d.forward === null) {
+      const dy = e.clientY - d.y0;
+      if (Math.abs(dx) < DRAG_SLOP) return;
+      if (Math.abs(dy) > Math.abs(dx)) {
+        drag.current = null; // a scroll, not a turn
+        return;
+      }
+      const forward = dx < 0;
+      const to = d.from + (forward ? 1 : -1);
+      const deck = deckRef.current;
+      const shown = deck?.querySelector(`[data-slide-index="${d.from}"]`)?.firstElementChild;
+      if (!deck || !shown || to < 0 || to >= total) {
+        drag.current = null;
+        return;
+      }
+      e.currentTarget.setPointerCapture(e.pointerId);
+      stopTurn.current?.();
+      flushSync(() => setIndex(to));
+      const target = deck.querySelector<HTMLElement>(`[data-slide-index="${to}"]`);
+      if (!target) {
+        drag.current = null;
+        return;
+      }
+      d.forward = forward;
+      d.turn = m.createTurn({ deck, target, from: shown, forward });
+      stopTurn.current = d.turn.end;
+    }
+    if (!d.turn) return;
+    const progress = (d.forward ? -dx : dx) / d.width;
+    d.turn.pose(m.dragFrame(progress, d.forward!));
+  };
+
+  const onPointerUp = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const d = drag.current;
+    const m = turnRef.current;
+    if (!d || e.pointerId !== d.id) return;
+    drag.current = null;
+    if (!d.turn || !m || d.forward === null) return;
+    const dx = e.clientX - d.x0;
+    const progress = Math.max(0, (d.forward ? -dx : dx) / d.width);
+    // Speed over the last moments only: a leaf held still and then let go is not a flick.
+    const first = d.trail.find((p) => e.timeStamp - p.t <= RECENT_MS);
+    const moved = first ? (d.forward ? first.x - e.clientX : e.clientX - first.x) : 0;
+    const velocity = first ? Math.max(0, moved) / Math.max(16, e.timeStamp - first.t) : 0;
+    const turn = d.turn;
+    const at = m.dragFrame(progress, d.forward);
+    const keep = e.type === 'pointerup' && m.commits(progress, velocity);
+    if (keep) {
+      turn.animate(at, d.forward ? turn.last : 0, turn.end);
+      return;
+    }
+    // Falls back: the leaf returns to where it started, then the slide it came from is shown again.
+    turn.animate(at, d.forward ? 0 : turn.last, () => {
+      turn.end();
+      setIndex(d.from);
+    });
+  };
+
   useEffect(() => {
     if (!enhanced) return;
     const onKey = (e: KeyboardEvent) => {
@@ -109,7 +211,18 @@ export function SlideDeck({ label, previous, next, positions, hint, children }: 
   }, [enhanced, index, total, go]);
 
   return (
-    <div ref={deckRef} className={s.deck} role="group" aria-roledescription={label} aria-label={label} data-enhanced={enhanced ? 'true' : 'false'}>
+    <div
+      ref={deckRef}
+      className={s.deck}
+      role="group"
+      aria-roledescription={label}
+      aria-label={label}
+      data-enhanced={enhanced ? 'true' : 'false'}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerUp}
+    >
       {slides.map((slide, i) => (
         <div key={i} className={s.slideFrame} hidden={enhanced && i !== index ? true : undefined} data-slide-index={i} data-active={!enhanced || i === index ? 'true' : 'false'}>
           {slide}
@@ -127,6 +240,7 @@ export function SlideDeck({ label, previous, next, positions, hint, children }: 
             {next}
           </button>
           <p className={s.deckHint}>{hint}</p>
+          <p className={s.deckTouchHint}>{touchHint}</p>
         </div>
       ) : null}
     </div>

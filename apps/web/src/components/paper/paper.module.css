@@ -87,33 +87,9 @@
 
 .foldBody {
   display: grid;
-  grid-template-columns: 6.5rem 1fr;
+  grid-template-columns: auto 1fr;
   gap: 1rem 1.25rem;
   align-items: start;
-}
-
-.foldArt {
-  width: 100%;
-  height: auto;
-}
-
-/* The drawing is a sheet of paper in both themes, so its colours are the light ones. */
-.foldPage {
-  fill: #fbfaf6;
-  stroke: #4c5a52;
-  stroke-width: 1.2;
-}
-
-.foldText {
-  stroke: #b9bfb6;
-  stroke-width: 3;
-  stroke-linecap: round;
-}
-
-.foldLine {
-  stroke: #b4530a;
-  stroke-width: 3;
-  stroke-dasharray: 8 6;
 }
 
 .foldIntro,
@@ -126,9 +102,112 @@
   padding-left: 1.25rem;
 }
 
+/*
+ * The folding sheet (FoldMotion): Pliego's fold program on a small page. The middle panel is the base; the cover
+ * (top) and tuck (bottom) panels hang from its edges and turn about them in 3-D. Each panel has a printed front and a
+ * blank verso (two faces, backface hidden). Sizes and turns are set through the CSSOM. Light paper in both themes.
+ */
+.motion {
+  display: grid;
+  gap: 0.6rem;
+  justify-items: start;
+  margin: 0;
+}
+
+.motionStage {
+  perspective: 700px;
+  perspective-origin: 50% 40%;
+}
+
+.motionMiddle,
+.motionPanel {
+  position: relative;
+  transform-style: preserve-3d;
+}
+
+.motionPanel {
+  position: absolute;
+  left: 0;
+  width: 100%;
+}
+
+.motionTop {
+  bottom: 100%;
+  transform-origin: 50% 100%;
+}
+
+.motionBottom {
+  top: 100%;
+  transform-origin: 50% 0;
+}
+
+.motionMiddle::before,
+.motionPanel::before,
+.motionPanel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+}
+
+/* The printed side: faint lines of text on the page's paper. */
+.motionMiddle::before,
+.motionPanel::before {
+  background:
+    repeating-linear-gradient(to bottom, transparent 0 9px, #c9cdc4 9px 11px) 14% 12px / 70% calc(100% - 20px) no-repeat,
+    #fbfaf6;
+  box-shadow: inset 0 0 0 1px #d4d2c6;
+}
+
+/* The verso: blank paper, a touch darker, seen once a panel has turned over. */
+.motionPanel::after {
+  background: #f1efe7;
+  box-shadow: inset 0 0 0 1px #d4d2c6;
+  transform: rotateX(180deg);
+}
+
+/* The two creases, dashed in the focus ember, at the middle panel's edges (where the other panels hinge). */
+.motionMiddle::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-top: 2px dashed #b4530a;
+  border-bottom: 2px dashed #b4530a;
+  pointer-events: none;
+}
+
+.motionCaption {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: start;
+  max-width: 10.5rem;
+  font-size: 0.9rem;
+}
+
+.motionButton {
+  min-height: 2.5rem;
+  padding: 0.4rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.motionButton:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.motionButton:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
 @media (max-width: 30rem) {
   .foldBody {
-    grid-template-columns: 4.5rem 1fr;
+    grid-template-columns: 1fr;
   }
 }
 

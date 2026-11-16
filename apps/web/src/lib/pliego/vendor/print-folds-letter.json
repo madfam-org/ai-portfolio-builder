@@ -23,6 +23,88 @@
           "treatment": "crease"
         }
       ],
+      "program": [
+        {
+          "step": "fold-1-1",
+          "fold": "tuck-fold",
+          "to_deg": 45.0,
+          "ms": 500,
+          "label": {
+            "es": "Dobla hacia dentro el panel angosto del extremo",
+            "en": "Fold the narrow end panel in"
+          }
+        },
+        {
+          "step": "fold-1-2",
+          "fold": "tuck-fold",
+          "to_deg": 90.0,
+          "ms": 500,
+          "label": {
+            "es": "Dobla hacia dentro el panel angosto del extremo",
+            "en": "Fold the narrow end panel in"
+          }
+        },
+        {
+          "step": "fold-1-3",
+          "fold": "tuck-fold",
+          "to_deg": 135.0,
+          "ms": 500,
+          "label": {
+            "es": "Dobla hacia dentro el panel angosto del extremo",
+            "en": "Fold the narrow end panel in"
+          }
+        },
+        {
+          "step": "fold-1-4",
+          "fold": "tuck-fold",
+          "to_deg": 180.0,
+          "ms": 500,
+          "label": {
+            "es": "Dobla hacia dentro el panel angosto del extremo",
+            "en": "Fold the narrow end panel in"
+          }
+        },
+        {
+          "step": "fold-2-1",
+          "fold": "cover-fold",
+          "to_deg": 45.0,
+          "ms": 500,
+          "label": {
+            "es": "Dobla encima el panel de la portada para cerrarlo",
+            "en": "Fold the cover panel over to close it"
+          }
+        },
+        {
+          "step": "fold-2-2",
+          "fold": "cover-fold",
+          "to_deg": 90.0,
+          "ms": 500,
+          "label": {
+            "es": "Dobla encima el panel de la portada para cerrarlo",
+            "en": "Fold the cover panel over to close it"
+          }
+        },
+        {
+          "step": "fold-2-3",
+          "fold": "cover-fold",
+          "to_deg": 135.0,
+          "ms": 500,
+          "label": {
+            "es": "Dobla encima el panel de la portada para cerrarlo",
+            "en": "Fold the cover panel over to close it"
+          }
+        },
+        {
+          "step": "fold-2-4",
+          "fold": "cover-fold",
+          "to_deg": 180.0,
+          "ms": 500,
+          "label": {
+            "es": "Dobla encima el panel de la portada para cerrarlo",
+            "en": "Fold the cover panel over to close it"
+          }
+        }
+      ],
       "panels_mm": [
         93.666667,
         93.666666,
@@ -62,6 +144,88 @@
           "assignment": "V",
           "name": "tuck-fold",
           "treatment": "crease"
+        }
+      ],
+      "program": [
+        {
+          "step": "fold-1-1",
+          "fold": "tuck-fold",
+          "to_deg": 45.0,
+          "ms": 500,
+          "label": {
+            "es": "Dobla hacia dentro el panel angosto del extremo",
+            "en": "Fold the narrow end panel in"
+          }
+        },
+        {
+          "step": "fold-1-2",
+          "fold": "tuck-fold",
+          "to_deg": 90.0,
+          "ms": 500,
+          "label": {
+            "es": "Dobla hacia dentro el panel angosto del extremo",
+            "en": "Fold the narrow end panel in"
+          }
+        },
+        {
+          "step": "fold-1-3",
+          "fold": "tuck-fold",
+          "to_deg": 135.0,
+          "ms": 500,
+          "label": {
+            "es": "Dobla hacia dentro el panel angosto del extremo",
+            "en": "Fold the narrow end panel in"
+          }
+        },
+        {
+          "step": "fold-1-4",
+          "fold": "tuck-fold",
+          "to_deg": 180.0,
+          "ms": 500,
+          "label": {
+            "es": "Dobla hacia dentro el panel angosto del extremo",
+            "en": "Fold the narrow end panel in"
+          }
+        },
+        {
+          "step": "fold-2-1",
+          "fold": "cover-fold",
+          "to_deg": 45.0,
+          "ms": 500,
+          "label": {
+            "es": "Dobla encima el panel de la portada para cerrarlo",
+            "en": "Fold the cover panel over to close it"
+          }
+        },
+        {
+          "step": "fold-2-2",
+          "fold": "cover-fold",
+          "to_deg": 90.0,
+          "ms": 500,
+          "label": {
+            "es": "Dobla encima el panel de la portada para cerrarlo",
+            "en": "Fold the cover panel over to close it"
+          }
+        },
+        {
+          "step": "fold-2-3",
+          "fold": "cover-fold",
+          "to_deg": 135.0,
+          "ms": 500,
+          "label": {
+            "es": "Dobla encima el panel de la portada para cerrarlo",
+            "en": "Fold the cover panel over to close it"
+          }
+        },
+        {
+          "step": "fold-2-4",
+          "fold": "cover-fold",
+          "to_deg": 180.0,
+          "ms": 500,
+          "label": {
+            "es": "Dobla encima el panel de la portada para cerrarlo",
+            "en": "Fold the cover panel over to close it"
+          }
         }
       ],
       "panels_mm": [
@@ -105,6 +269,88 @@
           "treatment": "score"
         }
       ],
+      "program": [
+        {
+          "step": "fold-1-1",
+          "fold": "tuck-fold",
+          "to_deg": 45.0,
+          "ms": 500,
+          "label": {
+            "es": "Dobla hacia dentro el panel angosto del extremo",
+            "en": "Fold the narrow end panel in"
+          }
+        },
+        {
+          "step": "fold-1-2",
+          "fold": "tuck-fold",
+          "to_deg": 90.0,
+          "ms": 500,
+          "label": {
+            "es": "Dobla hacia dentro el panel angosto del extremo",
+            "en": "Fold the narrow end panel in"
+          }
+        },
+        {
+          "step": "fold-1-3",
+          "fold": "tuck-fold",
+          "to_deg": 135.0,
+          "ms": 500,
+          "label": {
+            "es": "Dobla hacia dentro el panel angosto del extremo",
+            "en": "Fold the narrow end panel in"
+          }
+        },
+        {
+          "step": "fold-1-4",
+          "fold": "tuck-fold",
+          "to_deg": 180.0,
+          "ms": 500,
+          "label": {
+            "es": "Dobla hacia dentro el panel angosto del extremo",
+            "en": "Fold the narrow end panel in"
+          }
+        },
+        {
+          "step": "fold-2-1",
+          "fold": "cover-fold",
+          "to_deg": 45.0,
+          "ms": 500,
+          "label": {
+            "es": "Dobla encima el panel de la portada para cerrarlo",
+            "en": "Fold the cover panel over to close it"
+          }
+        },
+        {
+          "step": "fold-2-2",
+          "fold": "cover-fold",
+          "to_deg": 90.0,
+          "ms": 500,
+          "label": {
+            "es": "Dobla encima el panel de la portada para cerrarlo",
+            "en": "Fold the cover panel over to close it"
+          }
+        },
+        {
+          "step": "fold-2-3",
+          "fold": "cover-fold",
+          "to_deg": 135.0,
+          "ms": 500,
+          "label": {
+            "es": "Dobla encima el panel de la portada para cerrarlo",
+            "en": "Fold the cover panel over to close it"
+          }
+        },
+        {
+          "step": "fold-2-4",
+          "fold": "cover-fold",
+          "to_deg": 180.0,
+          "ms": 500,
+          "label": {
+            "es": "Dobla encima el panel de la portada para cerrarlo",
+            "en": "Fold the cover panel over to close it"
+          }
+        }
+      ],
       "panels_mm": [
         93.666667,
         93.666666,
@@ -144,6 +390,88 @@
           "assignment": "V",
           "name": "tuck-fold",
           "treatment": "score"
+        }
+      ],
+      "program": [
+        {
+          "step": "fold-1-1",
+          "fold": "tuck-fold",
+          "to_deg": 45.0,
+          "ms": 500,
+          "label": {
+            "es": "Dobla hacia dentro el panel angosto del extremo",
+            "en": "Fold the narrow end panel in"
+          }
+        },
+        {
+          "step": "fold-1-2",
+          "fold": "tuck-fold",
+          "to_deg": 90.0,
+          "ms": 500,
+          "label": {
+            "es": "Dobla hacia dentro el panel angosto del extremo",
+            "en": "Fold the narrow end panel in"
+          }
+        },
+        {
+          "step": "fold-1-3",
+          "fold": "tuck-fold",
+          "to_deg": 135.0,
+          "ms": 500,
+          "label": {
+            "es": "Dobla hacia dentro el panel angosto del extremo",
+            "en": "Fold the narrow end panel in"
+          }
+        },
+        {
+          "step": "fold-1-4",
+          "fold": "tuck-fold",
+          "to_deg": 180.0,
+          "ms": 500,
+          "label": {
+            "es": "Dobla hacia dentro el panel angosto del extremo",
+            "en": "Fold the narrow end panel in"
+          }
+        },
+        {
+          "step": "fold-2-1",
+          "fold": "cover-fold",
+          "to_deg": 45.0,
+          "ms": 500,
+          "label": {
+            "es": "Dobla encima el panel de la portada para cerrarlo",
+            "en": "Fold the cover panel over to close it"
+          }
+        },
+        {
+          "step": "fold-2-2",
+          "fold": "cover-fold",
+          "to_deg": 90.0,
+          "ms": 500,
+          "label": {
+            "es": "Dobla encima el panel de la portada para cerrarlo",
+            "en": "Fold the cover panel over to close it"
+          }
+        },
+        {
+          "step": "fold-2-3",
+          "fold": "cover-fold",
+          "to_deg": 135.0,
+          "ms": 500,
+          "label": {
+            "es": "Dobla encima el panel de la portada para cerrarlo",
+            "en": "Fold the cover panel over to close it"
+          }
+        },
+        {
+          "step": "fold-2-4",
+          "fold": "cover-fold",
+          "to_deg": 180.0,
+          "ms": 500,
+          "label": {
+            "es": "Dobla encima el panel de la portada para cerrarlo",
+            "en": "Fold the cover panel over to close it"
+          }
         }
       ],
       "panels_mm": [

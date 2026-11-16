@@ -12,7 +12,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { letterFold, letterFolds, paperStock, paperStocks, PLIEGO_PINS } from '../src/lib/pliego/paper.ts';
+import { anglesAt, letterFold, letterFolds, paperStock, paperStocks, PLIEGO_PINS } from '../src/lib/pliego/paper.ts';
 
 const VENDOR = new URL('../src/lib/pliego/vendor/', import.meta.url);
 const read = (rel: string) => readFileSync(new URL(rel, VENDOR));
@@ -96,4 +96,20 @@ test('letter fold on Carta and A4: two folds measured from the top, the tucked b
     assert.ok(bottom < top, 'the tuck is the shorter panel');
   }
   assert.equal(letterFolds().length, 4);
+});
+
+test('the fold program is Pliego\'s: the tuck (bottom) panel folds in first, then the cover over it, both to 180°', () => {
+  const folds = letterFolds();
+  assert.equal(folds.length, 4, 'every paper × stock read (read-proof)');
+  for (const f of folds) {
+    const panels = f.program.map((s) => s.panel);
+    const firstTop = panels.indexOf('top');
+    assert.ok(firstTop > 0, `${f.paper}/${f.stock}: the bottom panel moves first`);
+    assert.ok(panels.slice(0, firstTop).every((p) => p === 'bottom') && panels.slice(firstTop).every((p) => p === 'top'), 'one panel at a time');
+    assert.deepEqual(anglesAt(f.program, f.program.length, 0), { top: 180, bottom: 180 }, 'flat in three at the end');
+    assert.deepEqual(anglesAt(f.program, 0, 0), { top: 0, bottom: 0 }, 'flat open at the start');
+    assert.ok(f.program.every((s) => s.ms > 0 && s.label.es && s.label.en), 'every step has a pace and both instructions');
+  }
+  const p = letterFold('letter', 'copy-80').program;
+  assert.deepEqual(anglesAt(p, 1, 0.5), { top: 0, bottom: 67.5 }, 'halfway through the second step');
 });

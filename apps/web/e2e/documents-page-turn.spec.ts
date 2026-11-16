@@ -66,6 +66,44 @@ test('arrows turn the page: announced at once, an inert hidden leaf for the tran
   expect(violations).toEqual([]);
 });
 
+/** Drags the shown slide with the mouse from `fromX` to `toX` (fractions of its width), at mid-height. */
+async function dragSlide(page: Page, fromX: number, toX: number) {
+  const box = (await page.locator('[data-slide-index][data-active="true"]').boundingBox())!;
+  const y = box.y + box.height / 2;
+  await page.mouse.move(box.x + box.width * fromX, y);
+  await page.mouse.down();
+  for (let k = 1; k <= 12; k++) await page.mouse.move(box.x + box.width * (fromX + ((toX - fromX) * k) / 12), y);
+  return async () => page.mouse.up();
+}
+
+test('turning by hand: the leaf follows the drag; past a third it turns, a short drag falls back', async ({ page }) => {
+  const violations = cspViolations(page);
+  await signIn(page.context(), OWNER_A);
+  await ready(page, url('app', `/documentos/${id}/vista-previa`));
+  // A mouse in the middle of the slide selects text; it never grabs the leaf.
+  let release = await dragSlide(page, 0.5, 0.1);
+  await release();
+  await expect(position(page)).toHaveText('Diapositiva 1 de 4');
+  expect(await layer(page).count()).toBe(0);
+  // From the fore-edge, a long drag: the destination is shown and announced, the leaf is held mid-turn, then turns.
+  release = await dragSlide(page, 0.95, 0.35);
+  await expect(position(page)).toHaveText('Diapositiva 2 de 4');
+  await expect(layer(page)).toHaveAttribute('data-page-turn', 'forward');
+  await page.waitForTimeout(200);
+  await expect(layer(page)).toHaveCount(1); // held by the hand, not playing on its own
+  await release();
+  await expect(layer(page)).toHaveCount(0);
+  await expect(position(page)).toHaveText('Diapositiva 2 de 4');
+  // A short drag back from the spine falls back: the slide it came from returns.
+  release = await dragSlide(page, 0.05, 0.15);
+  await expect(position(page)).toHaveText('Diapositiva 1 de 4');
+  await page.waitForTimeout(150);
+  await release();
+  await expect(layer(page)).toHaveCount(0);
+  await expect(position(page)).toHaveText('Diapositiva 2 de 4');
+  expect(violations).toEqual([]);
+});
+
 test('reduced motion: an instant change and no turning layer at all', async ({ page }) => {
   await signIn(page.context(), OWNER_A);
   await page.emulateMedia({ reducedMotion: 'reduce' });
