@@ -235,6 +235,22 @@ const fitOf = (lines: readonly PdfLine[]): Fit => {
 const isHead = (l: PdfLine | undefined, f: Fit) => !!l && f.varied && l.size > f.body + 0.25;
 
 /**
+ * A role title wrapped over several lines («Founder, President (…) and» / «Instructor»): the lines right above the date
+ * set at the title's own size, taken only when the line above them is a company set LARGER than the title, or a
+ * company's total time. Anything else (sizes that do not tell company from title) keeps the one-line title.
+ */
+function wrappedTitleStart(lines: readonly PdfLine[], last: number, floor: number, f: Fit): number {
+  const size = lines[last]!.size;
+  if (!isHead(lines[last], f)) return last;
+  let first = last;
+  while (first - 1 > floor && Math.abs(lines[first - 1]!.size - size) <= 0.25 && !isDuration(lines[first - 1]!.text)) first--;
+  if (first === last) return last;
+  const above = lines[first - 1];
+  const company = first - 1 > floor && above && ((isHead(above, f) && above.size > size + 0.25) || isDuration(above.text));
+  return company ? first : last;
+}
+
+/**
  * Experience entries, anchored on the date lines: the line above a date is the role; above that, a company line (set
  * larger than the description text) or a company plus its total time; otherwise the role belongs to the company of the
  * role before it (LinkedIn groups several roles under one company). Under the date: an optional place, then the
@@ -246,9 +262,9 @@ export function readExperience(lines: readonly PdfLine[]): Raw[] {
   const roles: { company: number; title: number; date: number }[] = [];
   let company = -1;
   dates.forEach((d, k) => {
-    const title = d - 1;
     const floor = k > 0 ? dates[k - 1]! : -1;
-    if (title <= floor) return;
+    if (d - 1 <= floor) return;
+    const title = wrappedTitleStart(lines, d - 1, floor, f);
     const above = title - 1;
     if (above > floor && isDuration(lines[above]!.text) && above - 1 > floor) company = above - 1;
     else if (above > floor && (k === 0 || isHead(lines[above], f))) company = above;
@@ -266,7 +282,10 @@ export function readExperience(lines: readonly PdfLine[]): Raw[] {
       rest = below.slice(1);
     }
     return {
-      role: lines[r.title]!.text,
+      role: lines
+        .slice(r.title, r.date)
+        .map((l) => l.text)
+        .join(' '),
       organization: r.company >= 0 ? lines[r.company]!.text : '',
       location,
       summary: paragraphs(rest),

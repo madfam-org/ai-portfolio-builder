@@ -7,7 +7,7 @@
  */
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { dateRange, groupLines, isDuration, mapLinkedInPdf, NotLinkedInPdfError, readContact, sectionOf, type PdfLine } from '../src/components/import/linkedin-pdf.ts';
+import { dateRange, groupLines, isDuration, mapLinkedInPdf, NotLinkedInPdfError, readContact, readExperience, sectionOf, type PdfLine } from '../src/components/import/linkedin-pdf.ts';
 import type { ImportResult } from '../src/components/import/model.ts';
 import { linkedInPdfImportEnabled } from '../src/lib/import-config.ts';
 import { ITEM_CONTENT } from '../src/server/api/validation.ts';
@@ -130,6 +130,40 @@ test('Spanish PDF with lost accents → sections still found, roles and dates re
   ]);
   assert.deepEqual(ofKind(r, 'education'), [{ institution: 'Universidad Ejemplo de Jalisco', degree: 'Licenciatura', field: 'Contadur a', startDate: '2018', endDate: '2022' }]);
   assert.equal(ofKind(r, 'language')[0]!.level, 'native');
+});
+
+test('a role title wrapped over two lines is one title under its company; equal sizes keep the one-line reading', () => {
+  let y = 700;
+  const at = (size: number, text: string): PdfLine => ({ page: 1, col: 'main', x: 220, y: (y -= 15), size, text });
+  const body = (text: string) => at(10.5, text);
+  const lines = [
+    at(12, 'Club Ejemplo'),
+    at(11.5, 'Founder, President (Summer 2011, Fall 2012) and'),
+    at(11.5, 'Instructor'),
+    body('September 2012 - April 2014 (1 year 8 months)'),
+    body('Waterloo, ON'),
+    body('Grew the club from 10 to 150 members over two terms.'),
+    at(12, 'Grupo Ejemplo'),
+    at(10.5, '2 years 1 month'),
+    at(11.5, 'Head of Data and'),
+    at(11.5, 'Analytics'),
+    body('May 2010 - June 2012 (2 years 2 months)'),
+    body('Built the reporting stack for the whole group.'),
+  ];
+  assert.deepEqual(
+    readExperience(lines).map((e) => [e.role, e.organization, e.startDate]),
+    [
+      ['Founder, President (Summer 2011, Fall 2012) and Instructor', 'Club Ejemplo', 'September 2012'],
+      ['Head of Data and Analytics', 'Grupo Ejemplo', 'May 2010'],
+    ],
+  );
+  // Company and title set at the SAME size: nothing tells them apart, so the line above the date stays the role.
+  y = 700;
+  const flat = [at(11.5, 'Club Ejemplo'), at(11.5, 'Instructor'), body('September 2012 - April 2014 (1 year 8 months)'), body('Taught salsa to new members every week.')];
+  assert.deepEqual(
+    readExperience(flat).map((e) => [e.role, e.organization]),
+    [['Instructor', 'Club Ejemplo']],
+  );
 });
 
 test('a PDF that is not a LinkedIn profile is refused; the helper PDF is a real PDF', () => {

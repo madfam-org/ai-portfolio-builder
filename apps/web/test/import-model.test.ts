@@ -57,6 +57,25 @@ test('duplicates: same kind and key fields (case, accents and spaces folded), ag
   assert.deepEqual([...dups].sort(), ['1', '3']);
 });
 
+test('duplicates: a field the import leaves empty does not count against a profile item (PDF certification, no issuer)', () => {
+  const held = [
+    { kind: 'certification' as const, content: { name: 'First Aid', issuer: 'Red Cross' } },
+    { kind: 'experience' as const, content: { role: 'Engineer', organization: 'Acme', startDate: '2020-01' } },
+  ];
+  const dups = findDuplicates(
+    [
+      item('1', 'certification', { name: 'first aid' }),
+      item('2', 'certification', { name: 'First Aid', issuer: 'Other Body' }),
+      item('3', 'certification', { name: 'CPR' }),
+      item('4', 'experience', { role: 'Engineer', organization: 'Acme' }),
+      item('5', 'experience', { role: 'Engineer', organization: 'Acme', startDate: '2021-01' }),
+      item('6', 'certification', { issuer: 'Red Cross' }),
+    ],
+    held,
+  );
+  assert.deepEqual([...dups].sort(), ['1', '4'], 'an empty name never matches; a different filled field still differs');
+});
+
 test('header choices: only fields the import has; preselected only when empty today; links only when new; the patch', () => {
   const header = { displayName: 'Ana', headline: 'Nueva', summary: 'Igual', contact: { email: 'ana@example.test', links: [{ label: 'a', url: 'https://a.test' }, { label: 'b', url: 'https://b.test' }] } };
   const profile = { displayName: '', headline: 'Vieja', summary: 'Igual', contact: { links: [{ label: 'a', url: 'https://a.test' }] } };
