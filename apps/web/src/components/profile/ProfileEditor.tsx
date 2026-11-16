@@ -292,12 +292,14 @@ export function ProfileEditor({ locale, nameHint }: { locale: Locale; nameHint: 
         appCopy={appCopy}
         onSaved={setProfile}
       />
+      {/* Batch 4: the contents list appears once there is something to jump to, and names only the kinds in use. */}
+      {filledKinds.length > 0 ? (
       <section className={s.panel} aria-labelledby="perfil-trayectoria">
         <h2 id="perfil-trayectoria">{copy.itemsTitle}</h2>
         <p>{copy.itemsIntro}</p>
         <nav aria-label={copy.contents}>
           <ul className={s.toc}>
-            {ITEM_KIND_ORDER.map((kind) => (
+            {filledKinds.map((kind) => (
               <li key={kind}>
                 <a href={`#${sectionId(kind)}`}>{appCopy.itemKinds[kind]}</a> <span className={s.count}>({itemsOfKind(items, kind).length})</span>
               </li>
@@ -305,6 +307,7 @@ export function ProfileEditor({ locale, nameHint }: { locale: Locale; nameHint: 
           </ul>
         </nav>
       </section>
+      ) : null}
       {/* Batch 4 (critique #6): what the person has comes first, in the documents' order; empty kinds follow, compact. */}
       {filledKinds.map((kind) => (
         <KindSection
