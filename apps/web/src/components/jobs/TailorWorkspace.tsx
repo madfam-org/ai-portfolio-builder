@@ -112,6 +112,8 @@ export function TailorWorkspace({ locale, jobId }: { locale: Locale; jobId: stri
     if (field === 'items') return p.code === 'tooMany' ? fmt(t.tailor.problems.itemsTooMany, { max: LIMITS.items }) : t.tailor.problems.itemsRequired;
     return fmt(t.tailor.problems.tooLong, { max: LIMITS[field] });
   };
+  /** A problem in a folded field (summary, greeting, closing) opens «Más opciones» so the error is seen. */
+  const moreProblem = (['summary', 'greeting', 'closing'] as const).some((f) => formProblem(f) !== null);
   const itemProblems: ItemProblems = {};
   for (const p of problems) {
     if (p.scope !== 'item') continue;
@@ -192,6 +194,7 @@ export function TailorWorkspace({ locale, jobId }: { locale: Locale; jobId: stri
       <PageHeader title={a.routes.jobTailor} description={[job.title, job.company].filter(Boolean).join(' · ')} />
       <p className="lead">{t.tailor.intro}</p>
 
+      <div className={s.flow}>
       <section className={s.section} aria-labelledby="tailor-items">
         <h2 id="tailor-items">{t.matchLabel}</h2>
         {items.length === 0 ? (
@@ -226,17 +229,6 @@ export function TailorWorkspace({ locale, jobId }: { locale: Locale; jobId: stri
             </p>
           ) : null}
         </fieldset>
-        {chosenKinds.map((k) => (
-          <TemplatePicker
-            key={k}
-            id={`tailor-template-${k}`}
-            kind={k}
-            locale={locale}
-            legend={TEMPLATE_PICKER_COPY[locale].legendFor(a.kinds[k])}
-            value={kindTemplates[k] ?? template}
-            onChange={(v) => setKindTemplates((all) => ({ ...all, [k]: v }))}
-          />
-        ))}
         <fieldset className={s.fieldset} aria-describedby="tailor-language-hint" data-testid="tailor-language">
           <legend>{lt.legend}</legend>
           <p className="small muted" id="tailor-language-hint">
@@ -254,38 +246,55 @@ export function TailorWorkspace({ locale, jobId }: { locale: Locale; jobId: stri
             </p>
           ) : null}
           {docLocale !== profileLocale ? <p className="small muted">{BILINGUAL_COPY[locale].overridesPerLanguage(BILINGUAL_COPY[locale].inLanguage[docLocale])}</p> : null}
-          <div className="small muted" data-testid="tailor-languages-existing">
-            {existingLanguages.length === 0 ? (
-              lt.none
-            ) : (
-              <>
-                {lt.existing}
-                <ul>
-                  {existingLanguages.map((g) => (
-                    <li key={g.locale}>{lt.existingLine(lt.options[g.locale], g.kinds.map((k) => a.kinds[k]).join(', '))}</li>
-                  ))}
-                </ul>
-              </>
-            )}
-          </div>
         </fieldset>
-        <TextAreaField
-          id="tailor-summary"
-          label={t.tailor.summary}
-          hint={t.tailor.summaryHint}
-          rows={4}
-          value={summary}
-          placeholder={profile ? localizeHeader({ headline: profile.headline, summary: profile.summary }, profile.translations, profileLocale, docLocale).header.summary : ''}
-          onChange={(e) => setSummary(e.target.value)}
-          error={formProblem('summary')}
-        />
         <CheckboxField id="tailor-contact" label={t.tailor.showContact} hint={t.tailor.showContactHint} checked={showContact} onChange={(e) => setShowContact(e.target.checked)} />
-        {kinds.includes('cover_letter') ? (
-          <>
-            <TextField id="tailor-greeting" label={t.tailor.greeting} value={greeting} onChange={(e) => setGreeting(e.target.value)} error={formProblem('greeting')} />
-            <TextAreaField id="tailor-closing" label={t.tailor.closing} rows={2} value={closing} onChange={(e) => setClosing(e.target.value)} error={formProblem('closing')} />
-          </>
-        ) : null}
+        {/* Batch 4 (critique #10): the essentials above; the rest folds here and opens by itself on a problem inside. */}
+        <details className={s.more} open={moreProblem} data-testid="tailor-more">
+          <summary>{t.tailor.more}</summary>
+          <div className={s.moreBody}>
+            {chosenKinds.map((k) => (
+              <TemplatePicker
+                key={k}
+                id={`tailor-template-${k}`}
+                kind={k}
+                locale={locale}
+                legend={TEMPLATE_PICKER_COPY[locale].legendFor(a.kinds[k])}
+                value={kindTemplates[k] ?? template}
+                onChange={(v) => setKindTemplates((all) => ({ ...all, [k]: v }))}
+              />
+            ))}
+            <TextAreaField
+              id="tailor-summary"
+              label={t.tailor.summary}
+              hint={t.tailor.summaryHint}
+              rows={4}
+              value={summary}
+              placeholder={profile ? localizeHeader({ headline: profile.headline, summary: profile.summary }, profile.translations, profileLocale, docLocale).header.summary : ''}
+              onChange={(e) => setSummary(e.target.value)}
+              error={formProblem('summary')}
+            />
+            {kinds.includes('cover_letter') ? (
+              <>
+                <TextField id="tailor-greeting" label={t.tailor.greeting} value={greeting} onChange={(e) => setGreeting(e.target.value)} error={formProblem('greeting')} />
+                <TextAreaField id="tailor-closing" label={t.tailor.closing} rows={2} value={closing} onChange={(e) => setClosing(e.target.value)} error={formProblem('closing')} />
+              </>
+            ) : null}
+            <div className="small muted" data-testid="tailor-languages-existing">
+              {existingLanguages.length === 0 ? (
+                lt.none
+              ) : (
+                <>
+                  {lt.existing}
+                  <ul>
+                    {existingLanguages.map((g) => (
+                      <li key={g.locale}>{lt.existingLine(lt.options[g.locale], g.kinds.map((k) => a.kinds[k]).join(', '))}</li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </div>
+          </div>
+        </details>
         <MissingTranslations
           locale={locale}
           missing={tailorMissing({ profile, items, selection, locale: docLocale, summary, showContact })}
@@ -294,21 +303,6 @@ export function TailorWorkspace({ locale, jobId }: { locale: Locale; jobId: stri
           id="tailor-translations"
           heading="h3"
         />
-        {chosenKinds.length > 0 ? (
-          <div>
-            <p className="small muted">{t.tailor.willCreate}</p>
-            <ul data-testid="tailor-will-create">
-              {chosenKinds.map((k) => (
-                <li key={k}>{artifactTitle(a.kinds[k], job.title, job.company, languageTag)}</li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-        <div className={s.actions}>
-          <Button onClick={() => void create()} disabled={busy || items.length === 0} aria-describedby={serverError ? 'tailor-server-error' : undefined}>
-            {busy ? t.tailor.creating : t.tailor.create}
-          </Button>
-        </div>
         {serverError ? (
           <div ref={errorRef} tabIndex={-1} id="tailor-server-error" className={s.result}>
             <ErrorState message={serverError} />
@@ -332,6 +326,24 @@ export function TailorWorkspace({ locale, jobId }: { locale: Locale; jobId: stri
           </div>
         ) : null}
       </section>
+      {chosenKinds.length > 0 ? (
+        <div className={s.willCreate}>
+          <p className="small muted">{t.tailor.willCreate}</p>
+          <ul data-testid="tailor-will-create">
+            {chosenKinds.map((k) => (
+              <li key={k}>{artifactTitle(a.kinds[k], job.title, job.company, languageTag)}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+      {/* Batch 4 (critique #10): the one primary button stays in reach, sticky at the bottom of the viewport while the
+          selection and the options scroll past (the drafts it creates are listed just above, in the flow). */}
+      <div className={s.createBar} data-testid="tailor-create-bar">
+        <Button onClick={() => void create()} disabled={busy || items.length === 0} aria-describedby={serverError ? 'tailor-server-error' : undefined}>
+          {busy ? t.tailor.creating : t.tailor.create}
+        </Button>
+      </div>
+      </div>
 
       <JobDocuments locale={locale} artifacts={artifacts} headingId="tailor-docs" />
 

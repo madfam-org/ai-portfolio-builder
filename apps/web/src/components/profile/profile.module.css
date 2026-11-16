@@ -153,6 +153,57 @@
   font-size: 0.95rem;
 }
 
+/* Batch 4 (critique #6): import first, folded once the profile has content. */
+.importToggle {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.importToggle > summary {
+  cursor: pointer;
+  padding: 0.9rem 1.25rem;
+  font-weight: 600;
+  color: var(--brand);
+}
+.importToggle[open] > summary {
+  border-bottom: 1px solid var(--line);
+}
+.importToggle > section {
+  border: 0;
+  background: none;
+}
+
+/* The kinds the person has not used yet: compact blocks, two columns where there is room. */
+.more {
+  display: grid;
+  gap: 0.75rem;
+  border-top: 1px solid var(--line);
+  padding-top: 1.5rem;
+}
+.more > h2 {
+  margin: 0;
+}
+.moreGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+  gap: 0.75rem;
+}
+.sectionCompact {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.sectionCompact h3 {
+  margin: 0 0 0.2rem;
+  font-size: 1.02rem;
+}
+.sectionCompact .sectionHint {
+  font-size: 0.9rem;
+}
+
 .list {
   list-style: none;
   padding: 0;

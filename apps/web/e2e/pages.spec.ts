@@ -52,6 +52,12 @@ test('a public artifact renders on the pages host: noindex by default, no-store,
   await expect(page.getByText(XSS).first()).toBeVisible();
   expect(await page.evaluate(() => (window as unknown as { __pwned?: number }).__pwned)).toBeUndefined();
   await expect(page.getByRole('link', { name: /Repórtalo/ })).toHaveAttribute('href', /^mailto:legal@madfam\.io\?subject=/);
+  // Batch 4 (critique #9): the reader can keep it as a PDF; the button itself never prints.
+  const savePdf = page.getByRole('button', { name: 'Guardar como PDF' });
+  await expect(savePdf).toBeVisible();
+  await page.emulateMedia({ media: 'print' });
+  await expect(savePdf).toBeHidden();
+  await page.emulateMedia({ media: 'screen' });
   expect(violations).toEqual([]);
 });
 

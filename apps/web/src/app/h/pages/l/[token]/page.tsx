@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { ArtifactView } from '@/components/render/ArtifactView';
 import { PagesFooter } from '@/components/render/PagesFooter';
+import { PagesPrint } from '@/components/render/PagesPrint';
 import { PaperPage } from '../../PaperPage';
 import styles from '../../pages.module.css';
 import { loadLink, pageLocale, pageTitle } from '../../load';
@@ -22,6 +23,7 @@ export default async function LinkPage({ params }: Props) {
   return (
     <>
       <main className={`shell ${styles.main}`} id="main">
+        <PagesPrint locale={locale} />
         <PaperPage kind={data.artifact.kind}>
           <ArtifactView data={data} />
         </PaperPage>

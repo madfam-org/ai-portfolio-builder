@@ -64,6 +64,8 @@ export function ProfileEditor({ locale, nameHint }: { locale: Locale; nameHint: 
   /** W7 (B4): `/perfil#traducir-encabezado` opens the header in the other language (the flag's links). */
   const [headerMode, setHeaderMode] = useState<TextLocale | null>(null);
   const deepLinked = useRef(false);
+  /** Batch 4: import opens by itself only for a profile that started empty (its first job then is to fill it). */
+  const [startedEmpty, setStartedEmpty] = useState(false);
 
   const fetchProfile = useCallback(async () => {
     setLoad({ state: 'loading' });
@@ -74,6 +76,7 @@ export function ProfileEditor({ locale, nameHint }: { locale: Locale; nameHint: 
     }
     setProfile(res.data.profile);
     setItems(res.data.items);
+    if (!deepLinked.current) setStartedEmpty(res.data.items.length === 0);
     setLoad({ state: 'ready' });
     // W7 (B4): the missing-translation flag links to `/perfil#traducir-<item id>` (or the header): once, after the
     // first load, that form opens in the other language (its heading takes the focus, which scrolls to it).
@@ -226,6 +229,10 @@ export function ProfileEditor({ locale, nameHint }: { locale: Locale; nameHint: 
     );
   }
 
+  const shown = (kind: ItemKind) => itemsOfKind(items, kind).length > 0 || (editing?.kind === kind && editing.id === null);
+  const filledKinds = ITEM_KIND_ORDER.filter(shown);
+  const emptyKinds = ITEM_KIND_ORDER.filter((kind) => !shown(kind));
+
   const form = (kind: ItemKind) => {
     if (!editing || editing.kind !== kind) return null;
     const isNew = editing.id === null;
@@ -261,6 +268,20 @@ export function ProfileEditor({ locale, nameHint }: { locale: Locale; nameHint: 
           </ul>
         </EmptyState>
       ) : null}
+      {/* Batch 4 (critique #6): import comes first. Open for a profile that started empty; folded afterwards. */}
+      <details className={s.importToggle} open={startedEmpty} data-testid="import-toggle">
+        <summary>{copy.importToggle}</summary>
+        <ImportPanel
+          locale={locale}
+          profile={profile}
+          existing={items}
+          onImported={(saved, added, headerChanged) => {
+            setProfile(saved);
+            setItems((all) => [...all, ...added]);
+            if (headerChanged) setHeaderVersion((v) => v + 1);
+          }}
+        />
+      </details>
       <HeaderForm
         key={`${headerVersion}-${headerMode ?? ''}`}
         profile={profile}
@@ -284,7 +305,8 @@ export function ProfileEditor({ locale, nameHint }: { locale: Locale; nameHint: 
           </ul>
         </nav>
       </section>
-      {ITEM_KIND_ORDER.map((kind) => (
+      {/* Batch 4 (critique #6): what the person has comes first, in the documents' order; empty kinds follow, compact. */}
+      {filledKinds.map((kind) => (
         <KindSection
           key={kind}
           kind={kind}
@@ -303,16 +325,33 @@ export function ProfileEditor({ locale, nameHint }: { locale: Locale; nameHint: 
           onDelete={setToDelete}
         />
       ))}
-      <ImportPanel
-        locale={locale}
-        profile={profile}
-        existing={items}
-        onImported={(saved, added, headerChanged) => {
-          setProfile(saved);
-          setItems((all) => [...all, ...added]);
-          if (headerChanged) setHeaderVersion((v) => v + 1);
-        }}
-      />
+      {emptyKinds.length > 0 ? (
+        <section className={s.more} aria-labelledby="perfil-mas">
+          <h2 id="perfil-mas">{copy.moreTitle}</h2>
+          <p className={s.hint}>{copy.moreIntro}</p>
+          <div className={s.moreGrid}>
+            {emptyKinds.map((kind) => (
+              <KindSection
+                key={kind}
+                kind={kind}
+                title={appCopy.itemKinds[kind]}
+                items={itemsOfKind(items, kind)}
+                copy={copy}
+                bilingual={BILINGUAL_COPY[locale]}
+                primary={primary}
+                editingId={editing?.kind === kind ? editing.id : null}
+                adding={editing?.kind === kind && editing.id === null}
+                reordering={reordering}
+                form={form(kind)}
+                onAdd={() => openNew(kind)}
+                onEdit={openEdit}
+                onMove={(item, delta) => void move(item, delta)}
+                onDelete={setToDelete}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
       <p className="visually-hidden" role="status" aria-live="polite" data-testid="profile-announce">
         {announcement}
       </p>
