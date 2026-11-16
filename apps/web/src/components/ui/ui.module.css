@@ -88,6 +88,29 @@
 .input[aria-invalid='true'] {
   border-color: #a1291c;
 }
+/* Batch 5: the file picker's own button (import) is styled like a secondary button instead of the browser default. */
+.input[type='file'] {
+  padding: 0.35rem;
+  cursor: pointer;
+}
+
+.input[type='file']::file-selector-button {
+  margin-right: 0.75rem;
+  padding: 0.45rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--brand);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.input[type='file']:disabled::file-selector-button {
+  opacity: 0.55;
+  cursor: default;
+}
+
 textarea.input {
   min-height: 6rem;
   resize: vertical;
