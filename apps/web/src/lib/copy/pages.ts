@@ -13,6 +13,8 @@ export interface PagesCopy {
   report: string;
   reportSubject: string;
   madeWith: string;
+  /** Batch 4: the reader's button that opens the print dialog (Save as PDF). */
+  savePdf: string;
   notFoundTitle: string;
   notFoundBody: string;
 }
@@ -22,6 +24,7 @@ export const PAGES_COPY: Record<Locale, PagesCopy> = {
     report: '¿Contenido indebido? Repórtalo',
     reportSubject: 'Reporte de contenido',
     madeWith: 'Hecho con {name}',
+    savePdf: 'Guardar como PDF',
     notFoundTitle: 'Página no encontrada',
     notFoundBody: 'Esta página no existe, ya no está publicada o el enlace cambió.',
   },
@@ -29,6 +32,7 @@ export const PAGES_COPY: Record<Locale, PagesCopy> = {
     report: 'Inappropriate content? Report it',
     reportSubject: 'Content report',
     madeWith: 'Made with {name}',
+    savePdf: 'Save as PDF',
     notFoundTitle: 'Page not found',
     notFoundBody: 'This page does not exist, is no longer published or its link changed.',
   },

@@ -254,6 +254,19 @@
   touch-action: pan-y;
 }
 
+/* Batch 4: the reader's «Guardar como PDF», above the sheet on the pages host; never printed. */
+.pagesPrint {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 0.75rem;
+}
+
+@media print {
+  .pagesPrint {
+    display: none;
+  }
+}
+
 /* print */
 @page cvLetter {
   size: letter;

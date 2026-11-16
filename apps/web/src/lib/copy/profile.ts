@@ -44,9 +44,14 @@ export interface ProfileCopy {
   itemsTitle: string;
   itemsIntro: string;
   contents: string;
+  /** Batch 4: the empty kinds, gathered after the filled ones. */
+  moreTitle: string;
+  moreIntro: string;
+  /** Batch 4: import moves to the top, folded once the profile has content. */
+  importToggle: string;
   countLabel: (n: number) => string;
-  /** Per kind: the add button, the empty line, the form heading when adding / editing, what to put in. */
-  kinds: Record<ItemKind, { add: string; empty: string; newTitle: string; editTitle: string; hint: string }>;
+  /** Per kind: the add button, the form heading when adding / editing, what to put in. */
+  kinds: Record<ItemKind, { add: string; newTitle: string; editTitle: string; hint: string }>;
   fields: Fields;
   /** Per-kind label overrides of `fields` (the same key means different things in different kinds). */
   fieldOverrides: Partial<Record<ItemKind, Fields>>;
@@ -133,19 +138,22 @@ export const PROFILE_COPY: Record<Locale, ProfileCopy> = {
     itemsTitle: 'Tu trayectoria',
     itemsIntro: 'Agrega cada elemento una vez. El orden que elijas aquí es el orden inicial en tus documentos.',
     contents: 'Secciones del perfil',
+    moreTitle: 'Más secciones',
+    moreIntro: 'Agrega solo las que te sirvan; las vacías no aparecen en tus documentos.',
+    importToggle: 'Importar de LinkedIn o de un archivo JSON Resume',
     countLabel: (n) => (n === 1 ? '1 elemento' : `${n} elementos`),
     kinds: {
-      experience: { add: 'Agregar experiencia', empty: 'Aún no agregas experiencia laboral.', newTitle: 'Nueva experiencia', editTitle: 'Editar experiencia', hint: 'Empleos, proyectos por contrato, trabajo independiente o prácticas.' },
-      education: { add: 'Agregar estudios', empty: 'Aún no agregas estudios.', newTitle: 'Nuevos estudios', editTitle: 'Editar estudios', hint: 'Carreras, posgrados, bachillerato técnico, diplomados.' },
-      project: { add: 'Agregar proyecto', empty: 'Aún no agregas proyectos.', newTitle: 'Nuevo proyecto', editTitle: 'Editar proyecto', hint: 'Lo que construiste o en lo que participaste, con enlaces si se puede ver.' },
-      skill: { add: 'Agregar habilidad', empty: 'Aún no agregas habilidades.', newTitle: 'Nueva habilidad', editTitle: 'Editar habilidad', hint: 'Una habilidad por elemento: herramientas, técnicas, conocimientos.' },
-      language: { add: 'Agregar idioma', empty: 'Aún no agregas idiomas.', newTitle: 'Nuevo idioma', editTitle: 'Editar idioma', hint: 'Incluye tu lengua materna.' },
-      certification: { add: 'Agregar certificación', empty: 'Aún no agregas certificaciones.', newTitle: 'Nueva certificación', editTitle: 'Editar certificación', hint: 'Con su vigencia, si vence: quien reclute la revisa.' },
-      achievement: { add: 'Agregar logro', empty: 'Aún no agregas logros.', newTitle: 'Nuevo logro', editTitle: 'Editar logro', hint: 'Resultados que quieras poder destacar por separado.' },
-      award: { add: 'Agregar reconocimiento', empty: 'Aún no agregas reconocimientos.', newTitle: 'Nuevo reconocimiento', editTitle: 'Editar reconocimiento', hint: 'Premios, becas, menciones.' },
-      publication: { add: 'Agregar publicación', empty: 'Aún no agregas publicaciones.', newTitle: 'Nueva publicación', editTitle: 'Editar publicación', hint: 'Artículos, capítulos, ponencias, entradas de blog.' },
-      volunteering: { add: 'Agregar voluntariado', empty: 'Aún no agregas voluntariado.', newTitle: 'Nuevo voluntariado', editTitle: 'Editar voluntariado', hint: 'Trabajo no remunerado en organizaciones o comunidades.' },
-      link: { add: 'Agregar enlace', empty: 'Aún no agregas enlaces.', newTitle: 'Nuevo enlace', editTitle: 'Editar enlace', hint: 'Muestras de trabajo que quieras elegir para cada vacante (un video, un caso, un repositorio).' },
+      experience: { add: 'Agregar experiencia', newTitle: 'Nueva experiencia', editTitle: 'Editar experiencia', hint: 'Empleos, proyectos por contrato, trabajo independiente o prácticas.' },
+      education: { add: 'Agregar estudios', newTitle: 'Nuevos estudios', editTitle: 'Editar estudios', hint: 'Carreras, posgrados, bachillerato técnico, diplomados.' },
+      project: { add: 'Agregar proyecto', newTitle: 'Nuevo proyecto', editTitle: 'Editar proyecto', hint: 'Lo que construiste o en lo que participaste, con enlaces si se puede ver.' },
+      skill: { add: 'Agregar habilidad', newTitle: 'Nueva habilidad', editTitle: 'Editar habilidad', hint: 'Una habilidad por elemento: herramientas, técnicas, conocimientos.' },
+      language: { add: 'Agregar idioma', newTitle: 'Nuevo idioma', editTitle: 'Editar idioma', hint: 'Incluye tu lengua materna.' },
+      certification: { add: 'Agregar certificación', newTitle: 'Nueva certificación', editTitle: 'Editar certificación', hint: 'Con su vigencia, si vence: quien reclute la revisa.' },
+      achievement: { add: 'Agregar logro', newTitle: 'Nuevo logro', editTitle: 'Editar logro', hint: 'Resultados que quieras poder destacar por separado.' },
+      award: { add: 'Agregar reconocimiento', newTitle: 'Nuevo reconocimiento', editTitle: 'Editar reconocimiento', hint: 'Premios, becas, menciones.' },
+      publication: { add: 'Agregar publicación', newTitle: 'Nueva publicación', editTitle: 'Editar publicación', hint: 'Artículos, capítulos, ponencias, entradas de blog.' },
+      volunteering: { add: 'Agregar voluntariado', newTitle: 'Nuevo voluntariado', editTitle: 'Editar voluntariado', hint: 'Trabajo no remunerado en organizaciones o comunidades.' },
+      link: { add: 'Agregar enlace', newTitle: 'Nuevo enlace', editTitle: 'Editar enlace', hint: 'Muestras de trabajo que quieras elegir para cada vacante (un video, un caso, un repositorio).' },
     },
     fields: {
       role: 'Puesto',
@@ -285,19 +293,22 @@ export const PROFILE_COPY: Record<Locale, ProfileCopy> = {
     itemsTitle: 'Your career',
     itemsIntro: 'Add each item once. The order you choose here is the starting order in your documents.',
     contents: 'Profile sections',
+    moreTitle: 'More sections',
+    moreIntro: 'Add only the ones that help you; empty ones never appear in your documents.',
+    importToggle: 'Import from LinkedIn or a JSON Resume file',
     countLabel: (n) => (n === 1 ? '1 item' : `${n} items`),
     kinds: {
-      experience: { add: 'Add experience', empty: 'No work experience added yet.', newTitle: 'New experience', editTitle: 'Edit experience', hint: 'Jobs, contract work, freelance work or internships.' },
-      education: { add: 'Add education', empty: 'No education added yet.', newTitle: 'New education', editTitle: 'Edit education', hint: 'Degrees, postgraduate studies, technical school, diplomas.' },
-      project: { add: 'Add project', empty: 'No projects added yet.', newTitle: 'New project', editTitle: 'Edit project', hint: 'What you built or took part in, with links if it can be seen.' },
-      skill: { add: 'Add skill', empty: 'No skills added yet.', newTitle: 'New skill', editTitle: 'Edit skill', hint: 'One skill per item: tools, techniques, knowledge.' },
-      language: { add: 'Add language', empty: 'No languages added yet.', newTitle: 'New language', editTitle: 'Edit language', hint: 'Include your native language.' },
-      certification: { add: 'Add certification', empty: 'No certifications added yet.', newTitle: 'New certification', editTitle: 'Edit certification', hint: 'With its expiry date, if it expires: recruiters check it.' },
-      achievement: { add: 'Add achievement', empty: 'No achievements added yet.', newTitle: 'New achievement', editTitle: 'Edit achievement', hint: 'Results you want to be able to highlight on their own.' },
-      award: { add: 'Add award', empty: 'No awards added yet.', newTitle: 'New award', editTitle: 'Edit award', hint: 'Prizes, scholarships, honours.' },
-      publication: { add: 'Add publication', empty: 'No publications added yet.', newTitle: 'New publication', editTitle: 'Edit publication', hint: 'Articles, chapters, talks, blog posts.' },
-      volunteering: { add: 'Add volunteering', empty: 'No volunteering added yet.', newTitle: 'New volunteering', editTitle: 'Edit volunteering', hint: 'Unpaid work for organisations or communities.' },
-      link: { add: 'Add link', empty: 'No links added yet.', newTitle: 'New link', editTitle: 'Edit link', hint: 'Work samples you want to pick for each job (a video, a case study, a repository).' },
+      experience: { add: 'Add experience', newTitle: 'New experience', editTitle: 'Edit experience', hint: 'Jobs, contract work, freelance work or internships.' },
+      education: { add: 'Add education', newTitle: 'New education', editTitle: 'Edit education', hint: 'Degrees, postgraduate studies, technical school, diplomas.' },
+      project: { add: 'Add project', newTitle: 'New project', editTitle: 'Edit project', hint: 'What you built or took part in, with links if it can be seen.' },
+      skill: { add: 'Add skill', newTitle: 'New skill', editTitle: 'Edit skill', hint: 'One skill per item: tools, techniques, knowledge.' },
+      language: { add: 'Add language', newTitle: 'New language', editTitle: 'Edit language', hint: 'Include your native language.' },
+      certification: { add: 'Add certification', newTitle: 'New certification', editTitle: 'Edit certification', hint: 'With its expiry date, if it expires: recruiters check it.' },
+      achievement: { add: 'Add achievement', newTitle: 'New achievement', editTitle: 'Edit achievement', hint: 'Results you want to be able to highlight on their own.' },
+      award: { add: 'Add award', newTitle: 'New award', editTitle: 'Edit award', hint: 'Prizes, scholarships, honours.' },
+      publication: { add: 'Add publication', newTitle: 'New publication', editTitle: 'Edit publication', hint: 'Articles, chapters, talks, blog posts.' },
+      volunteering: { add: 'Add volunteering', newTitle: 'New volunteering', editTitle: 'Edit volunteering', hint: 'Unpaid work for organisations or communities.' },
+      link: { add: 'Add link', newTitle: 'New link', editTitle: 'Edit link', hint: 'Work samples you want to pick for each job (a video, a case study, a repository).' },
     },
     fields: {
       role: 'Job title',

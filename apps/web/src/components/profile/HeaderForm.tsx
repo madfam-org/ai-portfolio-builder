@@ -104,7 +104,9 @@ export function HeaderForm({
   const h = copy.header;
   const toast = useToast();
   const [values, setValues] = useState<HeaderValues>(() => toValues(profile, nameHint, uiLocale));
-  const [saved, setSaved] = useState<string>(() => JSON.stringify(toValues(profile, null, uiLocale)));
+  // The baseline includes the name prefilled from the account: an untouched profile has nothing unsaved (the server
+  // fills the same name on the first save anyway), so it never reads «Tienes cambios sin guardar» (critique #6).
+  const [saved, setSaved] = useState<string>(() => JSON.stringify(toValues(profile, nameHint, uiLocale)));
   const [errors, setErrors] = useState<FieldErrors>({});
   const [state, setState] = useState<SaveState>('clean');
   const [focusTick, setFocusTick] = useState(0);

@@ -115,6 +115,8 @@ export interface JobsCopy {
     summaryHint: string;
     showContact: string;
     showContactHint: string;
+    /** Batch 4 (critique #10): the less common choices, folded under the essentials. */
+    more: string;
     greeting: string;
     closing: string;
     willCreate: string;
@@ -245,6 +247,7 @@ export const JOBS_COPY: Record<Locale, JobsCopy> = {
       summaryHint: 'Encabeza los documentos. Si lo dejas vacío, se usa el resumen de tu perfil.',
       showContact: 'Incluir mis datos de contacto',
       showContactHint: 'Correo, teléfono y enlaces de tu perfil.',
+      more: 'Más opciones: plantilla, resumen y carta',
       greeting: 'Saludo de la carta (opcional)',
       closing: 'Despedida de la carta (opcional)',
       willCreate: 'Se crearán estos borradores:',
@@ -389,6 +392,7 @@ export const JOBS_COPY: Record<Locale, JobsCopy> = {
       summaryHint: 'It heads the documents. Leave it empty to use the summary of your profile.',
       showContact: 'Include my contact details',
       showContactHint: 'Email, phone and links from your profile.',
+      more: 'More options: template, summary and letter',
       greeting: 'Greeting of the letter (optional)',
       closing: 'Closing of the letter (optional)',
       willCreate: 'These drafts will be created:',

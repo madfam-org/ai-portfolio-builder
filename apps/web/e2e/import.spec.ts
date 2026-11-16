@@ -13,6 +13,13 @@ import { suiteOwners, url } from './support/env.ts';
 
 const { OWNER_A, OWNER_B } = suiteOwners('import');
 const FIX = join(import.meta.dirname, '..', 'test', 'fixtures', 'import');
+/** Batch 4: import is open for a profile that starts empty and folded once it has content; open it either way. */
+async function openImport(page: Page) {
+  const toggle = page.getByTestId('import-toggle');
+  if ((await toggle.getAttribute('open')) === null) await toggle.locator('summary').click();
+  await expect(toggle).toHaveAttribute('open', '');
+}
+
 const zipBuffer = () => Buffer.from(buildZip(dirFiles(join(FIX, 'linkedin'), 'Basic_LinkedInDataExport/')));
 
 /** Every request that SENDS something to the data API (the editor's own GET /profile load is not one). */
@@ -30,6 +37,7 @@ test('LinkedIn ZIP: read in the browser, previewed, duplicates unchecked, only t
   await signIn(context, OWNER_A);
   await page.goto(url('app', '/perfil'));
   const panel = page.getByTestId('import-panel');
+  await openImport(page);
   await expect(panel.getByRole('heading', { name: 'Importar tus datos' })).toBeVisible();
   await expect(panel.getByText('El archivo se lee aquí, en tu navegador. No se sube a ningún servidor.')).toBeVisible();
   await expect(panel.getByText(/abrimos solo estos archivos: Profile, Positions, Education, Skills/)).toBeVisible();
@@ -99,6 +107,7 @@ test('JSON Resume: «Descartar» sends nothing; English page imports what stays 
   const requests = apiRequests(page);
   const resume = readFileSync(join(FIX, 'resume.json'));
   const panel = page.getByTestId('import-panel');
+  await openImport(page);
 
   await panel.getByLabel('Archivo JSON Resume').setInputFiles({ name: 'cv.json', mimeType: 'application/json', buffer: resume });
   await expect(page.getByTestId('import-preview').getByRole('checkbox', { name: /Desarrollador · Taller Ejemplo/ })).toBeChecked();

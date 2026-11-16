@@ -255,3 +255,52 @@
     color: #ff9b8f;
   }
 }
+
+/* Batch 4 (critique #10): tailoring keeps the essentials in view; the rest folds, and the primary button follows. */
+.flow {
+  display: grid;
+}
+
+.more {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.more > summary {
+  cursor: pointer;
+  padding: 0.75rem;
+  font-weight: 600;
+  color: var(--brand);
+}
+.moreBody {
+  display: grid;
+  gap: 0.9rem;
+  padding: 0 0.75rem 0.75rem;
+}
+
+.willCreate ul {
+  margin: 0.25rem 0 0;
+  padding-left: 1.25rem;
+}
+
+.createBar {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.75rem 0;
+  margin-top: 0.5rem;
+  background: linear-gradient(to bottom, transparent, var(--bg) 35%);
+}
+
+@media (max-width: 760px) {
+  .createBar > * {
+    width: 100%;
+  }
+}
+
+@media print {
+  .createBar {
+    position: static;
+  }
+}

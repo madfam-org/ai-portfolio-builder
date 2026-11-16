@@ -287,7 +287,7 @@ test('copy: every field and option of every kind is labelled in es and en; both 
   for (const locale of ['es', 'en'] as const) {
     const c = PROFILE_COPY[locale];
     for (const kind of KINDS) {
-      assert.ok(c.kinds[kind].add && c.kinds[kind].empty && c.kinds[kind].hint, `${locale} ${kind}`);
+      assert.ok(c.kinds[kind].add && c.kinds[kind].newTitle && c.kinds[kind].hint, `${locale} ${kind}`);
       for (const spec of ITEM_FIELDS[kind]) {
         assert.notEqual(fieldLabel(c, kind, spec.name), spec.name, `${locale} ${kind}.${spec.name} has no label`);
         labelled += 1;

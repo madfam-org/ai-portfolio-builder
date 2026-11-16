@@ -57,6 +57,21 @@ export function KindSection({
   const a = copy.actions;
   const other = otherLocale(primary);
   const b = bilingual;
+  // Batch 4 (critique #6): an empty kind is one compact block (title, its hint, «Agregar …»), not a full section.
+  if (items.length === 0 && !adding) {
+    return (
+      <section className={`${s.section} ${s.sectionCompact}`} id={sectionId(kind)} aria-labelledby={`${sectionId(kind)}-title`} data-testid={`section-${kind}`}>
+        <div>
+          <h3 id={`${sectionId(kind)}-title`}>{title}</h3>
+          <p className={s.sectionHint}>{k.hint}</p>
+        </div>
+        <Button id={addId(kind)} variant="secondary" size="small" onClick={onAdd}>
+          <Icon name="plus" />
+          {k.add}
+        </Button>
+      </section>
+    );
+  }
   return (
     <section className={s.section} id={sectionId(kind)} aria-labelledby={`${sectionId(kind)}-title`} data-testid={`section-${kind}`}>
       <div className={s.sectionHead}>
@@ -64,7 +79,6 @@ export function KindSection({
         <span className={s.count}>{copy.countLabel(items.length)}</span>
       </div>
       <p className={s.sectionHint}>{k.hint}</p>
-      {items.length === 0 && !adding ? <p className={s.hint}>{k.empty}</p> : null}
       {items.length > 0 ? (
         <ol className={s.list}>
           {items.map((item, index) => {
