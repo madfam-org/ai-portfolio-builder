@@ -128,6 +128,17 @@ secondary ones), how to limit use or disclosure, that nothing is transferred, ho
   LinkedIn does not publish its CSV headers, so each field is found by header aliases (English and Spanish). A grouped
   preview (duplicates of existing items unchecked, «ya existe») is sent only on confirmation, as one batch call. No AI,
   no scraping, no connection to LinkedIn.
+- **LinkedIn profile PDF** (dormant: `CV_IMPORT_LINKEDIN_PDF`): the PDF LinkedIn makes of the person's OWN profile
+  («Save to PDF», <https://www.linkedin.com/help/linkedin/answer/a541960>; instant, no email to wait for), read in the
+  browser with the job intake's pdf.js setup (`src/components/import/linkedin-pdf.ts`) into the SAME preview: header,
+  summary, experience (several roles under one company), education, languages, certifications, honors, publications,
+  and only the TOP skills (the PDF lists no others; the copy points to the ZIP). The file's two columns and heading sizes
+  are read from its own geometry; labels in English and Spanish, also with accents lost (LinkedIn says the PDF supports
+  only English characters, so the preview asks the person to check accents). Why a file and not a direct connection:
+  outside the EEA and Switzerland LinkedIn offers no self-serve API for a member's positions, education or skills
+  (Sign In with LinkedIn gives name, email, photo and locale only; the Member Data Portability API is EEA/CH only; the
+  Profile API is partner-only), and its User Agreement §8.2 forbids scripts and browser add-ons that copy profiles, so
+  cv offers no bookmarklet or extension on linkedin.com.
 - **Export and deletion** on `/ajustes`: «Descargar mis datos» (full JSON), «Exportar como JSON Resume», «Eliminar mis
   datos» behind a typed «ELIMINAR»; the Janua account is managed in Janua (linked, never deleted from here).
 

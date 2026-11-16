@@ -15,6 +15,8 @@ import { BILINGUAL_COPY } from '@/lib/copy/bilingual';
 import type { Locale } from '@/lib/routing';
 import { parseJsonResume, NotJsonResumeError, JSON_RESUME_MAX_BYTES } from './json-resume';
 import { LINKEDIN_FILE_NAMES, NotLinkedInError, readLinkedInZip } from './linkedin';
+import { NotLinkedInPdfError, readLinkedInPdf } from './linkedin-pdf';
+import { PDF_LIMITS, ScannedPdfError } from '@/components/jobs/intake/pdf';
 import { IMPORT_MAX_BODY_BYTES, IMPORT_MAX_ITEMS, findDuplicates, type ImportResult } from './model';
 import { headerChoices, headerPatch, type HeaderKey } from './header';
 import { ZipError } from './zip';
@@ -34,14 +36,18 @@ type State =
  * in the browser (linkedin.ts / json-resume.ts: only the mapped files of the ZIP are ever opened), shown as a grouped
  * preview with a checkbox per item (all checked, except those already in the profile: «ya existe»), and sent only on
  * «Importar N elementos», as ONE all-or-none call (`POST /api/v1/profile/items/batch`). «Descartar» sends nothing.
+ * With `linkedInPdf` (the dormant `CV_IMPORT_LINKEDIN_PDF` switch) a third source reads the PDF LinkedIn makes of the
+ * person's own profile («Save to PDF»; linkedin-pdf.ts) into the same preview.
  */
 export function ImportPanel({
   locale,
+  linkedInPdf = false,
   profile,
   existing,
   onImported,
 }: {
   locale: Locale;
+  linkedInPdf?: boolean;
   profile: ProfileDto | null;
   existing: readonly Pick<ItemDto, 'kind' | 'content'>[];
   onImported: (profile: ProfileDto, items: ItemDto[], headerChanged: boolean) => void;
@@ -97,6 +103,28 @@ export function ImportPanel({
         const map = { too_large: copy.errors.tooLarge, not_zip: copy.errors.notZip, too_many_entries: copy.errors.tooManyEntries, unsupported: copy.errors.unsupported, entry_too_large: copy.errors.entryTooLarge, corrupt: copy.errors.corrupt };
         setError(map[err.code]);
       } else setError(copy.errors.corrupt);
+    }
+  }
+
+  async function onPdf(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError(null);
+    setDone(null);
+    if (file.size > PDF_LIMITS.maxBytes) {
+      reset();
+      setError(copy.errors.pdfTooLarge);
+      return;
+    }
+    setState({ step: 'reading' });
+    try {
+      show(await readLinkedInPdf(file));
+    } catch (err) {
+      setState({ step: 'idle' });
+      reset();
+      if (err instanceof NotLinkedInPdfError) setError(copy.errors.notLinkedInPdf);
+      else if (err instanceof ScannedPdfError) setError(copy.errors.pdfNoText);
+      else setError(copy.errors.pdfCorrupt);
     }
   }
 
@@ -214,6 +242,14 @@ export function ImportPanel({
             <p className={s.hint}>{copy.linkedin.how}</p>
             <TextField id="importar-zip" label={copy.linkedin.label} hint={copy.linkedin.hint} type="file" accept=".zip,application/zip" key={`zip-${inputs}`} disabled={busy} onChange={(e) => void onZip(e)} />
           </div>
+          {linkedInPdf ? (
+            <div className={s.source} data-testid="import-source-linkedin-pdf">
+              <h3>{copy.linkedinPdf.title}</h3>
+              <p className={s.hint}>{copy.linkedinPdf.how}</p>
+              <p className={s.hint}>{copy.linkedinPdf.limits}</p>
+              <TextField id="importar-pdf" label={copy.linkedinPdf.label} hint={copy.linkedinPdf.hint} type="file" accept=".pdf,application/pdf" key={`pdf-${inputs}`} disabled={busy} onChange={(e) => void onPdf(e)} />
+            </div>
+          ) : null}
           <div className={s.source}>
             <h3>{copy.jsonResume.title}</h3>
             <p className={s.hint}>{copy.jsonResume.how}</p>
@@ -234,9 +270,10 @@ export function ImportPanel({
             {copy.preview.title}
           </h3>
           <p className={s.hint}>
-            {state.result.source === 'linkedin' ? copy.preview.fromLinkedIn : copy.preview.fromJsonResume} {copy.preview.read(state.result.read.join(', '))}{' '}
-            {state.result.ignored > 0 ? copy.preview.ignored(state.result.ignored) : null}
+            {state.result.source === 'linkedin' ? copy.preview.fromLinkedIn : state.result.source === 'linkedin-pdf' ? copy.preview.fromLinkedInPdf : copy.preview.fromJsonResume}{' '}
+            {copy.preview.read(state.result.read.join(', '))} {state.result.ignored > 0 ? copy.preview.ignored(state.result.ignored) : null}
           </p>
+          {state.result.source === 'linkedin-pdf' ? <Notice tone="info">{copy.preview.pdfCheck}</Notice> : null}
           {state.result.skipped.length > 0 ? <p className={s.hint}>{copy.preview.skipped(state.result.skipped.length)}</p> : null}
           <HeaderChoices
             choices={headerChoices(state.result.header, profile)}
@@ -285,7 +322,7 @@ export function ImportPanel({
                           {level ? ` · ${level}` : ''}
                         </label>
                         <p id={`${id}-meta`} className={s.meta}>
-                          {copy.preview.origin(item.origin.file, item.origin.row)}
+                          {state.result.source === 'linkedin-pdf' ? copy.preview.originEntry(item.origin.file, item.origin.row) : copy.preview.origin(item.origin.file, item.origin.row)}
                           {dup ? <span className={s.dup}> · {copy.preview.exists}</span> : null}
                           {item.notes.map((n) => ` · ${copy.preview.notes[n]}`).join('')}
                           {item.tags.length ? ` · ${copy.preview.tags}: ${item.tags.join(', ')}` : ''}
