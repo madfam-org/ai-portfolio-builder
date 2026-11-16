@@ -97,14 +97,12 @@ function Result({ locale, data, location }: { locale: Locale; data: BenchmarkDto
 
   return (
     <div className="stack">
+      {/* Batch 5 (critique #8): the occupation in plain words and what the range covers; the classification's code,
+          method and confidence are under «Cómo se calcula». The figures keep their n, quarter and source beside them. */}
       <p>
-        <strong>{fmt(t.occupation, { code: occ.sinco, title: occ.title })}</strong>
-        {method ? <span className="muted"> — {method}</span> : null}
+        <strong data-testid="benchmark-occupation">{fmt(t.occupation, { title: occ.title })}</strong>
       </p>
-      <p className="small muted">
-        {fmt(t.confidence, { value: match.confidence.toFixed(2) })}
-        {match.ignored_terms.length > 0 ? ` ${fmt(t.ignored, { terms: match.ignored_terms.join(', ') })}` : null} {t.noSeniority}
-      </p>
+      <p className="small muted">{t.noSeniority}</p>
       <p className="small" data-testid="benchmark-geography">
         {data.query.stateSource === 'job_field' ? fmt(t.stateFromField, { state: requested }) : null}
         {data.query.stateSource === 'location_text' ? fmt(t.stateFromLocation, { state: requested, location }) : null}
@@ -143,6 +141,11 @@ function Result({ locale, data, location }: { locale: Locale; data: BenchmarkDto
       <details>
         <summary>{t.methodology}</summary>
         <ul className={s.list}>
+          <li className="small" data-testid="benchmark-classification">
+            {fmt(t.occupationCode, { code: occ.sinco })}
+            {method ? ` — ${method}` : null}. {fmt(t.confidence, { value: match.confidence.toFixed(2) })}
+            {match.ignored_terms.length > 0 ? ` ${fmt(t.ignored, { terms: match.ignored_terms.join(', ') })}` : null}
+          </li>
           <li className="small">{fmt(t.thresholds, { min: data.methodology.minimum_n, tails: data.methodology.tails_minimum_n })}</li>
           {data.methodology.notes.map((note) => (
             <li key={note} className="small" lang="es-MX">
