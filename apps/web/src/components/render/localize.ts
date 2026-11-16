@@ -15,7 +15,7 @@ import { contentLocale, localizeHeader, localizeItem, type ContentLocale } from 
 import { itemHeading } from '../profile/fields.ts';
 import type { RenderData } from './model.ts';
 
-const ITEM_KINDS: readonly string[] = ['experience', 'education', 'skill', 'project', 'certification', 'achievement', 'language', 'publication', 'volunteering', 'award', 'link'];
+const ITEM_KINDS: readonly string[] = ['experience', 'education', 'skill', 'project', 'certification', 'achievement', 'language', 'publication', 'volunteering', 'award', 'link', 'recommendation'];
 
 /** One field of the document that falls back to the primary language. `itemId` null: the header. */
 export interface MissingText {

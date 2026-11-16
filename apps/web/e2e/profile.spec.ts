@@ -53,7 +53,7 @@ test('a fresh person: honest empty state, why a rich profile matters, name from 
   await expect(page.getByText('Lo tomamos de tu cuenta de Janua; puedes cambiarlo.')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Importar tus datos' })).toBeVisible();
   await expect(page.getByText('No nos conectamos a tu cuenta de LinkedIn ni extraemos datos de otros sitios.')).toBeVisible();
-  for (const kind of ['Experiencia', 'Educación', 'Proyectos', 'Habilidades', 'Idiomas', 'Certificaciones', 'Logros', 'Reconocimientos', 'Publicaciones', 'Voluntariado', 'Enlaces']) {
+  for (const kind of ['Experiencia', 'Educación', 'Proyectos', 'Habilidades', 'Idiomas', 'Certificaciones', 'Logros', 'Reconocimientos', 'Publicaciones', 'Voluntariado', 'Recomendaciones', 'Enlaces']) {
     await expect(page.getByRole('heading', { level: 3, name: kind })).toBeVisible();
   }
   // Header: an invalid email is refused in place (nothing sent); a valid save persists and the name is stored.
@@ -82,7 +82,7 @@ test('a fresh person: honest empty state, why a rich profile matters, name from 
   expect(violations).toEqual([]);
 });
 
-test('A creates one item of each of the 11 kinds through its own form; after a reload all are there, in order', async ({ page, context }) => {
+test('A creates one item of each of the 12 kinds through its own form; after a reload all are there, in order', async ({ page, context }) => {
   test.setTimeout(120_000);
   const violations = cspViolations(page);
   await signIn(context, OWNER_A);
@@ -97,6 +97,7 @@ test('A creates one item of each of the 11 kinds through its own form; after a r
   await addItem(page, 'award', 'Agregar reconocimiento', { Reconocimiento: 'Beca de excelencia' }, { title: 'Beca de excelencia' });
   await addItem(page, 'publication', 'Agregar publicación', { Título: 'Series de tiempo en retail' }, { title: 'Series de tiempo en retail' });
   await addItem(page, 'volunteering', 'Agregar voluntariado', { 'Actividad o rol': 'Mentora', Organización: 'Club de programación' }, { title: 'Mentora' });
+  await addItem(page, 'recommendation', 'Agregar recomendación', { 'Quién te recomienda': 'Carmen Ejemplo', 'Su empresa u organización': 'Cooperativa Ejemplo', 'Cómo te conoce': 'Fue mi jefa', 'Recomendación, tal como la escribió': 'Ordenó nuestros reportes y enseñó al equipo.' }, { title: 'Carmen Ejemplo' });
   await addItem(page, 'link', 'Agregar enlace', { 'Nombre del enlace': 'Caso de estudio', 'Dirección (URL)': 'https://example.test/caso' }, { title: 'Caso de estudio' });
 
   await page.reload();
@@ -111,6 +112,7 @@ test('A creates one item of each of the 11 kinds through its own form; after a r
     ['award', 'Beca de excelencia'],
     ['publication', 'Series de tiempo en retail'],
     ['volunteering', 'Mentora'],
+    ['recommendation', 'Carmen Ejemplo'],
     ['link', 'Caso de estudio'],
   ] as const) {
     await expect(row(page, kind, title), kind).toHaveCount(1);
@@ -119,7 +121,8 @@ test('A creates one item of each of the 11 kinds through its own form; after a r
   const items = (await apiAs(OWNER_A, 'GET', '/api/v1/profile/items')).json?.items as { kind: string; content: Record<string, unknown>; tags: string[] }[];
   // A may already hold items other specs seeded (pages.spec): pick the ones this test created, by their title.
   const byKind = (k: string, title: string) => items.find((i) => i.kind === k && Object.values(i.content).includes(title));
-  expect(new Set(items.map((i) => i.kind)).size).toBe(11);
+  expect(new Set(items.map((i) => i.kind)).size).toBe(12);
+  expect(byKind('recommendation', 'Carmen Ejemplo')?.content).toMatchObject({ organization: 'Cooperativa Ejemplo', relationship: 'Fue mi jefa', text: 'Ordenó nuestros reportes y enseñó al equipo.' });
   expect(byKind('experience', 'Analista de datos')).toMatchObject({ content: { role: 'Analista de datos', employmentType: 'contract', startDate: '2021-03', highlights: ['Automaticé reportes', 'Reduje costos 20 %'] }, tags: ['SQL', 'Python'] });
   expect(byKind('project', 'Tablero de ventas')?.content).toMatchObject({ url: 'https://example.test/tablero', links: [{ label: 'Código', url: 'https://example.test/codigo' }, { label: 'Demo', url: 'http://example.test/demo' }] });
   expect(byKind('skill', 'Modelado de datos')?.content).toMatchObject({ level: 'advanced', years: 4 });

@@ -206,6 +206,9 @@ export function itemLabel(item: { kind: ItemKind; content: Record<string, unknow
     case 'link':
       label = s('label');
       break;
+    case 'recommendation':
+      label = join(s('name'), s('organization'));
+      break;
     default:
       label = s('name');
   }

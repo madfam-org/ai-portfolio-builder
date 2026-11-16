@@ -21,6 +21,7 @@ export const ITEM_KIND_ORDER: readonly ItemKind[] = [
   'award',
   'publication',
   'volunteering',
+  'recommendation',
   'link',
 ];
 
@@ -115,6 +116,14 @@ export const ITEM_FIELDS: Record<ItemKind, readonly FieldSpec[]> = {
     { name: 'label', type: 'text', max: LINK_LABEL_MAX, required: true },
     { name: 'url', type: 'url', required: true },
   ],
+  recommendation: [
+    { name: 'name', type: 'text', max: 200, required: true },
+    { name: 'role', type: 'text', max: 200 },
+    { name: 'organization', type: 'text', max: 200 },
+    { name: 'relationship', type: 'text', max: 300 },
+    { name: 'date', type: 'date' },
+    { name: 'text', type: 'textarea', max: 3000, required: true },
+  ],
 };
 
 /** The fields that name an item in its list row: the first is the title, the second (if any) follows it. */
@@ -130,6 +139,7 @@ export const ITEM_HEADING: Record<ItemKind, readonly string[]> = {
   volunteering: ['role', 'organization'],
   award: ['title', 'issuer'],
   link: ['label'],
+  recommendation: ['name', 'organization'],
 };
 
 /** The profile header (`profileBody` + `contactSchema`): the person, shown on top of every document. */

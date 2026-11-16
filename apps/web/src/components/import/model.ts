@@ -203,6 +203,7 @@ export const DUPLICATE_FIELDS: Record<ItemKind, readonly string[]> = {
   volunteering: ['role', 'organization'],
   award: ['title'],
   link: ['url'],
+  recommendation: ['name', 'text'],
 };
 
 const fold = (v: unknown) =>

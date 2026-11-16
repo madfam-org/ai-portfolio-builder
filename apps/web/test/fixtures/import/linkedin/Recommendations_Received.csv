@@ -1,0 +1,4 @@
+First Name,Last Name,Company,Job Title,Text,Creation Date,Status
+Carmen,Ejemplo,Cooperativa Ejemplo,Coordinadora de datos,"Ana ordenó nuestros reportes y enseñó al equipo a mantenerlos. Siempre entrega a tiempo, con ""cuidado"" en cada detalle.","10/10/13, 6:20 AM",VISIBLE
+Luis,Oculto,Fondo Ejemplo,Director,SENTINEL hidden recommendation never imported,"03/05/21, 11:02 PM",HIDDEN
+,,Sin Nombre,Gerente,Una recomendación sin nombre no se importa,"01/02/20, 9:00 AM",VISIBLE

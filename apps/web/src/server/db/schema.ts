@@ -29,6 +29,7 @@ export const PROFILE_ITEM_KINDS = [
   'volunteering',
   'award',
   'link',
+  'recommendation',
 ] as const;
 export const JOB_STATUSES = ['saved', 'applying', 'applied', 'interview', 'offer', 'rejected', 'archived'] as const;
 export const ARTIFACT_KINDS = ['cv', 'portfolio', 'presentation', 'cover_letter'] as const;

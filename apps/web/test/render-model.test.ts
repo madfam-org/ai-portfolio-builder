@@ -99,3 +99,21 @@ test('empty and malformed content renders nothing invented', () => {
   assert.deepEqual(readContent({ items: 'nope', blocks: [{ body: '' }], showContact: 'yes' }), { items: [], blocks: [], showContact: false, slides: [], summary: undefined });
   assert.equal(buildDocModel(data('unknown-kind', { items: [] })).kind, 'cv');
 });
+
+test('a recommendation prints the recommender and their words in quotation marks; per-job overrides never apply', () => {
+  const d = data('cv', { items: [{ itemId: 'r1', override: { title: 'Otra persona', summary: 'Texto cambiado', highlights: ['Nada'] } }] });
+  d.items.push({
+    id: 'r1',
+    kind: 'recommendation',
+    content: { name: 'Carmen Ejemplo', role: 'Coordinadora de datos', organization: 'Cooperativa Ejemplo', relationship: 'Fue mi jefa', date: '2013-10', text: 'Ana ordenó nuestros reportes.' },
+  } as (typeof d.items)[number]);
+  const m = buildDocModel(d);
+  assert.deepEqual(m.sections.map((s) => [s.kind, s.heading]), [['recommendation', 'Recomendaciones']]);
+  const e = m.sections[0]!.entries[0]!;
+  assert.equal(e.title, 'Carmen Ejemplo');
+  assert.equal(e.subtitle, 'Coordinadora de datos, Cooperativa Ejemplo');
+  assert.deepEqual(e.meta, ['Fue mi jefa']);
+  assert.equal(e.dates, 'oct 2013');
+  assert.equal(e.summary, '“Ana ordenó nuestros reportes.”');
+  assert.deepEqual(e.highlights, []);
+});

@@ -84,8 +84,8 @@ const zodOk = (schema: z.ZodType, value: unknown) => schema.safeParse(value).suc
 /** The browser check on the same content (through the form, as the editor does). */
 const formOk = (specs: readonly FieldSpec[], value: Record<string, unknown>) => Object.keys(formToContent(specs, contentToForm(specs, value)).errors).length === 0;
 
-test('every item kind of the API has a descriptor, and nothing else does (11 kinds, read-proof)', () => {
-  assert.equal(KINDS.length, 11);
+test('every item kind of the API has a descriptor, and nothing else does (12 kinds, read-proof)', () => {
+  assert.equal(KINDS.length, 12);
   assert.deepEqual(Object.keys(ITEM_FIELDS).sort(), [...KINDS].sort());
   assert.deepEqual([...ITEM_KIND_ORDER].sort(), [...KINDS].sort());
   assert.deepEqual(Object.keys(ITEM_CONTENT).sort(), [...KINDS].sort());

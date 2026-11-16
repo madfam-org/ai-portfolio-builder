@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { NotJsonResumeError, fluencyLevel, parseJsonResume, skillLevel } from '../src/components/import/json-resume.ts';
-import { LINKEDIN_FILE_NAMES, NotLinkedInError, languageLevel, mapLinkedIn, readLinkedInZip, selectEntries } from '../src/components/import/linkedin.ts';
+import { LINKEDIN_FILE_NAMES, NotLinkedInError, languageLevel, mapLinkedIn, readLinkedInZip, recommendationDate, selectEntries } from '../src/components/import/linkedin.ts';
 import type { ImportResult } from '../src/components/import/model.ts';
 import { listEntries } from '../src/components/import/zip.ts';
 import { toJsonResume } from '../src/server/api/portability.ts';
@@ -18,8 +18,9 @@ import { RecordingBlob, buildZip, dirFiles, entrySpan } from './import-zip-helpe
 
 const FIX = join(import.meta.dirname, 'fixtures', 'import');
 const read = (...p: string[]) => readFileSync(join(FIX, ...p), 'utf8');
-const LI = ['Profile', 'Positions', 'Education', 'Skills', 'Certifications', 'Languages', 'Projects', 'Honors', 'Publications', 'Volunteering'] as const;
-const liFiles = () => Object.fromEntries(LI.map((n) => [n.toLowerCase(), read('linkedin', `${n}.csv`)]));
+const LI = ['Profile', 'Positions', 'Education', 'Skills', 'Certifications', 'Languages', 'Projects', 'Honors', 'Publications', 'Volunteering', 'Recommendations_Received'] as const;
+const fileId = (n: string) => (n === 'Recommendations_Received' ? 'recommendations' : n.toLowerCase());
+const liFiles = () => Object.fromEntries(LI.map((n) => [fileId(n), read('linkedin', `${n}.csv`)]));
 
 function assertValid(result: ImportResult) {
   assert.ok(result.items.length > 0, 'read-proof: items were produced');
@@ -66,7 +67,7 @@ test('LinkedIn CSVs → items of every mapped kind and the header; rows without 
   assert.equal(odd.content.startDate, '2016-01');
   assert.equal(odd.content.endDate, undefined);
   assert.deepEqual(odd.notes, ['date_dropped']);
-  assert.deepEqual(r.skipped, [{ file: 'Positions.csv', row: 3 }], 'the row without a company');
+  assert.deepEqual(r.skipped, [{ file: 'Positions.csv', row: 3 }, { file: 'Recommendations_Received.csv', row: 3 }], 'the row without a company; the recommendation without a name');
   assert.deepEqual(byKind(r, 'education')[0], {
     institution: 'Universidad de Ejemplo',
     degree: 'Licenciatura en Matemáticas',
@@ -85,6 +86,25 @@ test('LinkedIn CSVs → items of every mapped kind and the header; rows without 
   assert.deepEqual(byKind(r, 'award'), [{ title: 'Premio a la Innovación', date: '2019-11', summary: 'Primer lugar regional' }]);
   assert.deepEqual(byKind(r, 'publication'), [{ title: 'Series de tiempo para todos', publisher: 'Revista Ejemplo', date: '2020-04', url: 'https://revista.example.test/series', summary: 'Artículo de divulgación' }]);
   assert.deepEqual(byKind(r, 'volunteering'), [{ role: 'Voluntaria', organization: 'Banco de Alimentos Ejemplo', startDate: '2015-01', endDate: '2016-12', summary: 'Clasificación de donativos\n\n(Poverty Alleviation)' }]);
+  // Recommendations received: the visible one, verbatim, with the export's US date read as year and month; the hidden
+  // one (Status HIDDEN) never enters the import.
+  assert.deepEqual(byKind(r, 'recommendation'), [
+    {
+      name: 'Carmen Ejemplo',
+      role: 'Coordinadora de datos',
+      organization: 'Cooperativa Ejemplo',
+      date: '2013-10',
+      text: 'Ana ordenó nuestros reportes y enseñó al equipo a mantenerlos. Siempre entrega a tiempo, con "cuidado" en cada detalle.',
+    },
+  ]);
+  assert.ok(!JSON.stringify(r).includes('SENTINEL'), 'a hidden recommendation is not kept');
+});
+
+test('recommendationDate: LinkedIn\'s M/D/YY with a time → year and month; other shapes pass through', () => {
+  assert.equal(recommendationDate('10/10/13, 6:20 AM'), '2013-10');
+  assert.equal(recommendationDate('3/5/2021, 11:02 PM'), '2021-03');
+  assert.equal(recommendationDate('2019-04-01'), '2019-04-01');
+  assert.equal(recommendationDate(''), '');
 });
 
 test('Spanish headers, CRLF, BOM and Spanish dates; missing files are simply absent', () => {
@@ -145,11 +165,12 @@ test('selectEntries: base names, any folder, the shallowest wins, macOS forks an
   assert.equal(ignored, 2);
 });
 
-test('JSON Resume → items and header; interests, references and meta ignored; bad input refused', () => {
+test('JSON Resume → items and header; references become recommendations; interests and meta ignored; bad input refused', () => {
   const r = parseJsonResume(read('resume.json'));
   assertValid(r);
   assert.equal(r.source, 'json-resume');
-  assert.equal(r.ignored, 3);
+  assert.equal(r.ignored, 2);
+  assert.deepEqual(byKind(r, 'recommendation'), [{ name: 'Persona Ejemplo', text: 'Texto de referencia' }]);
   assert.deepEqual(r.header, {
     displayName: 'Beto Ejemplo',
     headline: 'Desarrollador web',

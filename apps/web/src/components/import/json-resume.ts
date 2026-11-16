@@ -1,7 +1,8 @@
 /**
  * JSON Resume (https://jsonresume.org/schema, v1.0.0: https://github.com/jsonresume/resume-schema) → an import.
  * Sections mapped: basics (header and contact), work, volunteer, education, awards, certificates, publications,
- * skills, languages, projects. `interests`, `references` and `meta` are ignored (counted, never kept).
+ * skills, languages, projects, references (recommendations received: the name and the words). `interests` and `meta`
+ * are ignored (counted, never kept).
  * Pre-v1 names some tools still write are accepted too (`work[].company`, `work[].website`, `publications[].website`).
  */
 import { languageCodeFromName } from '../../lib/languages.ts';
@@ -12,7 +13,7 @@ export class NotJsonResumeError extends Error {}
 /** The largest .json file read (bytes). */
 export const JSON_RESUME_MAX_BYTES = 2 * 1024 * 1024;
 
-const MAPPED = ['basics', 'work', 'volunteer', 'education', 'awards', 'certificates', 'publications', 'skills', 'languages', 'projects'] as const;
+const MAPPED = ['basics', 'work', 'volunteer', 'education', 'awards', 'certificates', 'publications', 'skills', 'languages', 'projects', 'references'] as const;
 
 const str = (v: unknown): string => (typeof v === 'string' ? v : '');
 const arr = (v: unknown): Raw[] => (Array.isArray(v) ? v.filter((x): x is Raw => !!x && typeof x === 'object' && !Array.isArray(x)) : []);
@@ -120,5 +121,6 @@ export function parseJsonResume(text: string): ImportResult {
     },
     tags: strings(e.keywords),
   }));
+  each('references', (e) => ({ kind: 'recommendation', raw: { name: str(e.name), text: str(e.reference) } }));
   return result;
 }

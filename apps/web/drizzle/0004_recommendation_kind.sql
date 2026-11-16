@@ -1,0 +1,2 @@
+ALTER TABLE "profile_items" DROP CONSTRAINT "profile_items_kind_check";--> statement-breakpoint
+ALTER TABLE "profile_items" ADD CONSTRAINT "profile_items_kind_check" CHECK ("profile_items"."kind" in ('experience', 'education', 'skill', 'project', 'certification', 'achievement', 'language', 'publication', 'volunteering', 'award', 'link', 'recommendation'));

@@ -44,6 +44,8 @@ export const ITEM_TEXT_FIELDS: Record<ItemKind, readonly string[]> = {
   volunteering: ['role', 'summary'],
   award: ['title', 'summary'],
   link: ['label'],
+  // The recommender's words (`text`) stay as they wrote them; their role and how they know the person can be translated.
+  recommendation: ['role', 'relationship'],
 };
 
 /** The fields a per-job title override replaces (components/render/model.ts buildEntry: the entry's title). */
@@ -59,6 +61,7 @@ const TITLE_FIELDS: Record<ItemKind, readonly string[]> = {
   volunteering: ['role'],
   award: ['title'],
   link: ['label'],
+  recommendation: [],
 };
 
 /** A language item without an ISO 639 code: its stored name cannot follow the document's language. */

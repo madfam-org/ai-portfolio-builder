@@ -79,7 +79,7 @@ export interface DocModel {
   closing: string | null;
 }
 
-const ITEM_KINDS: readonly ItemKind[] = ['experience', 'education', 'skill', 'project', 'certification', 'achievement', 'language', 'publication', 'volunteering', 'award', 'link'];
+const ITEM_KINDS: readonly ItemKind[] = ['experience', 'education', 'skill', 'project', 'certification', 'achievement', 'language', 'publication', 'volunteering', 'award', 'link', 'recommendation'];
 const ARTIFACT_KINDS: readonly ArtifactKind[] = ['cv', 'portfolio', 'presentation', 'cover_letter'];
 const COMPACT: ReadonlySet<ItemKind> = new Set(['skill', 'language', 'link']);
 
@@ -239,6 +239,21 @@ export function buildEntry(id: string, kind: ItemKind, raw: unknown, override: A
     case 'link':
       title = str(c.label);
       break;
+    case 'recommendation': {
+      // Someone else's words: printed as they wrote them, in quotation marks; a per-job override never applies.
+      const words = str(c.text);
+      return {
+        id,
+        kind,
+        title: str(c.name),
+        subtitle: join([str(c.role), str(c.organization)], ', '),
+        meta: [str(c.relationship)].filter((m): m is string => !!m),
+        dates: formatPartialDate(c.date, locale),
+        summary: words ? `“${words}”` : null,
+        highlights: [],
+        links: [],
+      };
+    }
   }
   return {
     id,

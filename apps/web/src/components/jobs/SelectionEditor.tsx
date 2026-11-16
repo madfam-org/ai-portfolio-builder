@@ -142,37 +142,40 @@ export function SelectionEditor({
                     </Button>
                   </span>
                 </div>
-                <details className={s.override} open={Object.keys(problems).length > 0 || undefined}>
-                  <summary>{t.tailor.adjust}</summary>
-                  <p className="small muted">{t.tailor.overrideHint}</p>
-                  <TextField
-                    id={`ov-${entry.itemId}-title`}
-                    label={t.tailor.overrideTitle}
-                    value={entry.override.title}
-                    placeholder={label(localized)}
-                    maxLength={LIMITS.overrideTitle}
-                    onChange={(e) => edit({ title: e.target.value })}
-                    error={problems.title ?? null}
-                  />
-                  <TextAreaField
-                    id={`ov-${entry.itemId}-summary`}
-                    label={t.tailor.overrideSummary}
-                    rows={3}
-                    value={entry.override.summary}
-                    placeholder={original.summary}
-                    onChange={(e) => edit({ summary: e.target.value })}
-                    error={problems.summary ?? null}
-                  />
-                  <TextAreaField
-                    id={`ov-${entry.itemId}-highlights`}
-                    label={t.tailor.overrideHighlights}
-                    rows={3}
-                    value={entry.override.highlights}
-                    placeholder={original.highlights.join('\n')}
-                    onChange={(e) => edit({ highlights: e.target.value })}
-                    error={problems.highlights ?? null}
-                  />
-                </details>
+                {/* A recommendation is someone else's words: no per-job title or text (render/model.ts ignores them). */}
+                {item.kind === 'recommendation' ? null : (
+                  <details className={s.override} open={Object.keys(problems).length > 0 || undefined}>
+                    <summary>{t.tailor.adjust}</summary>
+                    <p className="small muted">{t.tailor.overrideHint}</p>
+                    <TextField
+                      id={`ov-${entry.itemId}-title`}
+                      label={t.tailor.overrideTitle}
+                      value={entry.override.title}
+                      placeholder={label(localized)}
+                      maxLength={LIMITS.overrideTitle}
+                      onChange={(e) => edit({ title: e.target.value })}
+                      error={problems.title ?? null}
+                    />
+                    <TextAreaField
+                      id={`ov-${entry.itemId}-summary`}
+                      label={t.tailor.overrideSummary}
+                      rows={3}
+                      value={entry.override.summary}
+                      placeholder={original.summary}
+                      onChange={(e) => edit({ summary: e.target.value })}
+                      error={problems.summary ?? null}
+                    />
+                    <TextAreaField
+                      id={`ov-${entry.itemId}-highlights`}
+                      label={t.tailor.overrideHighlights}
+                      rows={3}
+                      value={entry.override.highlights}
+                      placeholder={original.highlights.join('\n')}
+                      onChange={(e) => edit({ highlights: e.target.value })}
+                      error={problems.highlights ?? null}
+                    />
+                  </details>
+                )}
               </li>
             );
           })}
