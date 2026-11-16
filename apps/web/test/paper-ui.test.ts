@@ -30,9 +30,9 @@ test('FoldGuide: Carta in bond, the bottom fold from the bottom edge and the top
   assert.match(html, /<div[^>]*aria-hidden="true"[^>]*>(?:(?!<\/figure>).)*data-fold-at="93\.666667"/s, 'the folding sheet is decorative');
   assert.match(html, /Ver cómo se dobla/, 'it offers to play Pliego\'s fold program');
   const t = text(html);
-  assert.match(t, /Dobla hacia arriba la parte de abajo, a 92\.1 mm del borde inferior\./);
-  assert.match(t, /Dobla hacia abajo la parte de arriba, a 93\.7 mm del borde superior/);
-  assert.match(t, /1\.6 mm más corta .* doblada mide 93\.7 × 215\.9 mm\./);
+  assert.match(t, /Dobla hacia arriba la parte de abajo, a 92 mm del borde inferior\./);
+  assert.match(t, /Dobla hacia abajo la parte de arriba, a 94 mm del borde superior/);
+  assert.match(t, /1\.6 mm más corta .* doblada mide 94 × 216 mm\./);
   assert.doesNotMatch(t, /marca las dos líneas/i, 'bond needs no scoring');
   assert.match(t, /Medidas para Carta \(México y EE\. UU\.\), calculadas por Pliego/);
   assert.match(html, /data-fold-at="93\.666667"/);
@@ -41,8 +41,8 @@ test('FoldGuide: Carta in bond, the bottom fold from the bottom edge and the top
 
 test('FoldGuide: A4 in cartulina says to score, in English', () => {
   const t = text(renderToStaticMarkup(createElement(FoldGuide, { locale: 'en', fold: letterFold('a4', 'cardstock-160'), paperName: 'A4' })));
-  assert.match(t, /Fold the bottom part up, 97\.9 mm from the bottom edge\./);
-  assert.match(t, /Fold the top part down over it, 99\.5 mm from the top edge\./);
+  assert.match(t, /Fold the bottom part up, 98 mm from the bottom edge\./);
+  assert.match(t, /Fold the top part down over it, 100 mm from the top edge\./);
   assert.match(t, /score both lines before folding/);
 });
 

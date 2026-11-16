@@ -59,7 +59,19 @@
 .tickStrong {
   fill: var(--ink);
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 600;
+}
+
+/* Batch 5: the chart is drawn on a 600-unit canvas, so on a phone (about 300 px wide) 13-unit labels rendered near
+   6.5 px. Larger units there keep them near 10-11 px, still inside the 96-unit height. */
+@media (max-width: 760px) {
+  .tick {
+    font-size: 20px;
+  }
+
+  .tickStrong {
+    font-size: 21px;
+  }
 }
 
 .posting {
