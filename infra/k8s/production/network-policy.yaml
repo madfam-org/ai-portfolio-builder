@@ -110,6 +110,28 @@ spec:
         - protocol: TCP
           port: 6432
 ---
+# Reading images: cv's pods to tlacuilo's API pods, on their CONTAINER port (8000; the Service publishes 80, and a
+# NetworkPolicy matches the port after the Service's translation). One bare namespaceSelector per peer, the shape that
+# works on this cluster. tlacuilo's own allow-consumer-ingress admits the `cv` namespace; both sides are needed.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-tlacuilo-egress
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: cv
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: tlacuilo
+      ports:
+        - protocol: TCP
+          port: 8000
+---
 # The scrapers, to the metrics port ONLY (W4-O). One bare namespaceSelector per peer, the shape the platform's other
 # app namespaces use for their metrics ports (a peer combining a namespaceSelector and a podSelector has rendered as
 # deny-all on this cluster). Enclii's netpol generator has no monitoring ingress type, so this policy is repo-managed
