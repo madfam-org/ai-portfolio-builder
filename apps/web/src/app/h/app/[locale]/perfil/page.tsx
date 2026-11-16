@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { AppFrame } from '@/components/app/AppFrame';
 import { appMetadata, pageLocale, type LocaleParams } from '@/components/app/page-helpers';
 import { ProfileEditor } from '@/components/profile/ProfileEditor';
+import { linkedInPdfImportEnabled } from '@/lib/import-config';
 
 export function generateMetadata({ params }: LocaleParams): Promise<Metadata> {
   return appMetadata(params, 'profile');
@@ -10,9 +11,10 @@ export function generateMetadata({ params }: LocaleParams): Promise<Metadata> {
 /**
  * `/perfil` (`/en/perfil`): the core profile editor (W3-2). The frame decides the honest state (dormant, signed out,
  * signed in); signed in, the editor loads the person's own profile through the same-origin data layer. The display
- * name is prefilled from the Janua `name` claim the session carries, until the person saves their own.
+ * name is prefilled from the Janua `name` claim the session carries, until the person saves their own. The LinkedIn
+ * profile PDF import shows only when `CV_IMPORT_LINKEDIN_PDF` is on (read per request, inside the signed-in frame).
  */
 export default async function Page({ params }: LocaleParams) {
   const locale = await pageLocale(params);
-  return <AppFrame locale={locale} route="profile">{(person) => <ProfileEditor locale={locale} nameHint={person.name} />}</AppFrame>;
+  return <AppFrame locale={locale} route="profile">{(person) => <ProfileEditor locale={locale} nameHint={person.name} linkedInPdf={linkedInPdfImportEnabled(process.env)} />}</AppFrame>;
 }

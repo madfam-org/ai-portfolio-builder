@@ -1,8 +1,9 @@
 /**
  * Strings of data portability and data rights (W4-I): the import on `/perfil` (the person's own LinkedIn export ZIP or
  * a JSON Resume file, read in the browser, previewed, confirmed) and «Descargar mis datos» / «Eliminar mis datos» on
- * `/ajustes`. Truth rules (R85): say exactly what is read, what is ignored and when anything leaves the browser; no AI,
- * no scraping, no connection to the person's LinkedIn account.
+ * `/ajustes`, plus (when `CV_IMPORT_LINKEDIN_PDF` is on) the PDF LinkedIn makes of the person's own profile. Truth
+ * rules (R85): say exactly what is read, what is ignored and when anything leaves the browser; no AI, no scraping, no
+ * connection to the person's LinkedIn account.
  */
 import type { Locale } from '../routing.ts';
 
@@ -14,6 +15,8 @@ export interface ImportCopy {
   privacyTitle: string;
   privacy: (files: string) => string[];
   linkedin: { title: string; how: string; label: string; hint: string };
+  /** LinkedIn's «Save to PDF» of the person's own profile (dormant flag). */
+  linkedinPdf: { title: string; how: string; label: string; hint: string; limits: string };
   jsonResume: { title: string; how: string; label: string; hint: string };
   reading: string;
   errors: {
@@ -29,11 +32,19 @@ export interface ImportCopy {
     tooBig: string;
     tooManyItems: (max: number) => string;
     nothingChecked: string;
+    notLinkedInPdf: string;
+    pdfNoText: string;
+    pdfTooLarge: string;
+    pdfCorrupt: string;
   };
   preview: {
     title: string;
     fromLinkedIn: string;
     fromJsonResume: string;
+    fromLinkedInPdf: string;
+    /** LinkedIn says its PDF supports only English characters: accents and «ñ» may come out wrong. */
+    pdfCheck: string;
+    originEntry: (section: string, n: number) => string;
     read: (list: string) => string;
     ignored: (n: number) => string;
     skipped: (n: number) => string;
@@ -96,9 +107,16 @@ export const IMPORT_COPY: Record<Locale, ImportCopy> = {
     ],
     linkedin: {
       title: 'Desde LinkedIn',
-      how: 'En LinkedIn, desde una computadora: Yo → Configuración y privacidad → Privacidad de datos → Descargar tus datos. Solicita el archivo y descarga el ZIP del enlace que te envían por correo (vence en 72 horas).',
+      how: 'En LinkedIn, desde una computadora: Yo → Configuración y privacidad → Privacidad de datos → Descargar tus datos. Elige solo los archivos de tu perfil en lugar del archivo completo: LinkedIn indica que así está listo en unos 10 minutos. Descarga el ZIP del enlace que te envían por correo (vence en 72 horas).',
       label: 'ZIP de tus datos de LinkedIn',
       hint: 'El archivo .zip tal como lo descargaste, hasta 300 MB.',
+    },
+    linkedinPdf: {
+      title: 'Desde el PDF de tu perfil de LinkedIn',
+      how: 'En LinkedIn, desde una computadora: abre tu propio perfil → Más (o Recursos) → Guardar como PDF («Save to PDF»). LinkedIn lo descarga al momento; no hay que esperar ningún correo.',
+      label: 'PDF de tu perfil de LinkedIn',
+      hint: 'El archivo .pdf tal como lo descargaste, hasta 20 MB.',
+      limits: 'El PDF trae tu encabezado, extracto, experiencia, educación, idiomas y certificaciones, pero solo tus aptitudes principales. Para traerlas todas, usa el ZIP.',
     },
     jsonResume: {
       title: 'Desde JSON Resume',
@@ -120,11 +138,18 @@ export const IMPORT_COPY: Record<Locale, ImportCopy> = {
       tooBig: 'Lo marcado es demasiado grande para enviarlo de una vez. Desmarca algunos elementos e inténtalo de nuevo.',
       tooManyItems: (max) => `Puedes importar hasta ${max} elementos a la vez. Desmarca algunos.`,
       nothingChecked: 'Marca al menos un elemento.',
+      notLinkedInPdf: 'Este PDF no parece el PDF de un perfil de LinkedIn: no encontramos secciones como «Experiencia» o «Educación».',
+      pdfNoText: 'Este PDF no tiene texto seleccionable. Descarga de nuevo el PDF desde tu perfil de LinkedIn.',
+      pdfTooLarge: 'El PDF pasa de 20 MB.',
+      pdfCorrupt: 'No pudimos leer este PDF. Descárgalo de nuevo desde tu perfil de LinkedIn.',
     },
     preview: {
       title: 'Revisa antes de guardar',
       fromLinkedIn: 'Leído de tu ZIP de LinkedIn.',
       fromJsonResume: 'Leído de tu archivo JSON Resume.',
+      fromLinkedInPdf: 'Leído del PDF de tu perfil de LinkedIn.',
+      pdfCheck: 'Un PDF es un documento impreso, no datos: revisa que cada elemento quedó en su lugar. LinkedIn advierte que su PDF solo admite caracteres en inglés, así que revisa también acentos y «ñ».',
+      originEntry: (section, n) => `${section}, entrada ${n}`,
       read: (list) => `Leímos: ${list}.`,
       ignored: (n) => (n === 1 ? 'Otro archivo o sección no se leyó.' : `Otros ${n} archivos o secciones no se leyeron.`),
       skipped: (n) => (n === 1 ? 'Una fila no tenía los datos mínimos (por ejemplo, cargo y empresa) y no se incluye.' : `${n} filas no tenían los datos mínimos (por ejemplo, cargo y empresa) y no se incluyen.`),
@@ -163,9 +188,16 @@ export const IMPORT_COPY: Record<Locale, ImportCopy> = {
     ],
     linkedin: {
       title: 'From LinkedIn',
-      how: 'On LinkedIn, from a computer: Me → Settings & Privacy → Data privacy → Download your data. Request the archive and download the ZIP from the link they email you (it expires after 72 hours).',
+      how: 'On LinkedIn, from a computer: Me → Settings & Privacy → Data privacy → Download your data. Pick only your profile\'s files instead of the full archive: LinkedIn says it is then ready in about 10 minutes. Download the ZIP from the link they email you (it expires after 72 hours).',
       label: 'Your LinkedIn data ZIP',
       hint: 'The .zip file as you downloaded it, up to 300 MB.',
+    },
+    linkedinPdf: {
+      title: 'From your LinkedIn profile PDF',
+      how: 'On LinkedIn, from a computer: open your own profile → More (or Resources) → Save to PDF. LinkedIn downloads it right away; there is no email to wait for.',
+      label: 'Your LinkedIn profile PDF',
+      hint: 'The .pdf file as you downloaded it, up to 20 MB.',
+      limits: 'The PDF carries your header, summary, experience, education, languages and certifications, but only your top skills. To bring all of them, use the ZIP.',
     },
     jsonResume: {
       title: 'From JSON Resume',
@@ -187,11 +219,18 @@ export const IMPORT_COPY: Record<Locale, ImportCopy> = {
       tooBig: 'What you checked is too large to send at once. Uncheck some items and try again.',
       tooManyItems: (max) => `You can import up to ${max} items at once. Uncheck some.`,
       nothingChecked: 'Check at least one item.',
+      notLinkedInPdf: 'This PDF does not look like a LinkedIn profile PDF: we found no sections such as "Experience" or "Education".',
+      pdfNoText: 'This PDF has no selectable text. Download the PDF from your LinkedIn profile again.',
+      pdfTooLarge: 'The PDF is larger than 20 MB.',
+      pdfCorrupt: 'We could not read this PDF. Download it again from your LinkedIn profile.',
     },
     preview: {
       title: 'Review before saving',
       fromLinkedIn: 'Read from your LinkedIn ZIP.',
       fromJsonResume: 'Read from your JSON Resume file.',
+      fromLinkedInPdf: 'Read from your LinkedIn profile PDF.',
+      pdfCheck: 'A PDF is a printed document, not data: check that every item landed in its place. LinkedIn notes that its PDF supports only English characters, so check accents and «ñ» too.',
+      originEntry: (section, n) => `${section}, entry ${n}`,
       read: (list) => `We read: ${list}.`,
       ignored: (n) => (n === 1 ? 'One other file or section was not read.' : `${n} other files or sections were not read.`),
       skipped: (n) => (n === 1 ? 'One row lacked the minimum (for example, role and company) and is left out.' : `${n} rows lacked the minimum (for example, role and company) and are left out.`),

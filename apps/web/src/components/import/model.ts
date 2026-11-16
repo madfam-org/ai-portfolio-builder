@@ -11,7 +11,7 @@ import type { ItemKind } from '../../lib/copy/app.ts';
 import { CONTACT_FIELDS, HEADER_FIELDS, ITEM_FIELDS, LINK_LABEL_MAX, TAGS_MAX, TAG_MAX, URL_MAX, isHttpUrl, type FieldSpec, type LinkRow } from '../profile/fields.ts';
 import { toPartialDate } from './dates.ts';
 
-export type ImportSource = 'linkedin' | 'json-resume';
+export type ImportSource = 'linkedin' | 'linkedin-pdf' | 'json-resume';
 export type ImportNote = 'truncated' | 'date_dropped' | 'url_dropped' | 'value_dropped';
 
 export interface ImportItem {

@@ -43,7 +43,7 @@ const emptyDraft = (kind: ItemKind): ItemDraft => ({ values: contentToForm(ITEM_
  * Honest states: loading, «no configurado» (dormant), session ended, unavailable with «Reintentar». No AI. Import: the
  * person's own LinkedIn export ZIP or a JSON Resume file, read in the browser (components/import, W4-I).
  */
-export function ProfileEditor({ locale, nameHint }: { locale: Locale; nameHint: string | null }) {
+export function ProfileEditor({ locale, nameHint, linkedInPdf = false }: { locale: Locale; nameHint: string | null; linkedInPdf?: boolean }) {
   const copy = PROFILE_COPY[locale];
   const appCopy = APP_COPY[locale];
   const contentLocale: ContentLocale = locale === 'en' ? 'en' : 'es-MX';
@@ -273,6 +273,7 @@ export function ProfileEditor({ locale, nameHint }: { locale: Locale; nameHint: 
         <summary>{copy.importToggle}</summary>
         <ImportPanel
           locale={locale}
+          linkedInPdf={linkedInPdf}
           profile={profile}
           existing={items}
           onImported={(saved, added, headerChanged) => {

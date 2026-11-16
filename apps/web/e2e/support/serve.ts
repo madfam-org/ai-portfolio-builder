@@ -74,6 +74,8 @@ const child = spawn(process.execPath, [server], {
     ...issuer.env,
     APP_DATABASE_URL: app,
     CV_METRICS_PORT: String(E2E_METRICS_PORT),
+    // The LinkedIn profile PDF import is dormant by default; the e2e server turns it on (e2e/import-linkedin-pdf.spec.ts).
+    CV_IMPORT_LINKEDIN_PDF: '1',
     ...hcm.env,
   },
 });
