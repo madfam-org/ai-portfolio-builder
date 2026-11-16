@@ -219,13 +219,27 @@ export function duplicateKey(kind: ItemKind, content: Record<string, unknown>): 
   return `${kind}|${DUPLICATE_FIELDS[kind].map((f) => fold(content[f])).join('|')}`;
 }
 
+/**
+ * Whether a candidate is «the same» as an item already in the profile. A field the candidate leaves EMPTY does not
+ * count against the match (the LinkedIn PDF prints a certification without its issuer, which the ZIP had filled in);
+ * the first field (the name, role or title) must be present and equal.
+ */
+function sameAs(kind: ItemKind, candidate: Record<string, unknown>, held: Record<string, unknown>): boolean {
+  const fields = DUPLICATE_FIELDS[kind];
+  if (!fold(candidate[fields[0]!])) return false;
+  return fields.every((f) => {
+    const c = fold(candidate[f]);
+    return c === '' || c === fold(held[f]);
+  });
+}
+
 /** Keys of the candidates that already exist among `existing` or earlier in the same import. */
 export function findDuplicates(candidates: readonly ImportItem[], existing: readonly { kind: ItemKind; content: Record<string, unknown> }[]): Set<string> {
   const known = new Set(existing.map((e) => duplicateKey(e.kind, e.content)));
   const dup = new Set<string>();
   for (const c of candidates) {
     const k = duplicateKey(c.kind, c.content);
-    if (known.has(k)) dup.add(c.key);
+    if (known.has(k) || existing.some((e) => e.kind === c.kind && sameAs(c.kind, c.content, e.content))) dup.add(c.key);
     else known.add(k);
   }
   return dup;
