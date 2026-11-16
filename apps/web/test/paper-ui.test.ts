@@ -41,8 +41,8 @@ test('FoldGuide: Carta in bond, the bottom fold from the bottom edge and the top
 
 test('FoldGuide: A4 in cartulina says to score, in English', () => {
   const t = text(renderToStaticMarkup(createElement(FoldGuide, { locale: 'en', fold: letterFold('a4', 'cardstock-160'), paperName: 'A4' })));
-  assert.match(t, /Fold the bottom part up, 97\.9 mm from the bottom edge\./);
-  assert.match(t, /Fold the top part down over it, 99\.5 mm from the top edge\./);
+  assert.match(t, /Fold the bottom part up, 98 mm from the bottom edge\./);
+  assert.match(t, /Fold the top part down over it, 100 mm from the top edge\./);
   assert.match(t, /score both lines before folding/);
 });
 
