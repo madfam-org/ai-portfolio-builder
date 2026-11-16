@@ -7,44 +7,39 @@ publish ([docs/PRODUCT.md](docs/PRODUCT.md)). **Incubating, pre-launch.** The pr
 
 ## What is live, honestly
 
-This repository was rebuilt from scratch on 2026-10-22. What it serves today (wave 1), from one
-container on MADFAM's own infrastructure (Enclii):
+An **invite-only private beta** (2026-11-16), from one container on MADFAM's own infrastructure (Enclii). Accounts are
+Janua's and invite-only: nobody signs up here ([docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) «Beta access»).
 
 | Host | What you get today |
 |---|---|
-| `cv.madfam.io` | a pre-launch landing in Spanish (`/`) and English (`/en`): what the product will do, what it is built on, a waitlist link (a plain `mailto:` to hola@madfam.io; no forms, cookies or analytics). Not indexed until the brand is ruled |
-| `cv-app.madfam.io` | a pre-launch notice: no accounts yet; sign-in with Janua is coming |
-| `cv-api.madfam.io` | `/api/v1/meta` (name, version, the git commit), `/health`, `/ready` |
+| `cv.madfam.io` | the landing in Spanish (`/`) and English (`/en`), the privacy notice (`/privacidad`, approved, version 2026-11-16.1) and the job-link reader page (`/lector`). Not indexed until the brand is ruled |
+| `cv-app.madfam.io` | the app, after signing in with Janua: the core profile, jobs, tailoring and documents (below) |
+| `cv-p.madfam.io` | the documents people choose to publish: `/<slug>` (public) and `/l/<token>` (by link); noindex unless the owner opts in |
+| `cv-api.madfam.io` | the owner-scoped API (`/api/v1/*`, Janua bearer tokens), `/health`, `/ready` |
 
-There are **no accounts, no portfolios, no CV import, no AI and no prices** live yet. Nothing here stores
-personal data. The code for sign-in and the owner-scoped data model is in the tree but switched off until
-its settings are provisioned ([docs/DEPLOYMENT.md](docs/DEPLOYMENT.md), "Identity and data").
+What a beta account can do ([docs/PRODUCT.md](docs/PRODUCT.md) has the model and every rule):
 
+- **One core profile**, bilingual field by field (es-MX / English): experience, education, skills, projects,
+  certifications, languages, achievements, awards, publications, volunteering, recommendations received and links.
+- **Import** it, in the browser: the LinkedIn data-export ZIP, the LinkedIn «Save to PDF» file, or a JSON Resume file;
+  a preview marks what already exists before anything is saved. Export everything (and JSON Resume) or delete it all
+  from «Ajustes».
+- **Jobs**: from a link (public ATS APIs, structured data, the page text, robots.txt respected), pasted text, a file,
+  or a bookmark that captures the open page; each job shows an AI-free keyword match against the profile and, from
+  Symbiosis HCM, the official income range for its occupation (INEGI ENOE).
+- **Tailored documents per job** (CV, portfolio, presentation, cover letter; 2–3 templates each): pre-selected in CV
+  order from the match, editable in place afterwards, previewed, printed to PDF by the browser (with an estimate of
+  the page count before printing) and published privately, by link or publicly.
 
-The hosts go live when the coordinator dispatches the first build and onboards the project
-([docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)); until then this is the code that will serve them.
-
-**W6-A (2026-10-22), in the tree; live once deployed and activated by the coordinator:**
-
-| Host / change | What it is |
-|---|---|
-| `cv.madfam.io/lector` (es-MX), `/en/lector` | a public page for website operators about cv's job-link reader: what it fetches, when, its limits, what it never does, how to opt out (`User-agent: madfam-cv` / `Disallow: /` in robots.txt), support@madfam.io. The reader's User-Agent points at it; linked from the footer |
-| `cv-p.madfam.io` | people's published CVs and portfolios, on MADFAM's own infrastructure: `/<slug>` (public) and `/l/<token>` (link-shared); noindex unless the owner chose to be indexed. Live once the coordinator adds its DNS record and tunnel route |
-| rate limit | unauthenticated reads (the pages host and cv-api's public reads) are limited per client: 60 at once, then 60 a minute per server, an honest `429` with `Retry-After` ([docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) "Rate limit on unauthenticated reads") |
-| sessions | a sign-in session ends after 7 days without use (was Auth.js's 30) |
+**Not live:** AI writing (waits for the Selva gateway and the owner's rulings), plans and payments (Dhanam), reading
+images through tlacuilo (built, dormant). No analytics, no ads, no data sold ([privacy notice](https://cv.madfam.io/privacidad)).
 
 ## What comes next
 
-1. Sign-in with Janua (MADFAM's identity service) on `cv-app.madfam.io` and the owner-scoped model (one
-   profile, jobs, tailored artifacts per job), with tests on a real Postgres proving one person can never
-   read another's data. **Built, dormant until provisioned.**
-2. The core journey (W3). The foundation is in the tree: every app page declared (`/perfil`, `/empleos`,
-   `/empleos/:id/adaptar`, `/documentos`, ...; each says «En construcción» until built), the app frame and UI
-   primitives, and a separate host for the pages people publish (public `/<slug>` and link-shared `/l/<token>`;
-   its label is not named yet, so it stays off). Then, in parallel: the profile editor, jobs with the tailoring
-   workspace, and the document renderers with preview, print and publish.
-3. Plans and checkout through Dhanam, AI assistance through the Selva gateway, and the remaining
-   MADFAM platform seams ([ECOSYSTEM.md](ECOSYSTEM.md)).
+Beta readiness: a first-run checklist, a cover-letter body of its own, the remaining design critique (public pages,
+landing voice, the long profile on phones), a feedback channel once the owner picks one, then the first invitations.
+After that: AI assistance through Selva, plans through Dhanam, and the remaining MADFAM seams
+([ECOSYSTEM.md](ECOSYSTEM.md)). Open rulings live in [AGENTS.md](AGENTS.md) «Pending rulings».
 
 ## The old code
 
@@ -64,7 +59,19 @@ CV_HOST_LANDING=cv.localhost CV_HOST_APP=cv-app.localhost CV_HOST_API=cv-api.loc
 # then open http://cv.localhost:3000/ and http://cv-app.localhost:3000/
 ```
 
-Agents: read [AGENTS.md](AGENTS.md) first.
+Agents: read [AGENTS.md](AGENTS.md) first (`CLAUDE.md` only points there).
+
+## Documentation map
+
+| File | What it holds |
+|---|---|
+| [AGENTS.md](AGENTS.md) | how to work here: doctrine, layout, commands, CI lanes, pending rulings, per-wave notes |
+| [docs/PRODUCT.md](docs/PRODUCT.md) | the product model and every behaviour rule (import, intake, match, tailoring, documents, bilingual text, privacy) |
+| [docs/DESIGN.md](docs/DESIGN.md) | the design system («The Tailor's Atelier»): tokens, type, components; read before any UI change |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | the env contract, activation and observability |
+| [docs/REPO_BOUNDARY.md](docs/REPO_BOUNDARY.md) | what never goes into this public repository |
+| [ECOSYSTEM.md](ECOSYSTEM.md) | the MADFAM services cv consumes (Janua, Dhanam, Selva, Enclii, HCM, Pliego, tlacuilo) |
+| [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md) | contributing; reporting a vulnerability |
 
 ## Licence
 

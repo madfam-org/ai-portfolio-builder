@@ -1,7 +1,8 @@
 # Product: one core profile, a tailored CV for every job
 
-> Last Updated: 2026-10-22. Status: incubating, pre-launch. The brand is not ruled ("MADFAM CV" is a working
-> label). Nothing below is offered to the public until sign-in is configured and the coordinator says so.
+> Last Updated: 2026-11-16. Status: incubating; **invite-only private beta** (Janua's `cv` entitlement gates sign-in).
+> The brand is not ruled ("MADFAM CV" is a working label). Agent rules for the same features: [`AGENTS.md`](../AGENTS.md);
+> the look: [`DESIGN.md`](DESIGN.md); settings and activation: [`DEPLOYMENT.md`](DEPLOYMENT.md).
 
 ## The owner requirement (verbatim, 2026-10-22)
 
@@ -56,9 +57,9 @@ coordinator's DNS and tunnel steps run. Its reads, and cv-api's public reads, ar
 | `/perfil` | the core profile and its items | W3-2 |
 | `/empleos`, `/empleos/:id` | jobs pipeline, one job | W3-3 |
 | `/empleos/:id/adaptar` | tailoring workspace: keyword match (no AI), selection, overrides, «Crear CV, portafolio y presentación» | W3-3 |
-| `/documentos`, `/documentos/:id` | artifacts, the editor and the publish dialog | W3-4 |
+| `/documentos`, `/documentos/:id` | artifacts; one document's settings, its content (editable in place) and sharing | W3-4, 2026-11-16 |
 | `/documentos/:id/vista-previa`, `/documentos/:id/imprimir` | preview (same renderer as the pages host), print view | W3-4 |
-| `/ajustes` | account and data settings | later |
+| `/ajustes` | data download (everything, or JSON Resume) and delete-all | W4-I |
 
 ### Documents: renderers, preview, print and publish (W3-4)
 
@@ -69,7 +70,23 @@ coordinator's DNS and tunnel steps run. Its reads, and cv-api's public reads, ar
   owner's profile on the server (`model.ts`); the cv-app preview, the print view and the pages host share it. React text
   only, no images, http(s) links with `rel="ugc nofollow noopener noreferrer"`, nothing invented.
 - **PDF = the browser's print** («Guardar como PDF» from `/documentos/:id/imprimir`), which keeps a real text layer;
-  no server-side PDF yet.
+  no server-side PDF yet. Before printing, the view says **«Aprox. N páginas»** on the chosen paper
+  (`components/paper/print-pages.ts`: a hidden copy laid out with the page's own `@media print` rules at the printable
+  width, paginated like print: an entry never splits). From three pages on it suggests trimming, and a CV in another
+  template is offered **«Usar Compacta»** when the same content would print shorter. The e2e holds the estimate equal
+  to Chromium's PDF for every CV template on Carta and A4.
+- **Editing in place** (`/documentos/:id`, «Contenido»): which profile items, in which order, with which text for
+  this document only; the document's summary (a letter's body); a letter's greeting and closing. Same editor as the
+  tailoring workspace; one PATCH that replaces only what it shows (text blocks, a presentation's own slides,
+  `showContact` and a portfolio's intro are kept). The profile never changes. Leaving with unsaved changes asks first.
+  A published document's page changes when its content is saved, as the editor says.
+- **Cover letter content**: the greeting, the opening (the summary), the text blocks, at most **three** roles or
+  projects as «Experiencia relevante» (title, organisation, dates; the CV carries the details), the closing and the
+  name. An empty greeting or closing becomes the text shown as the field's placeholder before creation («Estimado
+  equipo de {empresa}:» / «Atentamente,»; English: «Dear {company} hiring team,» / «Sincerely,»); no date or recipient
+  is added.
+- **Recommendations** print as the recommender's name, their role and organisation, the relationship and their words
+  in quotation marks, verbatim (never translated, never adjusted per job).
 - **Publish** from `/documentos/:id`: private, by link (`/l/<token>` on the pages host; never indexed; «Cambiar enlace»
   rotates it) or public at a chosen address (reserved words refused; «Permitir que buscadores indexen esta página» maps
   to `indexable`, off by default). At most 20 different documents published per 24 hours (429 `publish_limit`, stated in
