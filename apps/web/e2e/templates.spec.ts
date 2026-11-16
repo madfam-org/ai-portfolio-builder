@@ -59,14 +59,22 @@ test.beforeAll(async () => {
 
 /** The print view on Carta, then A4: the size of EVERY page and the PDF text layer of each. */
 async function printBoth(page: Page, id: string) {
+  // A previous call leaves the page emulating print, which hides the view's controls: start from the screen.
+  await page.emulateMedia({ media: 'screen' });
   await page.goto(url('app', `/documentos/${id}/imprimir`));
+  // The view's own estimate («Aprox. N páginas»), read before printing, per paper.
+  const estimate = async () => Number(await page.getByTestId('print-pages').getAttribute('data-pages'));
+  await expect(page.getByTestId('print-pages')).toBeVisible();
+  const letterEstimate = await estimate();
   await page.emulateMedia({ media: 'print' });
   const letter = readPdf(await page.pdf({ preferCSSPageSize: true }));
   await page.emulateMedia({ media: 'screen' });
   await page.getByLabel('A4').check();
+  await expect(page.getByTestId('print-pages')).toContainText('A4');
+  const a4Estimate = await estimate();
   await page.emulateMedia({ media: 'print' });
   const a4 = readPdf(await page.pdf({ preferCSSPageSize: true }));
-  return { letter, a4 };
+  return { letter, a4, estimates: { letter: letterEstimate, a4: a4Estimate } };
 }
 
 const flat = (s: string) => s.replace(/\s/g, '');
@@ -75,7 +83,11 @@ for (const template of CV_TEMPLATES) {
   test(`cv/${template}: Carta and A4, every page sized, the name and every entry in the text layer, no images`, async ({ page }) => {
     const violations = cspViolations(page);
     await signIn(page.context(), OWNER_A);
-    const { letter, a4 } = await printBoth(page, ids[`cv/${template}`]!);
+    const { letter, a4, estimates } = await printBoth(page, ids[`cv/${template}`]!);
+    // The page estimate shown before printing matches the PDF the browser makes (read-proof: both numbers logged).
+    test.info().annotations.push({ type: 'pages', description: `estimate letter ${estimates.letter} / pdf ${letter.pages}; a4 ${estimates.a4} / pdf ${a4.pages}` });
+    expect(estimates.letter, 'Carta estimate = PDF pages').toBe(letter.pages);
+    expect(estimates.a4, 'A4 estimate = PDF pages').toBe(a4.pages);
     for (const [pdf, size] of [
       [letter, [612, 792]],
       [a4, [595, 842]],

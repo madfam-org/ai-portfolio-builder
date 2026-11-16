@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { FoldGuide } from '@/components/paper/FoldGuide';
 import { PaperSheet } from '@/components/paper/PaperSheet';
+import { estimatePrintedPages } from '@/components/paper/print-pages';
 import { StockPicker } from '@/components/paper/StockPicker';
 import { Button, ButtonLink } from '@/components/ui/Button';
 import { Notice } from '@/components/ui/States';
@@ -28,6 +29,25 @@ export function PrintView({ locale, slides, backHref, stocks, folds, children }:
   const stock = stocks.find((s) => s.id === stockId) ?? stocks[0];
   const fold = folds?.find((f) => f.paper === size && f.stock === stockId) ?? null;
   const sheetClass = `${css.sheet} ${slides ? '' : size === 'a4' ? paper.paperA4 : paper.paperLetter}`;
+  // «Aprox. N páginas»: the document laid out with the print rules at the printable width (components/paper/print-pages.ts).
+  const [pages, setPages] = useState<number | null>(null);
+  useEffect(() => {
+    if (slides) return;
+    let live = true;
+    const run = () => {
+      const el = document.querySelector<HTMLElement>(`[data-paper="${size}"]`);
+      if (!el || !live) return;
+      try {
+        setPages(estimatePrintedPages(el, size));
+      } catch {
+        setPages(null);
+      }
+    };
+    void document.fonts.ready.then(run);
+    return () => {
+      live = false;
+    };
+  }, [size, slides]);
   return (
     <div className={css.printRoot}>
       <div className={`${css.noPrint} ${css.printHelp}`}>
@@ -48,6 +68,11 @@ export function PrintView({ locale, slides, backHref, stocks, folds, children }:
             ))}
           </fieldset>
         )}
+        {!slides && pages ? (
+          <p className="small" data-testid="print-pages" data-pages={pages}>
+            {d.printPages(pages, d.papers[size])}
+          </p>
+        ) : null}
         {slides || !stock ? null : <StockPicker locale={locale} stocks={stocks} value={stock.id} onChange={setStockId} />}
         {fold ? <FoldGuide locale={locale} fold={fold} paperName={d.papers[size]} /> : null}
         <Button onClick={() => window.print()}>{d.printButton}</Button>

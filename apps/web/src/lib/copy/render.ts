@@ -198,6 +198,8 @@ export interface DocumentsCopy {
   printHowToSlides: string;
   paperLabel: string;
   papers: Record<Paper, string>;
+  /** The print view's page estimate («Aprox. 2 páginas en Carta…»), with a nudge from three pages on. */
+  printPages: (pages: number, paper: string) => string;
   printButton: string;
   refreshing: string;
   refreshFailed: string;
@@ -304,6 +306,8 @@ export const DOCUMENTS_COPY: Record<Locale, DocumentsCopy> = {
     printHowToSlides: 'Pulsa «Imprimir o guardar como PDF» y elige «Guardar como PDF» como destino: cada diapositiva sale en su propia página.',
     paperLabel: 'Tamaño de papel',
     papers: { letter: 'Carta (México y EE. UU.)', a4: 'A4' },
+    printPages: (n, paperName) =>
+      `Aprox. ${n === 1 ? '1 página' : `${n} páginas`} en ${paperName}.${n >= 3 ? ' Más de dos páginas: si es un CV, considera quitar elementos en «Contenido» del documento.' : ''}`,
     printButton: 'Imprimir o guardar como PDF',
     refreshing: 'Renovando tu sesión…',
     refreshFailed: 'Tu sesión terminó. Inicia sesión de nuevo para ver tus documentos.',
@@ -407,6 +411,8 @@ export const DOCUMENTS_COPY: Record<Locale, DocumentsCopy> = {
     printHowToSlides: 'Press «Print or save as PDF» and choose «Save as PDF» as the destination: each slide gets its own page.',
     paperLabel: 'Paper size',
     papers: { letter: 'Letter (Mexico and US)', a4: 'A4' },
+    printPages: (n, paperName) =>
+      `About ${n === 1 ? '1 page' : `${n} pages`} on ${paperName}.${n >= 3 ? ' More than two pages: if this is a CV, consider removing items under the document\'s «Content».' : ''}`,
     printButton: 'Print or save as PDF',
     refreshing: 'Renewing your session…',
     refreshFailed: 'Your session ended. Sign in again to see your documents.',
