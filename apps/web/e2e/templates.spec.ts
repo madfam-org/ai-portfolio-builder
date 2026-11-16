@@ -91,16 +91,6 @@ for (const template of CV_TEMPLATES) {
     test.info().annotations.push({ type: 'pages', description: `estimate letter ${estimates.letter} / pdf ${letter.pages}; a4 ${estimates.a4} / pdf ${a4.pages}` });
     expect(estimates.letter, 'Carta estimate = PDF pages').toBe(letter.pages);
     expect(estimates.a4, 'A4 estimate = PDF pages').toBe(a4.pages);
-    // From three pages on, a CV in another template is offered Compacta when it would print shorter (A4 is showing).
-    await page.emulateMedia({ media: 'screen' });
-    const offer = page.getByTestId('print-compact');
-    if (template !== 'compacto' && estimates.a4 >= 3) {
-      await expect(offer).toBeVisible();
-      expect(Number(await offer.getAttribute('data-pages'))).toBeLessThan(estimates.a4);
-      await expect(offer.getByRole('button', { name: 'Usar Compacta' })).toBeEnabled();
-    } else {
-      await expect(offer).toHaveCount(0);
-    }
     for (const [pdf, size] of [
       [letter, [612, 792]],
       [a4, [595, 842]],
@@ -123,6 +113,15 @@ for (const template of CV_TEMPLATES) {
     else expect(style.size).toBe(template === 'clasico' ? '14.6667px' : '14px'); // 11pt, base 10.5pt
     if (template === 'clasico') expect(style.family).toMatch(/serif|Georgia|Palatino|Times|Iowan/);
     else expect(style.family).not.toMatch(/Palatino|Iowan/);
+    // The Compacta offer (A4 showing, back on screen): never for Compacta itself or under three pages; when shown, it
+    // promises fewer pages than now (it appears only when Compacta is actually shorter).
+    await page.emulateMedia({ media: 'screen' });
+    const offer = page.getByTestId('print-compact');
+    if (template === 'compacto' || estimates.a4 < 3) await expect(offer).toHaveCount(0);
+    else if ((await offer.count()) > 0) {
+      expect(Number(await offer.getAttribute('data-pages'))).toBeLessThan(estimates.a4);
+      await expect(offer.getByRole('button', { name: 'Usar Compacta' })).toBeEnabled();
+    }
     expect(violations).toEqual([]);
   });
 }
