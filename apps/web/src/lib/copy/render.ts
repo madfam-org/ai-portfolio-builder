@@ -129,6 +129,21 @@ export interface DocumentsCopy {
   contentSummary: (items: number, blocks: number) => string;
   contentWhereJob: string;
   contentWhereProfile: string;
+  /** Critique #7: editing the content in place. */
+  contentEditIntro: string;
+  contentSelectionIntro: string;
+  contentSelected: string;
+  contentSummaryLabel: string;
+  contentSummaryHint: string;
+  contentLetterHint: string;
+  contentPublishedNote: string;
+  contentSlidesNote: string;
+  contentUnsaved: string;
+  contentClean: string;
+  contentSave: string;
+  contentSaving: string;
+  contentDiscard: string;
+  contentSaved: string;
   suspendedTitle: string;
   suspendedBody: string;
   suspendedReason: string;
@@ -222,6 +237,20 @@ export const DOCUMENTS_COPY: Record<Locale, DocumentsCopy> = {
       `${items === 1 ? '1 elemento de tu perfil' : `${items} elementos de tu perfil`} y ${blocks === 1 ? '1 bloque de texto' : `${blocks} bloques de texto`}.`,
     contentWhereJob: 'Elige y ordena qué incluir en «Adaptar al empleo».',
     contentWhereProfile: 'Lo que aparece sale de tu perfil; edítalo ahí.',
+    contentEditIntro: 'Elige qué elementos de tu perfil van en este documento, en qué orden y con qué texto. Lo que ajustes aquí solo cambia este documento: tu perfil no cambia.',
+    contentSelectionIntro: 'Quita, agrega u ordena. «Ajustar el texto» cambia cómo se lee un elemento solo en este documento.',
+    contentSelected: 'En este documento ({n})',
+    contentSummaryLabel: 'Resumen de este documento (opcional)',
+    contentSummaryHint: 'Encabeza el documento; en una carta es su cuerpo. Si lo dejas vacío, se usa el resumen de tu perfil.',
+    contentLetterHint: 'Si dejas el saludo o la despedida vacíos, usamos el texto que ves en gris.',
+    contentPublishedNote: 'Este documento está publicado: al guardar, quien tenga el enlace verá los cambios.',
+    contentSlidesNote: 'Las diapositivas que armaste a mano no cambian aquí; esta lista es la que se usa cuando la presentación no tiene diapositivas propias.',
+    contentUnsaved: 'Tienes cambios sin guardar.',
+    contentClean: 'Sin cambios pendientes.',
+    contentSave: 'Guardar contenido',
+    contentSaving: 'Guardando…',
+    contentDiscard: 'Descartar cambios',
+    contentSaved: 'Contenido guardado.',
     suspendedTitle: 'Documento suspendido',
     suspendedBody: 'Este documento se retiró por una revisión de contenido y no se puede compartir ni publicar. Si crees que es un error, escribe a legal@madfam.io.',
     suspendedReason: 'Motivo',
@@ -311,6 +340,20 @@ export const DOCUMENTS_COPY: Record<Locale, DocumentsCopy> = {
     contentSummary: (items, blocks) => `${items === 1 ? '1 item from your profile' : `${items} items from your profile`} and ${blocks === 1 ? '1 text block' : `${blocks} text blocks`}.`,
     contentWhereJob: 'Choose and order what to include in «Tailor to the job».',
     contentWhereProfile: 'What appears comes from your profile; edit it there.',
+    contentEditIntro: 'Choose which items of your profile go into this document, in which order and with which text. What you adjust here changes this document only: your profile does not change.',
+    contentSelectionIntro: 'Remove, add or reorder. «Adjust the text» changes how an item reads in this document only.',
+    contentSelected: 'In this document ({n})',
+    contentSummaryLabel: 'Summary of this document (optional)',
+    contentSummaryHint: 'It heads the document; in a letter it is the body. Left empty, your profile summary is used.',
+    contentLetterHint: 'If you leave the greeting or the closing empty, we use the grey text you see.',
+    contentPublishedNote: 'This document is published: once you save, anyone with the link sees the changes.',
+    contentSlidesNote: 'Slides you built by hand do not change here; this list is used when the presentation has no slides of its own.',
+    contentUnsaved: 'You have unsaved changes.',
+    contentClean: 'No pending changes.',
+    contentSave: 'Save content',
+    contentSaving: 'Saving…',
+    contentDiscard: 'Discard changes',
+    contentSaved: 'Content saved.',
     suspendedTitle: 'Document suspended',
     suspendedBody: 'This document was withdrawn after a content review and cannot be shared or published. If you think this is a mistake, write to legal@madfam.io.',
     suspendedReason: 'Reason',

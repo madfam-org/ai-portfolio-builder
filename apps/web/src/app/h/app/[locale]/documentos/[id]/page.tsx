@@ -11,6 +11,7 @@ import { getConfig } from '@/lib/config';
 import { APP_COPY } from '@/lib/copy/app';
 import { DOCUMENTS_COPY } from '@/lib/copy/render';
 import { loadOwnerDocument } from '../load';
+import { DocumentContentEditor } from '../ui/DocumentContentEditor';
 import { DocumentSettings } from '../ui/DocumentSettings';
 import { DocumentState } from '../ui/DocumentState';
 import { PublishPanel } from '../ui/PublishPanel';
@@ -21,7 +22,8 @@ export function generateMetadata({ params }: IdParams): Promise<Metadata> {
 }
 
 /**
- * `/documentos/:id`: one document — title, language, template and status; what it contains; preview and print; and
+ * `/documentos/:id`: one document — title, language, template and status; what it contains, editable in place
+ * (DocumentContentEditor); preview and print; and
  * sharing (publish by link or publicly, unpublish). Another person's id is the same 404 as a missing one. Owner: W3-4.
  */
 export default async function Page({ params }: IdParams) {
@@ -67,13 +69,12 @@ export default async function Page({ params }: IdParams) {
                   }
                 />
                 <DocumentSettings locale={locale} artifact={artifact} />
-                <section className={css.panel} aria-labelledby="doc-content">
-                  <h2 id="doc-content">{d.contentTitle}</h2>
-                  <p>{d.contentSummary(content.items.length, content.blocks.length)}</p>
-                  <p className="muted">
-                    {job ? <a href={appPath.jobTailor(locale, job.id)}>{d.contentWhereJob}</a> : <a href={appPath.profile(locale)}>{d.contentWhereProfile}</a>}
+                <div className={css.panel}>
+                  <DocumentContentEditor locale={locale} artifact={artifact} job={job} />
+                  <p className="small muted">
+                    {d.contentSummary(content.items.length, content.blocks.length)} <a href={appPath.profile(locale)}>{d.contentWhereProfile}</a>
                   </p>
-                </section>
+                </div>
                 <PublishPanel locale={locale} artifact={artifact} pagesHost={getConfig().hosts.pages} />
               </>
             );
