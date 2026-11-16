@@ -105,6 +105,36 @@ function websites(raw: string): { label?: string; url: string }[] {
 
 const joinText = (...parts: string[]) => parts.filter(Boolean).join('\n\n');
 
+/**
+ * LinkedIn's export strips every line break from a description, so a bulleted description arrives as one line:
+ * «- Instruct students … - Follow up on …», «• Implement … • Collaborate …» or «•Handled …•Organized …». The text is
+ * split at each bullet marker followed by a capital letter or an opening quote/sign (so a range like «2018 - 2019»
+ * or «real - time» inside a sentence stays whole), and the pieces become bullet points:
+ * - when the text STARTS with a marker («• » / «•» / «- » / «* »): every piece is a bullet;
+ * - when it has at least two «•» markers after some opening text («First half of internship •Developed …»): the
+ *   opening text is the summary and the rest are bullets (a hyphen alone is too ambiguous to split prose on);
+ * - otherwise the text is a summary, untouched.
+ */
+const BULLET_AT = /(?:^|\s+)(?:•\s*|[-*]\s+)(?=[\p{Lu}"“'¿¡(])/u;
+const BULLET_SPLIT = /(?:^|\s+)(?:•\s*|[-*]\s+)(?=[\p{Lu}"“'¿¡(])/gu;
+
+export function descriptionToContent(raw: string): { summary?: string; highlights?: string[] } {
+  const text = raw.trim();
+  if (!text) return {};
+  const pieces = (s: string) => s.split(BULLET_SPLIT).map((part) => part.trim()).filter(Boolean);
+  if (/^(?:•|[-*]\s)/.test(text)) {
+    const highlights = pieces(text);
+    return highlights.length > 0 ? { highlights } : { summary: text };
+  }
+  if ((text.match(/•/g) ?? []).length >= 2) {
+    const first = text.search(BULLET_AT);
+    const lead = text.slice(0, first).trim();
+    const highlights = pieces(text.slice(first));
+    if (highlights.length >= 2) return { ...(lead ? { summary: lead } : {}), highlights };
+  }
+  return { summary: text };
+}
+
 /** Maps the CSV texts of the mapped files (by FileId) to an import. Pure: no I/O. */
 export function mapLinkedIn(files: Partial<Record<FileId, string>>, ignored = 0): ImportResult {
   const result: ImportResult = { source: 'linkedin', items: [], header: { contact: {} }, skipped: [], read: [], ignored };
@@ -134,7 +164,7 @@ export function mapLinkedIn(files: Partial<Record<FileId, string>>, ignored = 0)
 
   each('positions', [H.company, H.title], (r) => {
     const end = pick(r, H.end);
-    return { role: pick(r, H.title), organization: pick(r, H.company), location: pick(r, H.location), summary: pick(r, H.description), startDate: pick(r, H.start), endDate: end, current: end === '' && pick(r, H.start) !== '' ? true : undefined };
+    return { role: pick(r, H.title), organization: pick(r, H.company), location: pick(r, H.location), ...descriptionToContent(pick(r, H.description)), startDate: pick(r, H.start), endDate: end, current: end === '' && pick(r, H.start) !== '' ? true : undefined };
   });
   each('education', [H.school, H.degree], (r) => ({
     institution: pick(r, H.school),
@@ -155,7 +185,7 @@ export function mapLinkedIn(files: Partial<Record<FileId, string>>, ignored = 0)
   }));
   // W7 (B4): a recognised language name also gives its ISO 639 code, so each document prints it in its own language.
   each('languages', [H.name, H.proficiency], (r) => ({ code: languageCodeFromName(pick(r, H.name)) ?? undefined, name: pick(r, H.name), level: languageLevel(pick(r, H.proficiency)) }));
-  each('projects', [H.title, H.description], (r) => ({ name: pick(r, H.title), summary: pick(r, H.description), url: pick(r, H.url), startDate: pick(r, H.start), endDate: pick(r, H.end) }));
+  each('projects', [H.title, H.description], (r) => ({ name: pick(r, H.title), ...descriptionToContent(pick(r, H.description)), url: pick(r, H.url), startDate: pick(r, H.start), endDate: pick(r, H.end) }));
   each('honors', [H.title, H.issued], (r) => ({ title: pick(r, H.title), issuer: pick(r, H.issuer), date: pick(r, H.issued), summary: pick(r, H.description) }));
   each('publications', [H.name, H.publisher], (r) => ({ title: pick(r, H.name), publisher: pick(r, H.publisher), date: pick(r, H.published), url: pick(r, H.url), summary: pick(r, H.description) }));
   each('volunteering', [H.company, H.role], (r) => {

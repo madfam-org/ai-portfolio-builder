@@ -197,3 +197,47 @@ test('JSON Resume export round trip: profile → JSON Resume → import keeps ev
   const strip = (x: ImportResult) => x.items.map((i) => ({ kind: i.kind, content: i.kind === 'education' ? { ...i.content, summary: undefined } : i.content, tags: i.tags }));
   assert.deepEqual(JSON.parse(JSON.stringify(strip(again))), JSON.parse(JSON.stringify(strip(r))));
 });
+
+test('LinkedIn descriptions: bullets flattened by the export come back as bullet points; prose stays a summary', async () => {
+  const { descriptionToContent } = await import('../src/components/import/linkedin.ts');
+  // The export strips line breaks: a bulleted description arrives on one line.
+  assert.deepEqual(descriptionToContent('- Instruct students on self-development - Follow up on their progress'), {
+    highlights: ['Instruct students on self-development', 'Follow up on their progress'],
+  });
+  assert.deepEqual(descriptionToContent(' • Implement the full stack • Collaborate with design and sales'), {
+    highlights: ['Implement the full stack', 'Collaborate with design and sales'],
+  });
+  // A dash inside a sentence (a range, a lowercase word) never splits it.
+  assert.deepEqual(descriptionToContent('- Led the 2018 - 2019 relaunch and real - time reporting'), {
+    highlights: ['Led the 2018 - 2019 relaunch and real - time reporting'],
+  });
+  // A bullet written without a space after it.
+  assert.deepEqual(descriptionToContent('•Handled phone inquiries •Organized the open house'), {
+    highlights: ['Handled phone inquiries', 'Organized the open house'],
+  });
+  // An opening line before «•» bullets is kept as the summary.
+  assert.deepEqual(descriptionToContent('First half of internship •Developed the aggregator •Built the iPhone client'), {
+    summary: 'First half of internship',
+    highlights: ['Developed the aggregator', 'Built the iPhone client'],
+  });
+  // Prose that does not start with a marker is untouched.
+  assert.deepEqual(descriptionToContent('Built reports for agents - and brokerages - across Canada.'), {
+    summary: 'Built reports for agents - and brokerages - across Canada.',
+  });
+  assert.deepEqual(descriptionToContent('   '), {});
+});
+
+test('LinkedIn positions: a bulleted description maps to highlights, a plain one to the summary', async () => {
+  const { mapLinkedIn } = await import('../src/components/import/linkedin.ts');
+  const csv = [
+    'Company Name,Title,Description,Location,Started On,Finished On',
+    'Ejemplo SA,Instructora,"- Imparte talleres - Da seguimiento a cada grupo",,Feb 2024,Apr 2024',
+    'Otra SA,Analista,Reportes semanales para dirección.,,Jan 2020,Dec 2021',
+  ].join('\n');
+  const result = mapLinkedIn({ positions: csv });
+  const [bulleted, plain] = result.items.map((i) => i.content);
+  assert.deepEqual(bulleted!.highlights, ['Imparte talleres', 'Da seguimiento a cada grupo']);
+  assert.equal(bulleted!.summary, undefined);
+  assert.equal(plain!.summary, 'Reportes semanales para dirección.');
+  assert.equal(plain!.highlights, undefined);
+});
