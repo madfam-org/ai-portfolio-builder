@@ -91,16 +91,17 @@ test('cover letter: the letter fold Pliego computes, per size and stock, never p
   await expect(guide).toBeVisible();
   await expect(guide).toHaveAttribute('data-fold-guide', 'letter/copy-80');
   await expect(guide.getByRole('listitem')).toHaveText([
-    'Dobla hacia arriba la parte de abajo, a 92.1 mm del borde inferior.',
-    'Dobla hacia abajo la parte de arriba, a 93.7 mm del borde superior, sobre la anterior.',
+    'Dobla hacia arriba la parte de abajo, a 92 mm del borde inferior.',
+    'Dobla hacia abajo la parte de arriba, a 94 mm del borde superior, sobre la anterior.',
   ]);
-  await expect(guide).toContainText('doblada mide 93.7 × 215.9 mm');
+  await expect(guide).toContainText('1.6 mm más corta');
+  await expect(guide).toContainText('doblada mide 94 × 216 mm');
   await expect(guide).not.toContainText('marca las dos líneas');
 
   await page.getByLabel('A4').check();
   await page.getByLabel('Cartulina 160 g/m²').check();
   await expect(guide).toHaveAttribute('data-fold-guide', 'a4/cardstock-160');
-  await expect(guide.getByRole('listitem').first()).toHaveText('Dobla hacia arriba la parte de abajo, a 97.9 mm del borde inferior.');
+  await expect(guide.getByRole('listitem').first()).toHaveText('Dobla hacia arriba la parte de abajo, a 98 mm del borde inferior.');
   await expect(guide).toContainText('En cartulina, marca las dos líneas antes de doblar.');
 
   await page.emulateMedia({ media: 'print' });

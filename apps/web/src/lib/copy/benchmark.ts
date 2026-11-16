@@ -23,6 +23,8 @@ export interface BenchmarkCopy {
   unavailable: string;
   retry: string;
   occupation: string;
+  /** Batch 5 (critique #8): the occupation's code, under «Cómo se calcula». */
+  occupationCode: string;
   method: Record<'alias_exact' | 'alias_fuzzy' | 'catalog_fuzzy' | 'sinco_code', string>;
   confidence: string;
   ignored: string;
@@ -80,7 +82,8 @@ export const BENCHMARK_COPY: Record<Locale, BenchmarkCopy> = {
     dormant: 'La comparación con el mercado laboral todavía no está disponible.',
     unavailable: 'No pudimos consultar los datos del mercado en este momento.',
     retry: 'Intentar de nuevo',
-    occupation: 'Ocupación (SINCO {code}): {title}',
+    occupation: 'Ocupación: {title}',
+    occupationCode: 'Clave de la ocupación: SINCO {code}',
     method: {
       alias_exact: 'coincide con un puesto de la lista revisada «{phrase}»',
       alias_fuzzy: 'clasificada por parecido con «{phrase}»',
@@ -153,7 +156,8 @@ export const BENCHMARK_COPY: Record<Locale, BenchmarkCopy> = {
     dormant: 'The labour-market comparison is not available yet.',
     unavailable: 'We could not reach the market data right now.',
     retry: 'Try again',
-    occupation: 'Occupation (SINCO {code}): {title}',
+    occupation: 'Occupation: {title}',
+    occupationCode: 'Occupation code: SINCO {code}',
     method: {
       alias_exact: 'matches the reviewed title «{phrase}»',
       alias_fuzzy: 'classified by similarity to «{phrase}»',

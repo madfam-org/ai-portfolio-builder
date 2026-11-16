@@ -1,4 +1,4 @@
-import { mm, PAPER_COPY } from '@/lib/copy/paper';
+import { mm, mmWhole, PAPER_COPY } from '@/lib/copy/paper';
 import type { LetterFoldView } from '@/lib/pliego/paper';
 import type { Locale } from '@/lib/routing';
 import { FoldMotion } from './FoldMotion';
@@ -25,10 +25,10 @@ export function FoldGuide({ locale, fold, paperName }: { locale: Locale; fold: L
         <div>
           <p className={css.foldIntro}>{t.foldIntro}</p>
           <ol className={css.foldSteps}>
-            <li data-step="bottom">{t.foldBottom(mm(locale, fromBottom))}</li>
-            <li data-step="top">{t.foldTop(mm(locale, top))}</li>
+            <li data-step="bottom">{t.foldBottom(mmWhole(locale, fromBottom))}</li>
+            <li data-step="top">{t.foldTop(mmWhole(locale, top))}</li>
           </ol>
-          <p className={css.foldNote}>{t.foldTuck(mm(locale, fold.tuckShorterByMm), mm(locale, fold.panelsMm[0]), mm(locale, width))}</p>
+          <p className={css.foldNote}>{t.foldTuck(mm(locale, fold.tuckShorterByMm), mmWhole(locale, fold.panelsMm[0]), mmWhole(locale, width))}</p>
           {fold.treatment === 'score' ? <p className={css.foldNote}>{t.foldScore}</p> : null}
           <p className={css.source}>{t.foldSource(paperName)}</p>
         </div>

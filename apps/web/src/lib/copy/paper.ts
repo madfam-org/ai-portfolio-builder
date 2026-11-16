@@ -51,7 +51,7 @@ export const PAPER_COPY: Record<Locale, PaperCopy> = {
     foldNext: 'Siguiente doblez',
     foldRest: 'La hoja extendida, con el texto hacia ti.',
     foldDone: 'Doblada en tres, con el texto por dentro.',
-    foldSource: (paperName) => `Medidas para ${paperName}, calculadas por Pliego (doblez tipo carta del cartucho «print-folds»).`,
+    foldSource: (paperName) => `Medidas para ${paperName}, calculadas por Pliego.`,
   },
   en: {
     intl: 'en',
@@ -74,11 +74,16 @@ export const PAPER_COPY: Record<Locale, PaperCopy> = {
     foldNext: 'Next fold',
     foldRest: 'The sheet laid flat, text facing you.',
     foldDone: 'Folded in three, text inside.',
-    foldSource: (paperName) => `Measurements for ${paperName}, calculated by Pliego (the letter fold of its «print-folds» cartridge).`,
+    foldSource: (paperName) => `Measurements for ${paperName}, calculated by Pliego.`,
   },
 };
 
 /** Millimetres with one decimal, in the page's locale. */
+/** Batch 5: a fold line or a folded size in whole millimetres (a tenth of a millimetre is false precision by hand). */
+export function mmWhole(locale: Locale, v: number): string {
+  return new Intl.NumberFormat(PAPER_COPY[locale].intl, { maximumFractionDigits: 0 }).format(v);
+}
+
 export function mm(locale: Locale, v: number): string {
   return new Intl.NumberFormat(PAPER_COPY[locale].intl, { maximumFractionDigits: 1, minimumFractionDigits: 1 }).format(v);
 }
