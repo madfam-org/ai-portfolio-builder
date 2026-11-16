@@ -67,21 +67,22 @@ test('LinkedIn ZIP: read in the browser, previewed, duplicates unchecked, only t
   await expect(header.getByRole('checkbox', { name: /Nombre: Ana Ejemplo/ })).not.toBeChecked();
   await expect(header.getByText('reemplaza lo actual')).toHaveCount(1);
   await header.getByRole('checkbox', { name: /Nombre: Ana Ejemplo/ }).check();
-  await expect(preview.getByTestId('import-count')).toHaveText('16 de 18 marcados');
+  await expect(preview.getByTestId('import-count')).toHaveText('17 de 19 marcados');
 
   // Uncheck one experience from the keyboard, then confirm.
   await preview.getByRole('checkbox', { name: /Analista · Cooperativa Ejemplo/ }).focus();
   await page.keyboard.press('Space');
-  await expect(preview.getByTestId('import-count')).toHaveText('15 de 18 marcados');
+  await expect(preview.getByTestId('import-count')).toHaveText('16 de 19 marcados');
   const batch = page.waitForRequest((r) => r.url().endsWith('/api/v1/profile/items/batch') && r.method() === 'POST');
-  await preview.getByRole('button', { name: 'Importar 15 elementos' }).click();
+  await preview.getByRole('button', { name: 'Importar 16 elementos' }).click();
   const sent = await batch;
   const body = sent.postData() ?? '';
   expect(body).not.toContain('SENTINEL');
   expect(body).not.toContain('Cooperativa Ejemplo');
-  expect(JSON.parse(body).items).toHaveLength(15);
+  expect(JSON.parse(body).items).toHaveLength(16);
+  expect(JSON.parse(body).items.filter((i: { kind: string }) => i.kind === 'recommendation')).toHaveLength(1);
   expect(JSON.parse(body).profile.displayName).toBe('Ana Ejemplo');
-  await expect(page.getByRole('status').filter({ hasText: 'Importamos 15 elementos a tu perfil.' }).first()).toBeVisible();
+  await expect(page.getByRole('status').filter({ hasText: 'Importamos 16 elementos a tu perfil.' }).first()).toBeVisible();
   await expect(page.getByTestId('import-preview')).toHaveCount(0);
   expect(requests.filter((r) => r.url().includes('/profile/items/batch'))).toHaveLength(1);
 
@@ -91,7 +92,7 @@ test('LinkedIn ZIP: read in the browser, previewed, duplicates unchecked, only t
   await page.reload();
   await expect(page.getByTestId('section-language').getByTestId('profile-item')).toHaveCount(4);
   const stored = (await apiAs(OWNER_A, 'GET', '/api/v1/profile')).json!;
-  expect(stored.items).toHaveLength(16);
+  expect(stored.items).toHaveLength(17);
   expect(stored.profile.headline).toBe('Ingeniera de datos, de tiempo completo');
   expect(stored.items.filter((i: { content: { name?: string } }) => i.content.name?.toLowerCase() === 'python')).toHaveLength(1);
   expect(stored.profile.displayName).toBe('Ana Ejemplo');

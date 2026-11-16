@@ -67,7 +67,7 @@ test('LinkedIn CSVs → items of every mapped kind and the header; rows without 
   assert.equal(odd.content.startDate, '2016-01');
   assert.equal(odd.content.endDate, undefined);
   assert.deepEqual(odd.notes, ['date_dropped']);
-  assert.deepEqual(r.skipped, [{ file: 'Positions.csv', row: 3 }, { file: 'Recommendations_Received.csv', row: 3 }], 'the row without a company; the recommendation without a name');
+  assert.deepEqual(r.skipped, [{ file: 'Positions.csv', row: 3 }], 'the row without a company');
   assert.deepEqual(byKind(r, 'education')[0], {
     institution: 'Universidad de Ejemplo',
     degree: 'Licenciatura en Matemáticas',
@@ -92,7 +92,7 @@ test('LinkedIn CSVs → items of every mapped kind and the header; rows without 
     {
       name: 'Carmen Ejemplo',
       role: 'Coordinadora de datos',
-      organization: 'Cooperativa Ejemplo',
+      organization: 'Taller Ejemplo',
       date: '2013-10',
       text: 'Ana ordenó nuestros reportes y enseñó al equipo a mantenerlos. Siempre entrega a tiempo, con "cuidado" en cada detalle.',
     },
