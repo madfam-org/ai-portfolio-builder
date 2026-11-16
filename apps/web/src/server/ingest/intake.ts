@@ -17,6 +17,7 @@ import { detectAts } from './ats.ts';
 import { captureOnlyBoard } from './boards.ts';
 import { closedPosting } from './closed.ts';
 import { draftFromCapture, draftFromParts, draftFromText } from './extract.ts';
+import { workModeFromSentence } from './fields.ts';
 import { FETCH_LIMITS, FetchError, checkUrl, decodeBody, safeFetch, type Resolver, type Transport } from './fetcher.ts';
 import { pageParts } from './html.ts';
 import { robotsVerdict } from './robots.ts';
@@ -111,6 +112,11 @@ async function fromUrl(owner: string, raw: string, deps: IntakeDeps): Promise<In
       if (job) {
         const mapped = ats.map(job, json);
         const description = mapped.description?.trim() ?? '';
+        // The API's own fields win; a mode it leaves out may still be stated in the posting («This is a hybrid role»).
+        if (!mapped.fields.workMode) {
+          const mode = workModeFromSentence(description.slice(0, 20_000));
+          if (mode) mapped.fields.workMode = { value: mode, from: 'text' };
+        }
         if (mapped.fields.title && description) {
           const notes: IntakeDraft['notes'] = [];
           const text = description.length > SOURCE_TEXT_MAX ? (notes.push('text_truncated'), description.slice(0, SOURCE_TEXT_MAX)) : description;

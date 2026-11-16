@@ -102,10 +102,13 @@ coordinator's DNS and tunnel steps run. Its reads, and cv-api's public reads, ar
 
 ### Tailoring before AI: `GET /api/v1/jobs/:id/match`
 
-A deterministic, AI-free score of each profile item against a job posting (`keyword-overlap-v1`, in
+A deterministic, AI-free score of each profile item against a job posting (`keyword-overlap-v2`, in
 `apps/web/src/server/api/match.ts`): Spanish and English text is lower-cased and stripped of accents and
-stopwords; a tag scores 3 when all its words appear in the posting and each other matching word of the item
-scores 1; items are ranked by score, then position. It also lists the posting's most frequent words that no item
+stopwords (v2: also everyday filler such as «up», «best», «always», «cada»); a tag scores 3 when all its words appear
+in the posting and each other matching word of the item scores 1, counting only words about the work (v2: not the
+item's place, enums or a recommender's relation; a recommendation scores 0, it is someone else's words); items are
+ranked by score, then position. The tailoring page pre-selects the items that scored, plus the current job, in CV
+reading order (section, then the person's own order), never in score order. It also lists the posting's most frequent words that no item
 covers, leaving out what is not about the work (the employer's name, the place, posting boilerplate). Words are shown
 as the posting writes them («inglés», «comisiones»), never as the matcher's normalised tokens. It calls no network and no model. Assisted writing through Selva arrives in W6.
 

@@ -28,6 +28,7 @@ import {
   buildArtifactSet,
   initialSelection,
   languagesOf,
+  letterDefaults,
   restoreLanguage,
   stashLanguage,
   tailorMissing,
@@ -96,7 +97,7 @@ export function TailorWorkspace({ locale, jobId }: { locale: Locale; jobId: stri
   const { job, profile, items, match, artifacts } = bundle.data;
   const scores = new Map(match.items.map((m) => [m.itemId, m.score]));
   // Until the person changes it, the selection IS the match's pre-selection (computed, not copied into state).
-  const selection = selectionDraft ?? initialSelection(match, new Set(items.map((i) => i.id)));
+  const selection = selectionDraft ?? initialSelection(match, items);
   const profileLocale: ContentLocale = profile?.locale ?? (locale === 'en' ? 'en' : 'es-MX');
   const docLocale: ContentLocale = contentLocale ?? profileLocale;
   // W7 (B3): a version in a language other than the profile's says so in its title, so the two read apart.
@@ -113,7 +114,7 @@ export function TailorWorkspace({ locale, jobId }: { locale: Locale; jobId: stri
     return fmt(t.tailor.problems.tooLong, { max: LIMITS[field] });
   };
   /** A problem in a folded field (summary, greeting, closing) opens «Más opciones» so the error is seen. */
-  const moreProblem = (['summary', 'greeting', 'closing'] as const).some((f) => formProblem(f) !== null);
+  const moreProblem = formProblem('summary') !== null;
   const itemProblems: ItemProblems = {};
   for (const p of problems) {
     if (p.scope !== 'item') continue;
@@ -261,6 +262,29 @@ export function TailorWorkspace({ locale, jobId }: { locale: Locale; jobId: stri
             )}
           </div>
         </fieldset>
+        {kinds.includes('cover_letter') ? (
+          <fieldset className={s.fieldset} data-testid="tailor-letter">
+            <legend>{t.tailor.letterLegend}</legend>
+            <p className="small muted">{t.tailor.letterHint}</p>
+            <TextField
+              id="tailor-greeting"
+              label={t.tailor.greeting}
+              value={greeting}
+              placeholder={letterDefaults(job.company, docLocale).greeting}
+              onChange={(e) => setGreeting(e.target.value)}
+              error={formProblem('greeting')}
+            />
+            <TextAreaField
+              id="tailor-closing"
+              label={t.tailor.closing}
+              rows={2}
+              value={closing}
+              placeholder={letterDefaults(job.company, docLocale).closing}
+              onChange={(e) => setClosing(e.target.value)}
+              error={formProblem('closing')}
+            />
+          </fieldset>
+        ) : null}
         <CheckboxField id="tailor-contact" label={t.tailor.showContact} hint={t.tailor.showContactHint} checked={showContact} onChange={(e) => setShowContact(e.target.checked)} />
         {/* Batch 4 (critique #10): the essentials above (with the note on languages already created); the rest folds
             here and opens by itself on a problem inside. */}
@@ -288,12 +312,6 @@ export function TailorWorkspace({ locale, jobId }: { locale: Locale; jobId: stri
               onChange={(e) => setSummary(e.target.value)}
               error={formProblem('summary')}
             />
-            {kinds.includes('cover_letter') ? (
-              <>
-                <TextField id="tailor-greeting" label={t.tailor.greeting} value={greeting} onChange={(e) => setGreeting(e.target.value)} error={formProblem('greeting')} />
-                <TextAreaField id="tailor-closing" label={t.tailor.closing} rows={2} value={closing} onChange={(e) => setClosing(e.target.value)} error={formProblem('closing')} />
-              </>
-            ) : null}
           </div>
         </details>
         <MissingTranslations

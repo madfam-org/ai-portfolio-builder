@@ -312,7 +312,7 @@ test.describe.serial('bilingual profile text (synthetic persona)', () => {
     await page.goto(url('app', `/empleos/${jobId}/adaptar`));
     await addEverything(page);
     for (const kind of ['Portafolio', 'Presentación']) await page.getByLabel(kind, { exact: true }).uncheck();
-    await page.getByText('Más opciones: plantilla, resumen y carta').click();
+    await page.getByText('Más opciones: plantilla y resumen').click();
     await page.getByRole('group', { name: 'Plantilla: CV' }).getByRole('radio', { name: /^Clásica/ }).check();
     await page.getByTestId('tailor-language').getByRole('radio', { name: 'Inglés' }).check();
     await page.getByLabel('Incluir mis datos de contacto', { exact: false }).check();

@@ -5,12 +5,22 @@ import s from './render.module.css';
 
 /**
  * `cover_letter/base`: a letter. The sender (name, headline, the contact line only when shown), the greeting, the
- * opening (the artifact's summary), the text blocks, the selected items as a short «relevant experience» list, the
- * closing and the name as the signature. Nothing is added: no date, no recipient, no stock phrase.
+ * opening (the artifact's summary), the text blocks, a SHORT «relevant experience» list (the first roles or projects
+ * of the selection, at most `LETTER_ENTRIES`, each as role, organisation and dates: the CV carries the details;
+ * skills, languages and recommendations stay in the CV), the closing and the name as the signature. Nothing is added
+ * unseen: no date, no recipient; the greeting and closing the person left empty were shown as the fields'
+ * placeholders before the letter was created (components/jobs/tailoring.ts `letterDefaults`).
  */
+export const LETTER_ENTRIES = 3;
+const LETTER_KINDS = new Set(['experience', 'project']);
+
 export function CoverLetterView({ model }: { model: DocModel }) {
   const t = RENDER_COPY[model.locale];
-  const entries = model.sections.flatMap((sec) => sec.entries);
+  const entries = model.sections
+    .flatMap((sec) => sec.entries)
+    .filter((e) => LETTER_KINDS.has(e.kind))
+    .slice(0, LETTER_ENTRIES)
+    .map((e) => ({ ...e, summary: null, highlights: [], links: [] }));
   return (
     <article className={`${s.doc} ${s.letter}`} lang={model.locale === 'en' ? 'en' : 'es-MX'} data-kind="cover_letter">
       <header className={s.header}>

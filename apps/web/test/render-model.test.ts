@@ -32,12 +32,16 @@ test('items not in the data (deleted, or another person\'s) are skipped, never r
   assert.deepEqual(m.sections.flatMap((s) => s.entries.map((e) => e.id)), ['e2']);
 });
 
-test('only http(s) links survive; javascript: and data: are dropped; labels show the host', () => {
+test('only http(s) links survive; javascript: and data: are dropped; labels show the host, and a short path', () => {
   assert.equal(httpLink('javascript:alert(1)'), null);
   assert.equal(httpLink('data:text/html,hi'), null);
   assert.equal(httpLink('mailto:a@b.co'), null);
   assert.equal(httpLink('nota un url'), null);
-  assert.deepEqual(httpLink('https://example.test/a/', 'Web'), { href: 'https://example.test/a/', text: 'Web', host: 'example.test' });
+  assert.deepEqual(httpLink('https://example.test/a/', 'Web'), { href: 'https://example.test/a/', text: 'Web', host: 'example.test/a' });
+  assert.equal(httpLink('https://www.linkedin.com/in/aldoruizluna', 'LinkedIn')!.host, 'linkedin.com/in/aldoruizluna', 'www. dropped, the path kept');
+  assert.equal(httpLink('https://madf.am/', 'Web')!.host, 'madf.am');
+  assert.equal(httpLink('https://example.test/a?utm=1', 'Web')!.host, 'example.test', 'a query never shown');
+  assert.equal(httpLink(`https://example.test/${'x'.repeat(40)}`, 'Web')!.host, 'example.test', 'a long path shows the host only');
   assert.deepEqual(httpLink('https://example.test/a/'), { href: 'https://example.test/a/', text: 'example.test/a', host: null });
   const m = buildDocModel(data('portfolio', { items: [{ itemId: 'p1' }] }));
   assert.deepEqual(m.sections[0]!.entries[0]!.links.map((l) => l.href), ['https://example.test/code']);

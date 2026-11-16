@@ -2,13 +2,17 @@
  * `GET /api/v1/jobs/:id/match`: a deterministic, AI-free relevance score of each profile item against one job
  * posting. It gives per-job tailoring value before Selva lands (W6) and never calls the network.
  *
- * Heuristic `keyword-overlap-v1` (docs/PRODUCT.md):
+ * Heuristic `keyword-overlap-v2` (docs/PRODUCT.md):
  * 1. Normalise (es + en): lowercase, strip diacritics (NFD), keep letters, digits and the tech marks `+ # .`
- *    inside a word (c++, c#, node.js), drop stopwords of both languages, drop tokens shorter than 2 characters,
- *    fold a plural `s` on plain words longer than 4 characters.
+ *    inside a word (c++, c#, node.js), drop stopwords of both languages (function words AND the everyday filler of
+ *    any text: «up», «set», «best», «always», «muy», «cada» …), drop tokens shorter than 2 characters, fold a plural
+ *    `s` on plain words longer than 4 characters.
  * 2. Job terms: the set of normalised tokens of the job title and the posting text.
  * 3. For each item: a tag scores 3 when every token of the tag appears in the job terms; each other distinct
- *    content token found in the job terms scores 1. Content tokens come from the item's string fields.
+ *    content token found in the job terms scores 1. Content tokens come from the item's WORDS about the work: not
+ *    its place (`location`), its dates, links, codes or levels, nor how a recommender knows the person. A
+ *    recommendation scores nothing at all: it is someone else's words, not a claim of the person's (v2; in v1 its
+ *    generic praise outranked whole roles).
  * 4. Items are ranked by score, then by their own position, then by id (stable and reproducible).
  * 5. `missingTerms`: the job's most frequent terms that no item covers (up to 20), as a checklist for the person.
  *    Words that are not about the work are left out of this list only (never out of the score): the employer's own
@@ -24,10 +28,18 @@ const STOPWORDS = new Set(
     'a an and are as at be by for from has have in is it its of on or that the to was were will with you your we our ' +
     'this these those they their them he she his her not but if than then so such can may must should would could ' +
     'about into over under more most other some any all each per via etc ' +
+    // v2: everyday filler that matches any posting (never a skill on its own)
+    'up out off down set get got make made one two very just like what when where who whom why how which there here ' +
+    'been being do does did done own same both through while during across within without around every only even ' +
+    'still back much many few lot lots great good best better well also always ever new low high able ability strong ' +
+    'based using use used want wants need needs way ways take part help helps ' +
     // Spanish (diacritics already stripped)
     'el la los las un una unos unas y o u de del al en con por para sin sobre entre es son ser estar esta este estos ' +
     'estas ese esa esos esas que se su sus lo le les nos como mas muy ya tu tus mi mis nuestro nuestra nuestros ' +
-    'nuestras usted ustedes ellos ellas el ella hay tiene tienen debe deben sera seran desde hasta tambien'
+    'nuestras usted ustedes ellos ellas el ella hay tiene tienen debe deben sera seran desde hasta tambien ' +
+    // v2: everyday filler (Spanish)
+    'menos bien gran grande nuevo nueva cada todo toda todos todas otro otra otros otras algun alguna mismo misma ' +
+    'donde cuando quien cual cuales aqui asi solo siempre mejor parte forma manera'
   ).split(' '),
 );
 
@@ -62,11 +74,14 @@ export function normalise(text: string): string[] {
   return out;
 }
 
+/** Content fields that are not words about the work (v2 adds the place, the enums and the recommender's relation). */
+const NOT_WORK_FIELDS = new Set(['url', 'startDate', 'endDate', 'date', 'expiresOn', 'location', 'employmentType', 'level', 'code', 'relationship', 'credentialId']);
+
 function stringsOf(value: unknown, acc: string[] = []): string[] {
   if (typeof value === 'string') acc.push(value);
   else if (Array.isArray(value)) for (const v of value) stringsOf(v, acc);
   else if (value && typeof value === 'object') {
-    for (const [k, v] of Object.entries(value)) if (k !== 'url' && k !== 'startDate' && k !== 'endDate' && k !== 'date') stringsOf(v, acc);
+    for (const [k, v] of Object.entries(value)) if (!NOT_WORK_FIELDS.has(k)) stringsOf(v, acc);
   }
   return acc;
 }
@@ -80,7 +95,7 @@ export interface MatchItemInput {
 }
 
 export interface MatchResult {
-  algorithm: 'keyword-overlap-v1';
+  algorithm: 'keyword-overlap-v2';
   jobTerms: number;
   coveredTerms: number;
   items: { itemId: string; kind: string; score: number; matchedTags: string[]; matchedTerms: string[] }[];
@@ -98,6 +113,7 @@ export function matchItems(job: { title: string; sourceText: string; company?: s
   const covered = new Set<string>();
 
   const scored = items.map((item) => {
+    if (item.kind === 'recommendation') return { itemId: item.id, kind: item.kind, position: item.position, score: 0, matchedTags: [] as string[], matchedTerms: [] as string[] };
     const matchedTags: string[] = [];
     const tagTokens = new Set<string>();
     for (const tag of item.tags) {
@@ -119,7 +135,7 @@ export function matchItems(job: { title: string; sourceText: string; company?: s
     .slice(0, 20)
     .map(([t]) => show(t));
   return {
-    algorithm: 'keyword-overlap-v1',
+    algorithm: 'keyword-overlap-v2',
     jobTerms: freq.size,
     coveredTerms: covered.size,
     items: scored.map(({ position: _position, matchedTerms, ...rest }) => ({ ...rest, matchedTerms: matchedTerms.map(show).sort() })),

@@ -109,7 +109,14 @@ test('cover_letter/base: greeting, opening, blocks, relevant items, closing, sig
   const order = ['Estimado equipo de Acme:', 'Me interesa el puesto.', 'Cuerpo de la carta', 'Experiencia relevante', 'Saludos cordiales,', 'class="signature">Ana Prueba'].map((s) => html.indexOf(s));
   assert.ok(order.every((i) => i >= 0) && order.every((i, k) => k === 0 || i > order[k - 1]!), `order ${order}`);
   assert.doesNotMatch(html, /mailto:|tel:/, 'no contact unless shown');
+  assert.doesNotMatch(html, /Original highlight|Original summary/, 'the letter lists roles, not their details');
   assertSafe(html);
+});
+
+test('cover_letter/base: at most three roles or projects in «Experiencia relevante»; skills and the rest stay in the CV', () => {
+  const html = render(data('cover_letter', { items: [{ itemId: 's1' }, { itemId: 'e1' }, { itemId: 'l1' }, { itemId: 'e2' }, { itemId: 'p1' }, { itemId: 'd1' }] }));
+  assert.deepEqual(headings(html), ['h1:Ana Prueba', 'h2:Experiencia relevante', 'h3:Ingeniera de datos', 'h3:Analista', 'h3:Tablero']);
+  assert.doesNotMatch(html, /Python|Inglés|UNAM/);
 });
 
 test('user text is inert in every kind and every field; an empty document prints nothing invented', () => {

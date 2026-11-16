@@ -165,7 +165,7 @@ test('the tailoring workspace: one picker per chosen kind; the drafts carry each
   await expect(page.getByRole('heading', { level: 1, name: 'Adaptar al empleo' })).toBeVisible();
   // Batch 4: the template pickers are folded under «Más opciones» until opened.
   await expect(page.getByRole('group', { name: 'Plantilla: CV' })).toBeHidden();
-  await page.getByText('Más opciones: plantilla, resumen y carta').click();
+  await page.getByText('Más opciones: plantilla y resumen').click();
   for (const legend of ['Plantilla: CV', 'Plantilla: Portafolio', 'Plantilla: Presentación']) await expect(page.getByRole('group', { name: legend })).toBeVisible();
   await expect(page.getByRole('group', { name: 'Plantilla: Carta de presentación' })).toHaveCount(0);
   await page.getByRole('group', { name: 'Plantilla: CV' }).getByRole('radio', { name: /^Clásica/ }).check();

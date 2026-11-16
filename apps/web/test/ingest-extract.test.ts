@@ -8,7 +8,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { draftFromCapture, draftFromHtml, draftFromText } from '../src/server/ingest/extract.ts';
-import { employmentType, isoDate, parseSalary, workMode } from '../src/server/ingest/fields.ts';
+import { employmentType, isoDate, parseSalary, workMode, workModeFromSentence } from '../src/server/ingest/fields.ts';
 import { htmlToText, pageParts } from '../src/server/ingest/html.ts';
 import { mxStateCode } from '../src/server/ingest/mx.ts';
 import type { DraftFields } from '../src/server/ingest/types.ts';
@@ -214,4 +214,21 @@ test('hostile markup stays linear: 200 000 unclosed tags parse quickly', () => {
   const started = Date.now();
   pageParts('<div a=b c'.repeat(20_000) + '<p>' + '<!x'.repeat(50_000) + '<a '.repeat(50_000));
   assert.ok(Date.now() - started < 3000, `took ${Date.now() - started} ms`);
+});
+
+test('a sentence that states the job\'s own mode gives the work mode; a mode word elsewhere does not', () => {
+  for (const [text, mode] of [
+    ["This is a hybrid role: you'll split your time between the office, customers and home.", 'hybrid'],
+    ['We are hiring for a fully remote position in LATAM.', 'remote'],
+    ['The role is on-site in Monterrey.', 'onsite'],
+    ['El puesto es híbrido, con dos días en oficina.', 'hybrid'],
+    ['Modalidad: Remoto', 'remote'],
+    ['Esquema 100% presencial en Puebla.', 'onsite'],
+  ] as const) {
+    assert.equal(workModeFromSentence(text), mode, text);
+  }
+  for (const text of ['We value remote collaboration and hybrid cloud skills.', 'Nuestras oficinas están en CDMX.', '']) assert.equal(workModeFromSentence(text), null, text);
+  const d = draftFromText('Engineering Director\nClara\n\nThis is a hybrid role: you will split your time between the office and home.', 'paste')!;
+  assert.equal(d.fields.workMode?.value, 'hybrid');
+  assert.equal(d.fields.workMode?.from, 'text');
 });
