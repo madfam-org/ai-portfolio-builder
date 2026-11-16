@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { SelectField, TextAreaField, TextField } from '@/components/ui/Field';
 import { Notice } from '@/components/ui/States';
 import { useToast } from '@/components/ui/Toast';
+import { useUnsavedGuard } from '@/components/ui/useUnsavedGuard';
 import { api, apiErrorMessage } from '@/lib/client/api';
 import type { ContentLocale, ProfileDto } from '@/lib/client/types';
 import type { AppCopy } from '@/lib/copy/app';
@@ -125,6 +126,7 @@ export function HeaderForm({
   }, [focusTick]);
 
   const dirty = JSON.stringify(values) !== saved;
+  useUnsavedGuard(dirty && state !== 'saving');
   const shown: SaveState = state === 'saving' || state === 'failed' ? state : dirty ? 'dirty' : state === 'saved' ? 'saved' : 'clean';
   const set = <K extends keyof HeaderValues>(key: K, value: HeaderValues[K]) => {
     setValues((v) => ({ ...v, [key]: value }));

@@ -100,9 +100,15 @@
   padding-left: 1.25rem;
 }
 
+/* Skills, languages and links on wrapping lines, in every template (a CV's tall one-per-line list made it run a page
+   longer); still a real <ul> of text, read in order by screen readers and in the PDF's text layer. */
 .compact {
   margin: 0;
-  padding-left: 1.25rem;
+  padding-left: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 1.25rem;
 }
 
 .compactName {

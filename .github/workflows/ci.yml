@@ -9,8 +9,8 @@
 name: CI
 
 on:
+  # Every pull request, whatever its base: a PR stacked on another one's branch is checked too (it was not).
   pull_request:
-    branches: [main]
   push:
     branches: [main]
 

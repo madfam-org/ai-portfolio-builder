@@ -123,10 +123,12 @@ test('the whole journey, screen by screen', async ({ page, context }, info) => {
   const id = Object.fromEntries(set.artifacts.map((a) => [a.kind, a.id])) as Record<string, string>;
   await see('documents-list', url('app', '/documentos'));
   for (const kind of ['cv', 'portfolio', 'presentation', 'cover_letter']) {
-    await see(`document-${kind}`, url('app', `/documentos/${id[kind]}`));
+    // The content editor (edit in place) has loaded the profile's items before the screenshot.
+    await see(`document-${kind}`, url('app', `/documentos/${id[kind]}`), (p) => p.getByTestId('doc-content-editor').getByTestId('tailor-selected').waitFor());
     await see(`preview-${kind}`, url('app', `/documentos/${id[kind]}/vista-previa`));
   }
-  await see('print-cv', url('app', `/documentos/${id.cv}/imprimir`));
+  // The print view's «Aprox. N páginas» is part of the screen.
+  await see('print-cv', url('app', `/documentos/${id.cv}/imprimir`), (p) => p.getByTestId('print-pages').waitFor());
   await see('print-cover-letter', url('app', `/documentos/${id.cover_letter}/imprimir`));
 
   // Sharing: what the person sees after publishing, and what a recruiter sees.

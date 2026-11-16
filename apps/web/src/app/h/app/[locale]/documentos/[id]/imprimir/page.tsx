@@ -35,6 +35,7 @@ export default async function Page({ params }: IdParams) {
               backHref={appPath.artifact(locale, artifact.id)}
               stocks={paperStocks()}
               folds={artifact.kind === 'cover_letter' ? letterFolds() : null}
+              artifact={{ id: artifact.id, kind: artifact.kind, template: artifact.template }}
             >
               <ArtifactView data={data} />
             </PrintView>

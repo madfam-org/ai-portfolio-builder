@@ -67,12 +67,15 @@ async function printBoth(page: Page, id: string) {
   await expect(page.getByTestId('print-pages')).toBeVisible();
   const letterEstimate = await estimate();
   await page.emulateMedia({ media: 'print' });
+  // Fonts settled before each PDF: a late font swap reflows the sheet while Chromium paginates.
+  await page.evaluate(() => document.fonts.ready.then(() => undefined));
   const letter = readPdf(await page.pdf({ preferCSSPageSize: true }));
   await page.emulateMedia({ media: 'screen' });
   await page.getByLabel('A4').check();
   await expect(page.getByTestId('print-pages')).toContainText('A4');
   const a4Estimate = await estimate();
   await page.emulateMedia({ media: 'print' });
+  await page.evaluate(() => document.fonts.ready.then(() => undefined));
   const a4 = readPdf(await page.pdf({ preferCSSPageSize: true }));
   return { letter, a4, estimates: { letter: letterEstimate, a4: a4Estimate } };
 }
@@ -88,6 +91,16 @@ for (const template of CV_TEMPLATES) {
     test.info().annotations.push({ type: 'pages', description: `estimate letter ${estimates.letter} / pdf ${letter.pages}; a4 ${estimates.a4} / pdf ${a4.pages}` });
     expect(estimates.letter, 'Carta estimate = PDF pages').toBe(letter.pages);
     expect(estimates.a4, 'A4 estimate = PDF pages').toBe(a4.pages);
+    // From three pages on, a CV in another template is offered Compacta when it would print shorter (A4 is showing).
+    await page.emulateMedia({ media: 'screen' });
+    const offer = page.getByTestId('print-compact');
+    if (template !== 'compacto' && estimates.a4 >= 3) {
+      await expect(offer).toBeVisible();
+      expect(Number(await offer.getAttribute('data-pages'))).toBeLessThan(estimates.a4);
+      await expect(offer.getByRole('button', { name: 'Usar Compacta' })).toBeEnabled();
+    } else {
+      await expect(offer).toHaveCount(0);
+    }
     for (const [pdf, size] of [
       [letter, [612, 792]],
       [a4, [595, 842]],

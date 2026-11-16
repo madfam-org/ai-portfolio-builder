@@ -87,10 +87,11 @@ export function printRulesScoped(sheets: ArrayLike<CSSStyleSheet>, scope: string
 }
 
 /**
- * Estimates the printed pages of `source` (the sheet holding the document) on `paper`. Browser only. The hidden copy
- * and its scoped rules are removed before returning.
+ * Estimates the printed pages of `source` (the sheet holding the document) on `paper`, optionally as if it used
+ * another template (`swap`: the classes of the current and the other template). Browser only. The hidden copy and its
+ * scoped rules are removed before returning.
  */
-export function estimatePrintedPages(source: HTMLElement, paper: keyof typeof PRINT_AREA_MM): number {
+export function estimatePrintedPages(source: HTMLElement, paper: keyof typeof PRINT_AREA_MM, swap?: { from: string; to: string }): number {
   const area = PRINT_AREA_MM[paper];
   const host = document.createElement('div');
   host.setAttribute('data-print-measure', '');
@@ -100,6 +101,12 @@ export function estimatePrintedPages(source: HTMLElement, paper: keyof typeof PR
   copy.removeAttribute('id');
   for (const el of Array.from(copy.querySelectorAll('[id]'))) el.removeAttribute('id');
   Object.assign(copy.style, { padding: '0', border: '0', width: '100%', boxShadow: 'none' });
+  // «What if this were another template»: the copy wears the other template's class instead of its own.
+  if (swap) {
+    const sheet = copy.querySelector<HTMLElement>('[data-template]') ?? copy;
+    if (swap.from) sheet.classList.remove(swap.from);
+    if (swap.to) sheet.classList.add(swap.to);
+  }
   host.appendChild(copy);
   const sheet = new CSSStyleSheet();
   sheet.replaceSync(printRulesScoped(document.styleSheets, '[data-print-measure]').join('\n'));
