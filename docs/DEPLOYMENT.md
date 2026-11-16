@@ -85,7 +85,7 @@ Nothing reads these at import or build time; nothing throws at boot. The boot lo
 | `TLACUILO_API_URL` | plain env (reading images) | tlacuilo's API origin: https, or plain http to a cluster Service name (`*.svc`, `*.svc.cluster.local`); tlacuilo's API has no public hostname by design |
 | `TLACUILO_CLIENT_ID`, `TLACUILO_CLIENT_SECRET` | the Enclii secret intake → an ExternalSecret, read `optional: true` (added by the activation PR, after the client exists) | Janua client credentials for tlacuilo (scope `tlacuilo:extract`) |
 | `TLACUILO_TOKEN_URL`, `TLACUILO_TIMEOUT_MS` | plain env, optional | token endpoint (default `${AUTH_JANUA_ISSUER}/api/v1/oauth/token`); budget for one page (default 45000 ms, 1000-70000) |
-| `CV_IMPORT_LINKEDIN_PDF` | plain env, optional; unset in production (dormant) | `1`/`true`/`on` shows the LinkedIn profile PDF import on `/perfil` (`lib/import-config.ts`); anything else keeps it off. Read per request, no rebuild needed |
+| `CV_IMPORT_LINKEDIN_PDF` | plain env, optional; `"1"` in production since 2026-11-16 (owner ruling) | `1`/`true`/`on` shows the LinkedIn profile PDF import on `/perfil` (`lib/import-config.ts`); anything else keeps it off. Read per request, no rebuild needed |
 
 ### Sign-in shape
 
