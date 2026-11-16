@@ -82,6 +82,50 @@ test('the detail page: title and status saved; the content summary; preview and 
   await expect(page.getByLabel('Estado')).toHaveValue('ready');
 });
 
+test('editing the content in place: remove, add, adjust the text, an emptied closing gets its default; blocks kept; the profile untouched', async ({ page }) => {
+  const violations = cspViolations(page);
+  type Item = { id: string; kind: string; content: Record<string, unknown> };
+  const mine = (await apiAs(OWNER_A, 'GET', '/api/v1/profile/items')).json!.items as Item[];
+  const pick = (kind: string, field: string, value: string) => mine.find((i) => i.kind === kind && i.content[field] === value)!.id;
+  const [exp, edu, skill] = [pick('experience', 'role', 'Backend'), pick('education', 'institution', 'UNAM'), pick('skill', 'name', 'Python')];
+  const created = await apiAs(OWNER_A, 'POST', '/api/v1/artifacts', {
+    jobId,
+    kind: 'cover_letter',
+    title: `Carta editable ${RUN}`,
+    content: { items: [{ itemId: exp }, { itemId: edu }], greeting: 'Hola:', closing: 'Adiós,', blocks: [{ body: 'Bloque propio' }] },
+  });
+  expect(created.status).toBe(201);
+  const id = created.json!.artifact.id as string;
+  const profileBefore = mine;
+
+  await signedIn(page);
+  await page.goto(url('app', `/documentos/${id}`));
+  const editor = page.getByTestId('doc-content-editor');
+  await expect(editor.getByRole('heading', { name: 'En este documento (2)' })).toBeVisible();
+  await expect(editor.getByTestId('doc-content-state')).toHaveText('Sin cambios pendientes.');
+  await expect(editor.getByRole('button', { name: 'Guardar contenido' })).toBeDisabled();
+  await editor.getByRole('button', { name: 'Quitar: Ingeniería · UNAM' }).click();
+  await editor.getByRole('button', { name: 'Agregar: Python' }).click();
+  const entry = editor.getByTestId('tailor-entry').filter({ hasText: 'Backend · Acme' });
+  await entry.getByText('Ajustar el texto para este empleo').click();
+  await entry.getByLabel('Descripción para este empleo').fill('Solo en esta carta.');
+  await editor.getByLabel('Despedida').fill('');
+  await expect(editor.getByLabel('Despedida')).toHaveAttribute('placeholder', 'Atentamente,');
+  await expect(editor.getByTestId('doc-content-state')).toHaveText('Tienes cambios sin guardar.');
+  await editor.getByRole('button', { name: 'Guardar contenido' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Contenido guardado.' })).toBeVisible();
+  await expect(editor.getByTestId('doc-content-state')).toHaveText('Sin cambios pendientes.');
+
+  const after = (await apiAs(OWNER_A, 'GET', `/api/v1/artifacts/${id}`)).json!.artifact.content as Record<string, unknown>;
+  expect(after.items).toEqual([{ itemId: exp, override: { summary: 'Solo en esta carta.' } }, { itemId: skill }]);
+  expect([after.greeting, after.closing]).toEqual(['Hola:', 'Atentamente,']);
+  expect(after.blocks).toEqual([{ body: 'Bloque propio' }]);
+  expect((await apiAs(OWNER_A, 'GET', '/api/v1/profile/items')).json!.items).toEqual(profileBefore);
+  await page.reload();
+  await expect(page.getByTestId('doc-content-editor').getByRole('heading', { name: 'En este documento (2)' })).toBeVisible();
+  expect(violations).toEqual([]);
+});
+
 const EXPECTED: Record<keyof typeof ids, string[]> = {
   cv: ['Ana Prueba', 'Perfil profesional', 'Experiencia', 'Líder de backend', 'Educación', 'Ingeniería', 'Habilidades', 'Por qué Acme'],
   portfolio: ['Ana Prueba', 'Experiencia', 'Líder de backend', 'Educación', 'Ingeniería', 'Habilidades'],

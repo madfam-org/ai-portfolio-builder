@@ -29,6 +29,8 @@ export function SelectionEditor({
   onChange,
   itemsError,
   itemProblems,
+  intro,
+  heading,
 }: {
   locale: Locale;
   /** W7 (B4): the profile's primary language and the documents' language; the placeholders show the latter. */
@@ -40,6 +42,10 @@ export function SelectionEditor({
   onChange: (next: SelectionEntry[]) => void;
   itemsError: string | null;
   itemProblems: ItemProblems;
+  /** The line under the heading (default: the tailoring page's «Preseleccionamos…»). */
+  intro?: string;
+  /** The heading of the chosen list, with `{n}` (default: «En los documentos de este empleo ({n})»). */
+  heading?: string;
 }) {
   const t = JOBS_COPY[locale];
   const pendingFocus = useRef<string[] | null>(null);
@@ -75,8 +81,8 @@ export function SelectionEditor({
 
   return (
     <>
-      <h3 id="tailor-selected-heading">{fmt(t.tailor.selected, { n: selection.length })}</h3>
-      <p className="small muted">{t.tailor.preselected}</p>
+      <h3 id="tailor-selected-heading">{fmt(heading ?? t.tailor.selected, { n: selection.length })}</h3>
+      <p className="small muted">{intro ?? t.tailor.preselected}</p>
       {selection.length > 1 ? (
         <p>
           <Button id="tailor-clear" size="small" variant="ghost" onClick={() => act(clearSelection(), ['tailor-available-heading'])}>
