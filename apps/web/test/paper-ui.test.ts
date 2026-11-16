@@ -27,7 +27,8 @@ test('PaperSheet: no style attribute in the server markup; the stock and the fra
 test('FoldGuide: Carta in bond, the bottom fold from the bottom edge and the top fold from the top, es-MX', () => {
   const html = renderToStaticMarkup(createElement(FoldGuide, { locale: 'es', fold: letterFold('letter', 'copy-80'), paperName: 'Carta (México y EE. UU.)' }));
   assert.doesNotMatch(html, /\sstyle=/i);
-  assert.match(html, /<svg[^>]*aria-hidden="true"/, 'the drawing is decorative');
+  assert.match(html, /<div[^>]*aria-hidden="true"[^>]*>(?:(?!<\/figure>).)*data-fold-at="93\.666667"/s, 'the folding sheet is decorative');
+  assert.match(html, /Ver cómo se dobla/, 'it offers to play Pliego\'s fold program');
   const t = text(html);
   assert.match(t, /Dobla hacia arriba la parte de abajo, a 92\.1 mm del borde inferior\./);
   assert.match(t, /Dobla hacia abajo la parte de arriba, a 93\.7 mm del borde superior/);

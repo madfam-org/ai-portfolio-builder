@@ -7,7 +7,7 @@ import type { Locale } from '@/lib/routing';
 import css from './paper.module.css';
 
 /** Pixels per millimetre of the small page (a Carta sheet is about 162 × 210 px). */
-const SCALE = 0.75;
+const SCALE = 0.6;
 
 const reducedMotion = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -99,8 +99,9 @@ export function FoldMotion({ locale, fold }: { locale: Locale; fold: LetterFoldV
     <figure className={css.motion} data-fold-step={finished ? 'done' : String(step)}>
       <div className={css.motionStage} aria-hidden="true">
         <div ref={sheetRef} className={css.motionMiddle}>
-          <div ref={topRef} className={`${css.motionPanel} ${css.motionTop}`} />
-          <div ref={bottomRef} className={`${css.motionPanel} ${css.motionBottom}`} />
+          {/* Each panel hangs from its crease; data-fold-at is that crease, mm from the top edge (Pliego's numbers). */}
+          <div ref={topRef} className={`${css.motionPanel} ${css.motionTop}`} data-fold-at={fold.foldsFromTopMm[0]} />
+          <div ref={bottomRef} className={`${css.motionPanel} ${css.motionBottom}`} data-fold-at={fold.foldsFromTopMm[1]} />
         </div>
       </div>
       <figcaption className={css.motionCaption}>

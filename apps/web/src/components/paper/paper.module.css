@@ -87,33 +87,9 @@
 
 .foldBody {
   display: grid;
-  grid-template-columns: 6.5rem 1fr;
+  grid-template-columns: auto 1fr;
   gap: 1rem 1.25rem;
   align-items: start;
-}
-
-.foldArt {
-  width: 100%;
-  height: auto;
-}
-
-/* The drawing is a sheet of paper in both themes, so its colours are the light ones. */
-.foldPage {
-  fill: #fbfaf6;
-  stroke: #4c5a52;
-  stroke-width: 1.2;
-}
-
-.foldText {
-  stroke: #b9bfb6;
-  stroke-width: 3;
-  stroke-linecap: round;
-}
-
-.foldLine {
-  stroke: #b4530a;
-  stroke-width: 3;
-  stroke-dasharray: 8 6;
 }
 
 .foldIntro,
@@ -132,18 +108,15 @@
  * blank verso (two faces, backface hidden). Sizes and turns are set through the CSSOM. Light paper in both themes.
  */
 .motion {
-  grid-column: 1 / -1;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 1rem 1.75rem;
-  margin: 0.75rem 0 0;
+  display: grid;
+  gap: 0.6rem;
+  justify-items: start;
+  margin: 0;
 }
 
 .motionStage {
-  perspective: 900px;
+  perspective: 700px;
   perspective-origin: 50% 40%;
-  padding: 0.5rem 1rem;
 }
 
 .motionMiddle,
@@ -193,11 +166,22 @@
   transform: rotateX(180deg);
 }
 
+/* The two creases, dashed in the focus ember, at the middle panel's edges (where the other panels hinge). */
+.motionMiddle::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-top: 2px dashed #b4530a;
+  border-bottom: 2px dashed #b4530a;
+  pointer-events: none;
+}
+
 .motionCaption {
   display: grid;
-  gap: 0.6rem;
+  gap: 0.5rem;
   justify-items: start;
-  max-width: 22rem;
+  max-width: 10.5rem;
+  font-size: 0.9rem;
 }
 
 .motionButton {
@@ -223,7 +207,7 @@
 
 @media (max-width: 30rem) {
   .foldBody {
-    grid-template-columns: 4.5rem 1fr;
+    grid-template-columns: 1fr;
   }
 }
 
