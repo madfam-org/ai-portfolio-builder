@@ -7,7 +7,7 @@ import { contentFromDraft, draftChanged, draftFromContent, type DocumentDraft, t
 import { LIMITS, letterDefaults } from '@/components/jobs/tailoring';
 import { Button } from '@/components/ui/Button';
 import { TextAreaField, TextField } from '@/components/ui/Field';
-import { ErrorState, Notice } from '@/components/ui/States';
+import { ErrorState } from '@/components/ui/States';
 import { useToast } from '@/components/ui/Toast';
 import { api, apiErrorMessage } from '@/lib/client/api';
 import type { ArtifactDto, ContentLocale, ItemDto } from '@/lib/client/types';
@@ -112,7 +112,12 @@ export function DocumentContentEditor({ locale, artifact, job }: { locale: Local
     <section aria-labelledby="doc-content" data-testid="doc-content-editor">
       <h2 id="doc-content">{d.contentTitle}</h2>
       <p className="muted">{d.contentEditIntro}</p>
-      {artifact.status === 'published' ? <Notice tone="info">{d.contentPublishedNote}</Notice> : null}
+      {/* A standing note, not a live region: only the save result is announced. */}
+      {artifact.status === 'published' ? (
+        <p className="small" data-testid="doc-content-published">
+          {d.contentPublishedNote}
+        </p>
+      ) : null}
       {artifact.kind === 'presentation' ? <p className="small muted">{d.contentSlidesNote}</p> : null}
       {loadError ? (
         <ErrorState message={loadError} />
