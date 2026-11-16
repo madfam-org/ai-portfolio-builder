@@ -109,10 +109,10 @@ export interface ArtifactDto {
   updatedAt: string;
 }
 
-/** `GET /api/v1/jobs/:id/match` (keyword-overlap-v1, no AI). */
+/** `GET /api/v1/jobs/:id/match` (keyword-overlap-v2, no AI). */
 export interface MatchDto {
   jobId: string;
-  algorithm: 'keyword-overlap-v1';
+  algorithm: 'keyword-overlap-v2';
   jobTerms: number;
   coveredTerms: number;
   items: { itemId: string; kind: ItemKind; score: number; matchedTags: string[]; matchedTerms: string[] }[];

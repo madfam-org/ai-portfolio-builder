@@ -9,7 +9,7 @@ import type { ItemDto } from '@/lib/client/types';
 import { fmt, JOBS_COPY } from '@/lib/copy/jobs';
 import { localizeItem, type ContentLocale } from '@/lib/profile-text';
 import type { Locale } from '@/lib/routing';
-import { LIMITS, addEntry, cleanOverride, itemLabel, itemOriginal, moveEntry, removeEntry, setOverride, type OverrideDraft, type SelectionEntry } from './tailoring';
+import { LIMITS, addEntry, cleanOverride, clearSelection, itemLabel, itemOriginal, moveEntry, removeEntry, setOverride, type OverrideDraft, type SelectionEntry } from './tailoring';
 import s from './jobs.module.css';
 
 export type ItemProblems = Record<string, Partial<Record<keyof OverrideDraft, string>>>;
@@ -77,6 +77,13 @@ export function SelectionEditor({
     <>
       <h3 id="tailor-selected-heading">{fmt(t.tailor.selected, { n: selection.length })}</h3>
       <p className="small muted">{t.tailor.preselected}</p>
+      {selection.length > 1 ? (
+        <p>
+          <Button id="tailor-clear" size="small" variant="ghost" onClick={() => act(clearSelection(), ['tailor-available-heading'])}>
+            {t.tailor.clearAll}
+          </Button>
+        </p>
+      ) : null}
       {itemsError ? (
         <p className={s.fieldError} id="tailor-items-error" role="alert">
           {itemsError}
@@ -182,7 +189,7 @@ export function SelectionEditor({
         </ol>
       )}
 
-      <h3 id="tailor-available-heading">{fmt(t.tailor.available, { n: available.length })}</h3>
+      <h3 id="tailor-available-heading" tabIndex={-1}>{fmt(t.tailor.available, { n: available.length })}</h3>
       {available.length === 0 ? (
         <p className="muted">{t.tailor.availableEmpty}</p>
       ) : (
@@ -199,7 +206,7 @@ export function SelectionEditor({
                   size="small"
                   variant="secondary"
                   aria-label={`${t.tailor.add}: ${name}`}
-                  onClick={() => act(addEntry(selection, item.id), [`sel-${item.id}-remove`])}
+                  onClick={() => act(addEntry(selection, item.id, items), [`sel-${item.id}-remove`])}
                 >
                   <Icon name="plus" /> {t.tailor.add}
                 </Button>

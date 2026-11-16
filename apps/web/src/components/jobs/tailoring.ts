@@ -5,13 +5,17 @@
  * Rules:
  * - Overrides live only in the artifact's `content.items[].override` (W2 `ARTIFACT_CONTENT`). Nothing here writes a
  *   profile item: the core profile never changes because of one job (a unit and an e2e test re-read it).
- * - The pre-selection is the API's keyword match (`keyword-overlap-v1`): items that scored above zero, in its rank
- *   order. No score is invented here; the person adds, removes and reorders.
+ * - The pre-selection is the API's keyword match (`keyword-overlap-v2`): items that scored above zero, plus any
+ *   experience marked current (the job a reader looks for first), laid out as a CV reads: by kind in the profile's
+ *   section order (`ITEM_KIND_ORDER`), then in the person's own order within a kind (the score decides WHAT is
+ *   picked, never the order: a ranked list would put a recommendation before education and roles out of date
+ *   order). No score is invented here; the person adds, removes and reorders.
  * - The limits mirror W2's zod (`server/api/validation.ts`); the unit test validates the output against it.
  * No React and no server import (relative `.ts` imports only), so the unit tests run it directly.
  */
 import type { ArtifactKind, ItemKind } from '../../lib/copy/app.ts';
 import type { ArtifactSetInput, ContentLocale } from '../../lib/client/types.ts';
+import { ITEM_KIND_ORDER } from '../profile/fields.ts';
 import { localizeRenderData, type MissingText } from '../render/localize.ts';
 
 /** Every artifact kind, in the order the workspace offers them. */
@@ -47,15 +51,55 @@ export interface SelectionEntry {
 
 export const EMPTY_OVERRIDE: OverrideDraft = { title: '', summary: '', highlights: '' };
 
-/** Items that matched (score above zero) and still exist in the profile, in the match's rank order. */
-export function initialSelection(match: { items: readonly { itemId: string; score: number }[] } | null, profileItemIds: ReadonlySet<string>): SelectionEntry[] {
-  if (!match) return [];
-  return match.items.filter((m) => m.score > 0 && profileItemIds.has(m.itemId)).map((m) => ({ itemId: m.itemId, override: { ...EMPTY_OVERRIDE } }));
+/** What the selection needs to know of a profile item: its kind and its place in the person's own order. */
+export interface PlacedItem {
+  id: string;
+  kind: ItemKind;
+  position: number;
+  content?: Record<string, unknown>;
 }
 
-export function addEntry(selection: readonly SelectionEntry[], itemId: string): SelectionEntry[] {
+const kindRank = (kind: ItemKind) => {
+  const i = ITEM_KIND_ORDER.indexOf(kind);
+  return i < 0 ? ITEM_KIND_ORDER.length : i;
+};
+/** CV reading order: section (kind) first, then the person's own order inside it. */
+const cvOrder = (a: PlacedItem, b: PlacedItem) => kindRank(a.kind) - kindRank(b.kind) || a.position - b.position || a.id.localeCompare(b.id);
+
+/**
+ * Items that matched (score above zero), plus every experience marked current, that still exist in the profile, in CV
+ * reading order (see the rules above).
+ */
+export function initialSelection(match: { items: readonly { itemId: string; score: number }[] } | null, profileItems: readonly PlacedItem[]): SelectionEntry[] {
+  if (!match) return [];
+  const scored = new Set(match.items.filter((m) => m.score > 0).map((m) => m.itemId));
+  return profileItems
+    .filter((i) => scored.has(i.id) || (i.kind === 'experience' && i.content?.current === true))
+    .sort(cvOrder)
+    .map((i) => ({ itemId: i.id, override: { ...EMPTY_OVERRIDE } }));
+}
+
+/**
+ * Adds an item. With the profile's items, it goes where a CV reads it: right before the first selected item that
+ * comes after it in CV order (after the person's own moves, the nearest such place); without them, or when nothing
+ * comes after it, at the end.
+ */
+export function addEntry(selection: readonly SelectionEntry[], itemId: string, profileItems?: readonly PlacedItem[]): SelectionEntry[] {
   if (selection.some((e) => e.itemId === itemId)) return [...selection];
-  return [...selection, { itemId, override: { ...EMPTY_OVERRIDE } }];
+  const entry = { itemId, override: { ...EMPTY_OVERRIDE } };
+  const byId = new Map((profileItems ?? []).map((i) => [i.id, i]));
+  const added = byId.get(itemId);
+  if (!added) return [...selection, entry];
+  const at = selection.findIndex((e) => {
+    const other = byId.get(e.itemId);
+    return other !== undefined && cvOrder(added, other) < 0;
+  });
+  return at < 0 ? [...selection, entry] : [...selection.slice(0, at), entry, ...selection.slice(at)];
+}
+
+/** «Quitar todos»: an empty selection (the person builds it from the list below). */
+export function clearSelection(): SelectionEntry[] {
+  return [];
 }
 
 export function removeEntry(selection: readonly SelectionEntry[], itemId: string): SelectionEntry[] {
@@ -118,6 +162,17 @@ export interface TailorInput {
   languageTag?: string;
 }
 
+/**
+ * The cover letter's greeting and closing when the person leaves them empty, in the documents' language. Shown as
+ * the fields' placeholders before anything is created (never added unseen): «Dear Clara hiring team,» /
+ * «Estimado equipo de Clara:», and «Sincerely,» / «Atentamente,». Without a company, a greeting without a name.
+ */
+export function letterDefaults(company: string, locale: ContentLocale): { greeting: string; closing: string } {
+  const name = company.trim();
+  if (locale === 'en') return { greeting: name ? `Dear ${name} hiring team,` : 'Dear hiring team,', closing: 'Sincerely,' };
+  return { greeting: name ? `Estimado equipo de ${name}:` : 'Estimado equipo de selección:', closing: 'Atentamente,' };
+}
+
 /** «CV · Desarrolladora backend · Empresa» (+ « (English)» for a version in another language), capped at the limit. */
 export function artifactTitle(kindLabel: string, jobTitle: string, company: string, languageTag = ''): string {
   const parts = [kindLabel, jobTitle.trim(), company.trim()].filter((p) => p !== '');
@@ -171,8 +226,9 @@ export function buildArtifactSet(input: TailorInput): { ok: true; body: Artifact
     let content: Record<string, unknown> = base;
     if (kind === 'presentation') content = { ...base, slides: [] };
     if (kind === 'cover_letter') {
-      const greeting = input.greeting.trim();
-      const closing = input.closing.trim();
+      const fallback = letterDefaults(input.company, input.locale);
+      const greeting = input.greeting.trim() || fallback.greeting;
+      const closing = input.closing.trim() || fallback.closing;
       content = { ...base, ...(greeting ? { greeting } : {}), ...(closing ? { closing } : {}) };
     }
     const template = input.templates?.[kind];

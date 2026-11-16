@@ -90,6 +90,8 @@ export interface JobsCopy {
   tailor: {
     intro: string;
     preselected: string;
+    /** «Quitar todos»: empties the selection. */
+    clearAll: string;
     selected: string;
     selectedEmpty: string;
     available: string;
@@ -117,6 +119,8 @@ export interface JobsCopy {
     showContactHint: string;
     /** Batch 4 (critique #10): the less common choices, folded under the essentials. */
     more: string;
+    letterLegend: string;
+    letterHint: string;
     greeting: string;
     closing: string;
     willCreate: string;
@@ -221,7 +225,8 @@ export const JOBS_COPY: Record<Locale, JobsCopy> = {
     },
     tailor: {
       intro: 'Elige qué parte de tu perfil va en los documentos de este empleo. Lo que ajustes aquí solo aplica a este empleo: tu perfil no cambia.',
-      preselected: 'Preseleccionamos los elementos con coincidencia por palabras clave. Agrega, quita u ordena como quieras.',
+      preselected: 'Preseleccionamos los elementos con coincidencia por palabras clave y tu puesto actual, en el orden de un CV. Agrega, quita u ordena como quieras.',
+      clearAll: 'Quitar todos',
       selected: 'En los documentos de este empleo ({n})',
       selectedEmpty: 'Aún no eliges nada. Agrega elementos de la lista de abajo.',
       available: 'Disponibles en tu perfil ({n})',
@@ -247,9 +252,11 @@ export const JOBS_COPY: Record<Locale, JobsCopy> = {
       summaryHint: 'Encabeza los documentos. Si lo dejas vacío, se usa el resumen de tu perfil.',
       showContact: 'Incluir mis datos de contacto',
       showContactHint: 'Correo, teléfono y enlaces de tu perfil.',
-      more: 'Más opciones: plantilla, resumen y carta',
-      greeting: 'Saludo de la carta (opcional)',
-      closing: 'Despedida de la carta (opcional)',
+      more: 'Más opciones: plantilla y resumen',
+      letterLegend: 'Carta de presentación',
+      letterHint: 'Si dejas el saludo o la despedida vacíos, usamos el texto que ves en gris. El cuerpo de la carta es el «Resumen para este empleo» (en «Más opciones»); si lo dejas vacío, es el resumen de tu perfil.',
+      greeting: 'Saludo',
+      closing: 'Despedida',
       willCreate: 'Se crearán estos borradores:',
       create: 'Crear documentos para este empleo',
       creating: 'Creando…',
@@ -367,7 +374,8 @@ export const JOBS_COPY: Record<Locale, JobsCopy> = {
     },
     tailor: {
       intro: 'Choose which parts of your profile go into the documents for this job. What you adjust here applies to this job only: your profile does not change.',
-      preselected: 'We preselected the items with a keyword match. Add, remove or reorder as you like.',
+      preselected: 'We preselected the items with a keyword match and your current job, in CV order. Add, remove or reorder as you like.',
+      clearAll: 'Remove all',
       selected: 'In the documents for this job ({n})',
       selectedEmpty: 'Nothing chosen yet. Add items from the list below.',
       available: 'Available in your profile ({n})',
@@ -393,9 +401,11 @@ export const JOBS_COPY: Record<Locale, JobsCopy> = {
       summaryHint: 'It heads the documents. Leave it empty to use the summary of your profile.',
       showContact: 'Include my contact details',
       showContactHint: 'Email, phone and links from your profile.',
-      more: 'More options: template, summary and letter',
-      greeting: 'Greeting of the letter (optional)',
-      closing: 'Closing of the letter (optional)',
+      more: 'More options: template and summary',
+      letterLegend: 'Cover letter',
+      letterHint: 'If you leave the greeting or the closing empty, we use the grey text you see. The body of the letter is the «Summary for this job» (under «More options»); left empty, it is your profile summary.',
+      greeting: 'Greeting',
+      closing: 'Closing',
       willCreate: 'These drafts will be created:',
       create: 'Create documents for this job',
       creating: 'Creating…',

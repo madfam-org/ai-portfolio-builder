@@ -13,8 +13,10 @@ import {
   artifactTitle,
   buildArtifactSet,
   cleanOverride,
+  clearSelection,
   initialSelection,
   itemLabel,
+  letterDefaults,
   itemOriginal,
   moveEntry,
   removeEntry,
@@ -96,7 +98,7 @@ test('selection + overrides map to ONE batch body that passes artifactSetBody an
   assert.deepEqual((body.artifacts[2]!.content as { slides: unknown[] }).slides, []);
 });
 
-test('the cover letter is opt-in and carries its greeting and closing; empty ones are omitted', () => {
+test('the cover letter is opt-in and carries its greeting and closing; an empty one gets the default shown as its placeholder', () => {
   const built = buildArtifactSet(input({ kinds: ['cover_letter', 'cv'], greeting: 'Estimado equipo:', closing: '' }));
   assert.ok(built.ok);
   const body = artifactSetBody.parse(built.body);
@@ -106,7 +108,15 @@ test('the cover letter is opt-in and carries its greeting and closing; empty one
   );
   const letter = ARTIFACT_CONTENT.cover_letter.parse(body.artifacts[1]!.content) as { greeting?: string; closing?: string };
   assert.equal(letter.greeting, 'Estimado equipo:');
-  assert.equal('closing' in letter, false);
+  assert.equal(letter.closing, 'Atentamente,', 'the placeholder the person saw');
+  const en = buildArtifactSet(input({ kinds: ['cover_letter'], locale: 'en', company: 'Clara' }));
+  assert.ok(en.ok);
+  assert.deepEqual(
+    (({ greeting, closing }) => ({ greeting, closing }))(en.body.artifacts[0]!.content as { greeting?: string; closing?: string }),
+    { greeting: 'Dear Clara hiring team,', closing: 'Sincerely,' },
+  );
+  assert.deepEqual(letterDefaults('  ', 'es-MX'), { greeting: 'Estimado equipo de selección:', closing: 'Atentamente,' });
+  assert.deepEqual(letterDefaults('', 'en'), { greeting: 'Dear hiring team,', closing: 'Sincerely,' });
   const noSummary = buildArtifactSet(input({ summary: '   ' }));
   assert.ok(noSummary.ok && !('summary' in (noSummary.body.artifacts[0]!.content as object)));
 });
@@ -166,13 +176,29 @@ test('cleanOverride: trimmed, empty fields and blank lines dropped; nothing over
   assert.deepEqual(cleanOverride({ title: '', summary: ' Hice X. ', highlights: ' a \n\nb' }), { summary: 'Hice X.', highlights: ['a', 'b'] });
 });
 
-test('the pre-selection is the match: score above zero, in its rank order, only items still in the profile', () => {
-  const match = { items: [{ itemId: I3, score: 7 }, { itemId: 'gone', score: 5 }, { itemId: I1, score: 1 }, { itemId: I2, score: 0 }] };
+test('the pre-selection: matched items plus the current job, in CV reading order (kind, then own order), never by score', () => {
+  const I4 = '44444444-4444-4444-8444-444444444444';
+  const I5 = '55555555-5555-4555-8555-555555555555';
+  const profile = [
+    { id: I1, kind: 'recommendation' as const, position: 0 },
+    { id: I2, kind: 'experience' as const, position: 1, content: { current: true } },
+    { id: I3, kind: 'experience' as const, position: 2 },
+    { id: I4, kind: 'education' as const, position: 0 },
+    { id: I5, kind: 'skill' as const, position: 0 },
+  ];
+  const match = { items: [{ itemId: I1, score: 13 }, { itemId: I5, score: 9 }, { itemId: 'gone', score: 5 }, { itemId: I3, score: 4 }, { itemId: I4, score: 1 }, { itemId: I2, score: 0 }] };
   assert.deepEqual(
-    initialSelection(match, new Set([I1, I2, I3])).map((e) => e.itemId),
-    [I3, I1],
+    initialSelection(match, profile).map((e) => e.itemId),
+    [I2, I3, I4, I5, I1],
+    'experience (current job though unscored, then the next role), education, skill; the recommendation last; a deleted item never',
   );
-  assert.deepEqual(initialSelection(null, new Set([I1])), []);
+  assert.deepEqual(initialSelection(null, profile), []);
+  // Adding puts an item where a CV reads it; «Quitar todos» empties the selection.
+  const sel = [{ itemId: I3, override: { ...blank } }, { itemId: I5, override: { ...blank } }];
+  assert.deepEqual(addEntry(sel, I4, profile).map((e) => e.itemId), [I3, I4, I5]);
+  assert.deepEqual(addEntry(sel, I2, profile).map((e) => e.itemId), [I2, I3, I5]);
+  assert.deepEqual(addEntry(sel, I1, profile).map((e) => e.itemId), [I3, I5, I1]);
+  assert.deepEqual(clearSelection(), []);
 });
 
 test('add / remove / move / override return new arrays and never mutate what they were given', () => {

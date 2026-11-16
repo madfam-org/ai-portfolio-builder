@@ -110,7 +110,7 @@ test.describe.serial('luxury retail beta journey (synthetic persona)', () => {
     await expect(selected.filter({ hasText: 'Client Advisor · Boutique de alta joyería (Monterrey)' })).toHaveCount(1);
     for (const kind of ['Portafolio', 'Presentación']) await page.getByLabel(kind, { exact: true }).uncheck();
     // Batch 4: the template is one of the folded options.
-    await page.getByText('Más opciones: plantilla, resumen y carta').click();
+    await page.getByText('Más opciones: plantilla y resumen').click();
     const cvTemplates = page.getByRole('group', { name: 'Plantilla: CV' });
     await expect(cvTemplates).toContainText('Una buena opción para postular a casas de lujo');
     await expect(cvTemplates.getByRole('radio', { name: /^Básica/ })).toBeChecked();

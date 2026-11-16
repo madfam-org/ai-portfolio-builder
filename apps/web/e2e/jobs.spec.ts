@@ -87,7 +87,7 @@ test.describe.serial('jobs, pipeline and tailoring', () => {
     await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible();
     const panel = page.getByTestId('match-panel');
     await expect(panel.getByRole('heading', { name: 'Coincidencia por palabras clave (sin IA)' })).toBeVisible();
-    await expect(panel).toContainText('keyword-overlap-v1');
+    await expect(panel).toContainText('keyword-overlap-v2');
 
     const match = (await apiAs(OWNER_A, 'GET', `/api/v1/jobs/${jobId}/match`)).json!;
     await expect(page.getByTestId('match-coverage')).toHaveText(`El anuncio tiene ${match.jobTerms} términos distintos; tu perfil cubre ${match.coveredTerms}.`);
@@ -117,7 +117,7 @@ test.describe.serial('jobs, pipeline and tailoring', () => {
     await expect(page.getByRole('heading', { level: 1, name: 'Adaptar al empleo' })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Sugerencias con IA (próximamente)' })).toBeVisible();
 
-    // Pre-selected: the items that matched, in the API's rank order.
+    // Pre-selected: the items that matched, in CV reading order (experience, then skills), never by score.
     const match = (await apiAs(OWNER_A, 'GET', `/api/v1/jobs/${jobId}/match`)).json!;
     const expected = (match.items as Json[]).filter((m) => m.score > 0).map((m) => m.itemId as string);
     expect(expected).toEqual([ids.exp, ids.k8s]);

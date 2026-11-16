@@ -25,7 +25,7 @@ const render = (d: any) => renderToStaticMarkup(createElement(ArtifactView, { da
 test('without translations, every kind × template × locale renders the markup main rendered (read-proof)', () => {
   const now = renderMatrix(render, templatesFor);
   if (process.env.CV_WRITE_RENDER_BASELINE === '1') {
-    writeFileSync(BASELINE, `${JSON.stringify({ source: 'main@f1ca3530 (before W7-B4); presentation title slide re-baselined 2026-11-15 (it heads with the person, never the private title)', hashes: now }, null, 2)}\n`);
+    writeFileSync(BASELINE, `${JSON.stringify({ source: 'main@f1ca3530 (before W7-B4); presentation title slide re-baselined 2026-11-15 (it heads with the person, never the private title); contact links show a short path and the cover letter lists roles only, re-baselined 2026-11-16', hashes: now }, null, 2)}\n`);
     return;
   }
   const { hashes } = JSON.parse(readFileSync(BASELINE, 'utf8')) as { hashes: Record<string, string> };
@@ -83,11 +83,12 @@ test('an English document prints the English text of every kind, proper names ke
     const d = translated(data(kind, content, { locale: 'en', contact: { location: 'Cuernavaca' } }));
     d.items = d.items.map((i: { id: string; content: Record<string, unknown> }) => (i.id === 'l1' ? { ...i, content: { ...i.content, code: 'en' } } : i));
     const html = render(d);
-    for (const en of ['Data engineer', 'English summary', 'English highlight', 'Analyst', 'Engineering, Computer science', 'Python (en)', 'Dashboard', 'Certificate', 'Website', 'English']) {
-      assert.ok(html.includes(en), `${kind}: ${en}`);
-    }
+    // A cover letter lists its first roles or projects only (role, organisation, dates): the rest is the CV's.
+    const letter = kind === 'cover_letter';
+    const expected = letter ? ['Data engineer', 'Analyst', 'Dashboard'] : ['Data engineer', 'English summary', 'English highlight', 'Analyst', 'Engineering, Computer science', 'Python (en)', 'Dashboard', 'Certificate', 'Website', 'English'];
+    for (const en of expected) assert.ok(html.includes(en), `${kind}: ${en}`);
     for (const es of ['Ingeniera de datos', 'Original summary', 'Original highlight', 'Analista', 'Computación', 'Inglés', 'Tablero', 'Sitio']) assert.ok(!html.includes(es), `${kind}: no «${es}»`);
-    for (const kept of ['Acme', 'UNAM', 'Org']) assert.ok(html.includes(kept), `${kind}: proper name ${kept}`);
+    for (const kept of letter ? ['Acme'] : ['Acme', 'UNAM', 'Org']) assert.ok(html.includes(kept), `${kind}: proper name ${kept}`);
     if (kind !== 'presentation') assert.ok(html.includes('Mexico City'), `${kind}: the item's place`);
   }
 });

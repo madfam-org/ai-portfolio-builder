@@ -46,6 +46,27 @@ export function workMode(value: string): WorkMode | null {
   return null;
 }
 
+/**
+ * A sentence in the posting that states the job's own mode: «This is a hybrid role», «a fully remote position»,
+ * «on-site job», «el puesto es híbrido», «modalidad: remoto», «esquema 100% presencial». Only these shapes count: a
+ * mode word elsewhere («remote collaboration», «we have offices») says nothing about the job. The first one wins.
+ */
+const MODE_SENTENCES: readonly RegExp[] = [
+  /\b(?:fully |100% )?(hybrid|remote|on-?site|in-office)(?:-first)? (?:role|position|job|opportunity)\b/,
+  /\b(?:this|the) (?:role|position|job) is (?:fully |100% )?(hybrid|remote|on-?site|in-office)\b/,
+  /\b(?:puesto|rol|trabajo|vacante|esquema|modalidad)(?: de trabajo)?(?: es| :|:)? (?:100% )?(hibrido|remoto|presencial)\b/,
+  /\b(hibrido|remoto|presencial) (?:al )?100%/,
+];
+
+export function workModeFromSentence(text: string): WorkMode | null {
+  const f = fold(text);
+  for (const re of MODE_SENTENCES) {
+    const m = re.exec(f);
+    if (m) return workMode(m[1]!);
+  }
+  return null;
+}
+
 const UNIT_PERIOD: Record<string, SalaryPeriod> = { HOUR: 'hour', DAY: 'day', WEEK: 'week', MONTH: 'month', YEAR: 'year' };
 
 /** schema.org `unitText` (HOUR … YEAR) → period. */

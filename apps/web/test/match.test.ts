@@ -16,7 +16,7 @@ test('matchItems ranks by tag (3) and term (1) overlap, deterministically, and l
     { id: 'c', kind: 'skill', position: 2, content: { name: 'Kubernetes' }, tags: [] },
   ];
   const r = matchItems(job, items);
-  assert.equal(r.algorithm, 'keyword-overlap-v1');
+  assert.equal(r.algorithm, 'keyword-overlap-v2');
   assert.deepEqual(
     r.items.map((i) => [i.itemId, i.score]),
     [
@@ -59,4 +59,18 @@ test('what is shown is the posting\'s own word, never the matcher\'s token; the 
   assert.deepEqual(bare.items.map((i) => i.score), r.items.map((i) => i.score));
   assert.equal(surfaceForms('Node.js y C++, APIs; Comisiones.').get('comisione'), 'comisiones');
   assert.equal(surfaceForms('Node.js y C++').get('node.js'), 'node.js');
+});
+
+test('v2: everyday filler, the place and a recommender\'s words never score; real work words still do', () => {
+  const job = { title: 'Engineering Director', sourceText: 'This is a hybrid role. Set up the best teams; always ensure quality. Build systems on React.' };
+  const items = [
+    { id: 'rec', kind: 'recommendation', position: 0, content: { name: 'Persona Ejemplo', text: 'Always builds the best teams, ensures quality.', relationship: 'Was my mentor' }, tags: [] },
+    { id: 'exp', kind: 'experience', position: 0, content: { role: 'Engineer', organization: 'X', location: 'Cuernavaca · Hybrid', highlights: ['Set up React systems and teams'] }, tags: [] },
+  ];
+  const r = matchItems(job, items);
+  const rec = r.items.find((i) => i.itemId === 'rec')!;
+  const exp = r.items.find((i) => i.itemId === 'exp')!;
+  assert.equal(rec.score, 0, 'a recommendation is someone else\'s words');
+  assert.deepEqual(exp.matchedTerms, ['react', 'systems', 'teams'], 'no «set», «up», «best» or the location\'s «hybrid»');
+  for (const filler of ['up', 'set', 'best', 'always', 'cada', 'siempre']) assert.deepEqual(normalise(filler), [], filler);
 });

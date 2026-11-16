@@ -29,7 +29,10 @@ export interface DocLink {
   href: string;
   /** What the reader sees: the person's label, else the address without its scheme. */
   text: string;
-  /** The destination host, shown next to a label (lane X §4.2). */
+  /**
+   * The destination, shown next to a label (lane X §4.2): the host, plus the path when it is short enough to read and
+   * type from a printed page («linkedin.com/in/ana», «madf.am/aldo»); a long address shows its host only.
+   */
   host: string | null;
 }
 
@@ -119,6 +122,9 @@ export function readContent(raw: unknown): ArtifactContent {
 }
 
 /** An http(s) link, or null for anything else (javascript:, data:, mailto:, malformed). */
+/** The longest «host/path» shown next to a label; longer addresses show the host only. */
+export const LINK_SHOWN_MAX = 40;
+
 export function httpLink(url: unknown, label?: unknown): DocLink | null {
   const raw = str(url);
   if (!raw) return null;
@@ -131,7 +137,10 @@ export function httpLink(url: unknown, label?: unknown): DocLink | null {
   if (u.protocol !== 'https:' && u.protocol !== 'http:') return null;
   const named = str(label);
   const bare = raw.replace(/^https?:\/\//i, '').replace(/\/$/, '');
-  return { href: u.href, text: named ?? bare, host: named ? u.host : null };
+  const host = u.host.replace(/^www\./i, '');
+  const path = u.pathname.replace(/\/$/, '');
+  const shown = path && path !== '/' && !u.search && (host + path).length <= LINK_SHOWN_MAX ? host + path : host;
+  return { href: u.href, text: named ?? bare, host: named ? shown : null };
 }
 
 const EMAIL = /^[^\s@<>()[\]\\,;:"]+@[^\s@<>()[\]\\,;:"]+\.[^\s@<>()[\]\\,;:"]+$/;

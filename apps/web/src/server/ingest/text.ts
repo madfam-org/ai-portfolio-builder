@@ -5,7 +5,7 @@
  * Computrabajo use. The first short line is offered as the title only when no label names it ('first-line', which the
  * preview marks as a suggestion). Unlabeled prose is never mined for fields.
  */
-import { clean, employmentType, isoDate, parseSalary, workMode } from './fields.ts';
+import { clean, employmentType, isoDate, parseSalary, workMode, workModeFromSentence } from './fields.ts';
 import { countryCode, fold, mentionsMexico, mxStateCode } from './mx.ts';
 import type { DraftFields, IntakeNote } from './types.ts';
 import type { Provenance } from './vocab.ts';
@@ -100,6 +100,8 @@ export function fieldsFromText(input: string): TextFields {
     }
     if (MODE_LINE.test(folded)) set('workMode', workMode(folded), 'text');
   }
+  // No labelled or stand-alone mode line: a sentence that states the job's own mode («This is a hybrid role»).
+  set('workMode', workModeFromSentence(input.slice(0, 20_000)), 'text');
   if (!fields.title) {
     const first = lines.find((l) => l !== '');
     if (first && first.length >= 3 && first.length <= 120 && !LABEL_RE.test(fold(first)) && !/[.!?]$/.test(first)) set('title', clean(first), 'first-line');
