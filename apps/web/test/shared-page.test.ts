@@ -200,11 +200,15 @@ test('a cover letter with a body of its own carries the body, but neither summar
   for (const kind of ['cv', 'portfolio', 'presentation']) {
     const shared = sharedRenderData(data(kind, { summary: 'Resumen propio', body: 'Cuerpo que no se imprime', items: [] }));
     assert.equal(JSON.stringify(shared).includes('Cuerpo que no se imprime'), false, kind);
-    assert.equal((shared.artifact.content as Record<string, unknown>).summary, 'Resumen propio', `${kind}: its summary stays`);
+    // The summary travels only where the kind prints it (projectContent): a CV and a portfolio without an intro do, a
+    // presentation never does.
+    const summary = (shared.artifact.content as Record<string, unknown>).summary;
+    if (kind === 'presentation') assert.equal(summary, undefined, 'presentation: never prints a summary, so none is carried');
+    else assert.equal(summary, 'Resumen propio', `${kind}: its summary stays`);
   }
-  // Nothing to drop: the content is passed on as it is.
+  // A letter without a body carries what it prints: its summary, its (empty) selection and blocks; nothing else.
   const plain = data('cover_letter', { summary: 'Resumen propio', items: [] });
-  assert.equal(sharedRenderData(plain).artifact.content, plain.artifact.content);
+  assert.deepEqual(sharedRenderData(plain).artifact.content, { summary: 'Resumen propio', items: [], blocks: [] });
 });
 
 test('text arrives in the document language: translations replace the primary text, untranslated fields keep it, nothing else is carried', () => {
