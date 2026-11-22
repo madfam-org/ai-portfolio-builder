@@ -159,7 +159,7 @@ Dockerfile's pinned `node:22-alpine` (every `actions/setup-node` reads it) and e
 `.github/workflows/` takes `--frozen-lockfile --ignore-scripts`, like the Dockerfile (the `guards` job checks both;
 `image.yml` fails when the built image's `node --version` differs from `.nvmrc`, so a base-digest bump that moves Node
 moves `.nvmrc` in the same PR). `ci.yml`: `agent-docs` (required files and markers), `web` (frozen install, lint,
-typecheck, unit tests ≥ 438 passing and none skipped, build, standalone smoke ≥ 13 passing; raise a floor when a PR adds tests), `pg` (the real-Postgres suite on a `postgres:16-alpine`
+typecheck, unit tests ≥ 447 passing and none skipped, build, standalone smoke ≥ 13 passing; raise a floor when a PR adds tests), `pg` (the real-Postgres suite on a `postgres:16-alpine`
 service container, as the `cv_app` role; fails on fewer than 55 passing tests), `e2e` (Playwright on GitHub-hosted runners:
 `npx playwright install --with-deps chromium`, the built server, its own Postgres service; fails on fewer than 110
 passing specs or any failed, flaky or skipped; raise the floor when a PR adds specs; a failed run uploads the
@@ -330,6 +330,7 @@ through tlacuilo»).
 |---|---|
 | `apps/web/src/server/tlacuilo/config.ts` | the three settings and the dormancy rule (`TLACUILO_API_URL`, `TLACUILO_CLIENT_ID`, `TLACUILO_CLIENT_SECRET`); http only to loopback or a cluster Service name |
 | `apps/web/src/server/tlacuilo/client.ts` | client credentials (scope `tlacuilo:extract`), `POST /v1/extractions` sync with `document_type=text_document` and `X-Sensitivity: restricted`, zod-validated and bounded answer, circuit breaker for service failures only, no cache |
+| `apps/web/src/server/breaker.ts` | the circuit breaker the tlacuilo and HCM clients share: only the service's own failures count (timeouts, connection errors, 5xx without a page code), and it opens after 3 in a row from at least 2 different people, so one person can never open it for everyone (`test/breaker.test.ts`) |
 | `apps/web/src/server/tlacuilo/route.ts` | `GET`/`POST /api/v1/jobs/intake/ocr`: one page image per call (≤ 480 KiB, signature checked against the declared type), the per-owner OCR ceiling, failures that keep their meaning |
 | `apps/web/src/components/jobs/intake/ocr-pages.ts` | the browser side: pages drawn to a canvas and shrunk to fit, sent one by one, text joined |
 | `apps/web/test-support/tlacuilo-fake.ts`, `test/tlacuilo-*.test.ts`, `test/ocr-pages.test.ts`, `e2e/ocr.spec.ts` | the synthetic service, the unit tests, and the browser journey (dormant on the real route; switched on with the route answered by the test) |
