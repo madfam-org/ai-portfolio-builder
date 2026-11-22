@@ -8,11 +8,12 @@ Please report vulnerabilities through GitHub's **private vulnerability reporting
 
 ## Scope
 
-The live surfaces are `cv.madfam.io` (landing), `cv-app.madfam.io` (pre-launch app shell) and
-`cv-api.madfam.io` (API: `/health`, `/ready`, `/api/v1/...`), all served by the code on `main`.
-Sign-in and the database are built but dormant until provisioned. The highest-severity findings are:
+The live surfaces are four hosts served by the code on `main` from one container: `cv.madfam.io` (landing),
+`cv-app.madfam.io` (the app: Janua sign-in, invite-only private beta), `cv-api.madfam.io` (API: `/health`, `/ready`,
+`/api/v1/...`) and `cv-p.madfam.io` (the pages people choose to publish). Sign-in and the database are live. The
+highest-severity findings are:
 
-- **Script execution** on any of the three hosts, or anything that needs the Content-Security-Policy
+- **Script execution** on any of the four hosts, or anything that needs the Content-Security-Policy
   relaxed (the HTML hosts use a per-request nonce with `'strict-dynamic'` and no `'unsafe-inline'` or
   `'unsafe-eval'`).
 - **Host-routing bypass:** a page or internal route (`/h/...`) reachable on a host that should not
@@ -21,10 +22,11 @@ Sign-in and the database are built but dormant until provisioned. The highest-se
 
 - **Auth bypass or cross-owner access:** reading or changing another person's profile, items, jobs or
   artifacts; an artifact that references another person's items; a token accepted without RS256, the
-  `cv-api` audience or the Janua issuer; a session cookie readable outside `cv-app.madfam.io`.
+  `cv-api` audience, the Janua issuer or an accepted client (the `cv-app` client, unless `CV_JANUA_CLIENT_IDS` names
+  others); a session cookie readable outside `cv-app.madfam.io`.
 - **Unintended publication:** a draft, private or suspended artifact readable through a public read, or a
   share link reachable by slug (or the reverse).
-- **(W6-A) The pages host `cv-p.madfam.io`** (people's published pages, once activated): script execution under its
+- **(W6-A) The pages host `cv-p.madfam.io`** (people's published pages): script execution under its
   stricter CSP, a cookie read or set there, a link page that leaks its token (Referer, caches, the report link), or a
   page indexed against its owner's choice.
 - **(W6-A) Rate-limit bypass** on the unauthenticated reads (the pages host, cv-api `/api/v1/public/*`): a way to make

@@ -1,6 +1,6 @@
 # Product: one core profile, a tailored CV for every job
 
-> Last Updated: 2026-11-16. Status: incubating; **invite-only private beta** (Janua's `cv` entitlement gates sign-in).
+> Last Updated: 2026-11-21. Status: incubating; **invite-only private beta** (Janua's `cv` entitlement gates sign-in).
 > The brand is not ruled ("MADFAM CV" is a working label). Agent rules for the same features: [`AGENTS.md`](../AGENTS.md);
 > the look: [`DESIGN.md`](DESIGN.md); settings and activation: [`DEPLOYMENT.md`](DEPLOYMENT.md).
 
@@ -44,13 +44,11 @@ An artifact is private until its owner publishes it:
 - **Moderation**: an operator can suspend an artifact (`suspended_at`, `suspended_reason`); a suspended artifact is
   never served publicly and its owner cannot publish it again (docs/DEPLOYMENT.md "Moderation").
 
-The public reads are plain JSON on cv-api. The rendered pages live on a separate flat host for user content (W3-1;
-working label `cv-p.madfam.io`, the label is the owner's call): `/<slug>` and `/l/<token>`, inert until `CV_HOST_PAGES`
-names it. The host is read from configuration, never hard-coded.
-
-**W6-A:** the owner approved `cv-p.madfam.io` (2026-10-22): «We will be hosting our users' CVs and portfolios in our own
-infra and ecosystem». `CV_HOST_PAGES` is set in production and the domain is in `enclii.yaml`; it answers once the
-coordinator's DNS and tunnel steps run. Its reads, and cv-api's public reads, are rate limited per client
+The public reads are plain JSON on cv-api. The rendered pages live on a separate flat host for user content,
+**`cv-p.madfam.io`** (W3-1 built it; the owner approved the name on 2026-10-22, W6-A: «We will be hosting our users' CVs
+and portfolios in our own infra and ecosystem»): `/<slug>` and `/l/<token>`, live in production (`CV_HOST_PAGES` in
+`deployment.yaml`, the domain in `enclii.yaml`). The host is read from configuration, never hard-coded; where
+`CV_HOST_PAGES` is unset, the row is inert. Its reads, and cv-api's public reads, are rate limited per client
 (docs/DEPLOYMENT.md "Rate limit on unauthenticated reads").
 
 ### The app (cv-app.madfam.io), declared in W3-1
@@ -186,7 +184,7 @@ edited. **Nothing is stored before «Guardar vacante»** (`POST /api/v1/jobs`, t
   at most 3; no cookie or credential sent; 2 MB after decompression; 8 s for the whole chain; HTML or JSON only;
   User-Agent `MADFAM-CV-Intake/1.0 (+https://cv.madfam.io/lector; …)`, explained on that page; logs carry the outcome and timing, never the site or the URL).
   Order: a board that forbids server reads → `capture_only` (LinkedIn, Indeed, Google, Glassdoor, Talent.com,
-  Computrabajo; `ingest/boards.ts`); a known ATS → its public, key-free API (Greenhouse, Lever, SmartRecruiters, Ashby,
+  LVMH, Computrabajo; `ingest/boards.ts`); a known ATS → its public, key-free API (Greenhouse, Lever, SmartRecruiters, Ashby,
   Workable, Recruitee, Pinpoint; `ingest/ats.ts` cites the provider docs); otherwise robots.txt for the token
   `madfam-cv` (RFC 9309: 4xx allows, 5xx or unreachable disallows), then the page, read as schema.org `JobPosting`
   JSON-LD → microdata → Open Graph → labeled lines of the readable text. A 401/403/429 from the site is reported

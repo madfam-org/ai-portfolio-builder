@@ -21,7 +21,7 @@ export interface SignedInPerson {
 
 /**
  * The frame of every app page (cv-app.madfam.io). Three honest states, decided on the server:
- * - sign-in not configured (the dormant default): the pre-launch notice, «aún no disponible»; nothing is stored;
+ * - sign-in not configured (the dormant default): the «not open yet» notice, «aún no disponible»; nothing is stored;
  * - configured, signed out: «Iniciar sesión», which returns to THIS page after Janua (redirect_to = its path);
  * - signed in: the section nav, the account menu in the top bar (who is signed in, «Cambiar de cuenta» / «Entrar como
  *   otra persona» / «Cerrar sesión», R44), and the page (`children` receives the person). The menu is a native

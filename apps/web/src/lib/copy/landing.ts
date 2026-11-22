@@ -132,7 +132,7 @@ export const COPY: Record<Locale, Copy> = {
     status:
       'Beta privada, solo por invitación. Todavía no hay registro abierto, precios ni fecha de lanzamiento. Si te anotas en la lista de espera, te escribiremos cuando haya novedades.',
     app: {
-      badge: 'Antes del lanzamiento',
+      badge: 'Beta privada · por invitación',
       headline: 'La app todavía no está abierta.',
       body: 'Estamos construyendo {name}. El inicio de sesión con Janua aún no está disponible: llegará próximamente. Por ahora no hay cuentas y aquí no se guarda ningún dato.',
       back: 'Conoce el proyecto',
@@ -228,7 +228,7 @@ export const COPY: Record<Locale, Copy> = {
     status:
       'Private beta, by invitation only. There is no open sign-up, price or launch date yet. If you join the waitlist, we will write to you when there is news.',
     app: {
-      badge: 'Pre-launch',
+      badge: 'Private beta · invite only',
       headline: 'The app is not open yet.',
       body: 'We are building {name}. Sign-in with Janua is not available yet: it is coming soon. For now there are no accounts and no data is stored here.',
       back: 'About the project',

@@ -26,32 +26,29 @@ product name is **not ruled**: the working label `MADFAM CV` renders from one co
 `ai-portfolio-builder`.
 
 The tree was **rebuilt from scratch on 2026-10-22** (wave 1, "fresh baseline"). The previous code
-(Supabase, Prisma, Vercel, Railway, next-auth, Stripe, HuggingFace, in-repo `@madfam/*` packages) is
+(Supabase, Prisma, Vercel, Railway, its own next-auth sign-in, Stripe, HuggingFace, in-repo `@madfam/*` packages) is
 preserved at the git tag **`legacy-2025-09`** (`7959f356`) for reference only. **Do not port from it**
-unless the piece is rebuilt to this tree's standard (owner-scoped data, tests first, ecosystem seams).
+unless the piece is rebuilt to this tree's standard (owner-scoped data, tests first, ecosystem seams). This tree uses
+Auth.js (`next-auth@5` beta) only as the Janua OIDC client on cv-app.
 
 ## Topology (decided 2026-10-22, owner-named hosts)
 
-One Enclii project and one Service, both **`cv`** (namespace `cv`). One container serves three hosts,
+One Enclii project and one Service, both **`cv`** (namespace `cv`). One container serves four hosts, all live,
 routed by the `Host` header:
 
 | Host | Role | Indexing |
 |---|---|---|
 | `cv.madfam.io` | landing (es-MX at `/`, en at `/en`) | `noindex` until the brand is ruled (`CV_INDEXABLE`); robots allow AI crawlers (R40) |
-| `cv-app.madfam.io` | app: shell, Janua sign-in (Auth.js, dormant until configured), the same-origin `/api/v1/*` proxy | never; robots disallow all |
+| `cv-app.madfam.io` | app: Janua sign-in (Auth.js, client `cv-app`; invite-only private beta, gated in Janua), the pages of the core journey, the same-origin `/api/v1/*` proxy | never; robots disallow all |
 | `cv-api.madfam.io` | API: `/api/v1/meta` and the owner-scoped API ([`docs/PRODUCT.md`](docs/PRODUCT.md)) | never; robots disallow all |
-| **pages host, label pending** (working label `cv-p.madfam.io`, env `CV_HOST_PAGES`) | user pages: `/<slug>` (public artifact), `/l/<token>` (link-shared) | per page: public only when its owner chose `indexable`; otherwise `noindex, nofollow, noai, noimageai`; `/l/*` always noindex, `no-store`, `no-referrer` |
+| `cv-p.madfam.io` (pages host, env `CV_HOST_PAGES`) | user pages: `/<slug>` (public artifact), `/l/<token>` (link-shared) | per page: public only when its owner chose `indexable`; otherwise `noindex, nofollow, noai, noimageai`; `/l/*` always noindex, `no-store`, `no-referrer` |
 
-The pages host is **inert until `CV_HOST_PAGES` is set**: the row exists in the host table (W3-1), but the owner
-has not named the label, so no request is routed to it and `enclii.yaml` / DNS do not carry it yet (coordinator:
-domain, tunnel, domain-map row, decision addendum, gate `cv.pages-live`). Its own strict CSP (`default-src 'none'`,
-`form-action 'none'`, `base-uri 'none'`), no cookies read or set, an abuse link to `legal@madfam.io` on every page.
-
-**W6-A update (2026-10-22):** the owner approved **`cv-p.madfam.io`**. `CV_HOST_PAGES` is set in
-`infra/k8s/production/deployment.yaml` and the domain is in `enclii.yaml`; the host answers once the coordinator runs
-domains reconcile and tunnels-apply (docs/DEPLOYMENT.md "Pages host"). Its reads and cv-api's public reads are rate
-limited per client before any lookup (`apps/web/src/server/read-limit.ts`; `CF-Connecting-IP` only, never
-`X-Forwarded-For`). Sign-in sessions expire after 7 days without use (`SESSION_OPTIONS`, `lib/auth-env.ts`). The landing
+**The pages host** (built in W3-1; the owner approved the name **`cv-p.madfam.io`** on 2026-10-22, W6-A) is live:
+`CV_HOST_PAGES` is set in `infra/k8s/production/deployment.yaml`, the domain and its status entry are in `enclii.yaml`
+(docs/DEPLOYMENT.md "Pages host"). Where `CV_HOST_PAGES` is unset the row stays inert (no request is routed to it).
+Its own strict CSP (`default-src 'none'`, `form-action 'none'`, `base-uri 'none'`), no cookies read or set, an abuse
+link to `legal@madfam.io` on every page. Its reads and cv-api's public reads are rate limited per client before any
+lookup (`apps/web/src/server/read-limit.ts`; `CF-Connecting-IP` only, never `X-Forwarded-For`). Sign-in sessions expire after 7 days without use (`SESSION_OPTIONS`, `lib/auth-env.ts`). The landing
 also serves `/lector` and `/en/lector` (`LANDING_PAGES` in `lib/routing.ts`), the page the job reader's User-Agent links to.
 
 `/health` (liveness) and `/ready` (readiness) answer 200 JSON on **any** Host, before host routing
@@ -66,9 +63,10 @@ Kubernetes Service publishes 80; every `enclii.yaml` domain pins `port: 80`. Fla
   no raw cluster, SSH or provider access path.
 - Secrets reach production only through the Enclii secret intake (or onboarding, for `cv-secrets`); this repo
   holds secret **names** ([`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) "Env contract").
-- **Dormant by default.** Sign-in and data ship OFF: without every `AUTH_*` value, sign-in routes answer 503
-  `not_configured`; without `APP_DATABASE_URL`, data routes do. Nothing reads them at import or build time, and
-  `/ready` blocks only on a dependency that IS configured and fails (fail closed).
+- **Dormant by default.** Sign-in and data ship OFF wherever their settings are missing (production has them): without
+  every `AUTH_*` value, sign-in routes answer 503 `not_configured`; without `APP_DATABASE_URL`, data routes do.
+  Nothing reads them at import or build time, and `/ready` blocks only on a dependency that IS configured and fails
+  (fail closed).
 - **Owner-scoped data, always:** every row carries `owner_sub` (the Janua `sub`); every repository function
   (`apps/web/src/server/db/repository.ts`) takes `ownerSub` first; another person's id is a 404; children use
   composite FKs `(parent_id, owner_sub)`. The only unscoped reads are the two public ones (published only). New
@@ -103,7 +101,7 @@ Kubernetes Service publishes 80; every `enclii.yaml` domain pins `port: 80`. Fla
 | `apps/web/src/lib/app-routes.ts` | every app page of the core journey, declared once (typed builders `appPath.*`, matcher, nav) |
 | `apps/web/src/lib/client/` | the cv-app data layer: typed `fetch` to the same-origin `/api/v1/*` proxy, results not exceptions, dormant-aware (`not_configured`) |
 | `apps/web/src/components/ui/` | app-owned UI primitives (R1): Button, fields, Notice/EmptyState/ErrorState/Badge, layout, nav, Toast, ConfirmDialog (native `<dialog>`), icons; CSS Modules, never a `style` prop |
-| `apps/web/src/components/app/` | `AppFrame` (dormant / signed-out / signed-in states, nav, account switching), `UnderConstruction`, page param helpers |
+| `apps/web/src/components/app/` | `AppFrame` (dormant / signed-out / signed-in states, nav, account switching), page param helpers |
 | `apps/web/src/components/render/`, `src/app/h/pages/` | the artifact renderers, one per kind (`model.ts` resolves the content against the owner's profile; `ArtifactView` is the (kind, template) registry), shared by the app's preview/print and the pages-host routes; `src/server/pages-gate.ts` lets the proxy 404 or set per-page headers before rendering |
 | `apps/web/src/components/import/`, `src/app/h/app/[locale]/ajustes/` | W4-I data portability: the in-browser LinkedIn-export ZIP / JSON Resume import (no dependency: `DecompressionStream`), and download / delete of everything the person holds (`server/db/data-rights.ts`, `server/api/portability.ts`); the LinkedIn profile PDF import (`linkedin-pdf.ts`, pdf.js via `jobs/intake/pdf.ts`, behind `CV_IMPORT_LINKEDIN_PDF`, on in production since 2026-11-16: `lib/import-config.ts`) |
 | `apps/web/src/server/ingest/`, `src/components/jobs/intake/`, `src/app/h/app/[locale]/empleos/{nuevo,capturar}/` | W5-J job intake: the SSRF-guarded one-shot fetcher (`fetcher.ts`, `net.ts`, `robots.ts`), board policy, ATS public APIs, JSON-LD / microdata / text extraction, `POST /api/v1/jobs/intake` (preview only); in the browser: PDF text (pdf.js, lazy), DOCX, HTML files and the «Capturar vacante» bookmark (fragment hand-off to `/empleos/capturar`). Typed job columns: migration `0002`, vocabularies in `server/ingest/vocab.ts` ([`docs/PRODUCT.md`](docs/PRODUCT.md) "Job intake") |
@@ -116,10 +114,10 @@ Kubernetes Service publishes 80; every `enclii.yaml` domain pins `port: 80`. Fla
 | `apps/web/src/auth.ts`, `src/app/api/auth/`, `src/app/auth/` | Auth.js with the Janua OIDC provider; sign-in, account switching (R44) and RP-logout |
 | `apps/web/src/lib/auth-env.ts`, `public-origin.ts`, `api-routes.ts` | the env contract and dormancy rules; the public-origin allow-list and CSRF guard; the API route table (shared by the proxy and the handler) |
 | `apps/web/src/server/` | `janua.ts` (RS256 JWKS verification), `db/` (schema, client, migrations runner, owner-scoped repository), `api/` (handler, zod bodies, the deterministic job match) |
-| `apps/web/drizzle/` | committed SQL migrations: `0001` grants the `cv_app` runtime role, `0002` typed job columns, `0003` bilingual `translations`, `0004` the `recommendation` item kind |
+| `apps/web/drizzle/` | committed SQL migrations: `0000` the initial schema, `0001` grants the `cv_app` runtime role, `0002` typed job columns, `0003` bilingual `translations`, `0004` the `recommendation` item kind |
 | `apps/web/src/server/metrics*.ts` | observability (W4): the dependency-free registry, route-template labels, process metrics, and the internal `/metrics` listener on `CV_METRICS_PORT` (9090) plus the JSON request log, started from `src/instrumentation.ts` ([`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) "Observability") |
 | `apps/web/test-pg/`, `test-support/` | the real-Postgres suite (`pnpm test:pg`) and the local RS256/JWKS token fixture |
-| `janua.client.yaml` | names only: the `cv-api` resource server and the `cv-web` client the W2 code uses |
+| `janua.client.yaml` | names only: the `cv-api` resource server and the `cv-app` client (provisioned; cv-api accepts only its tokens) |
 | `docs/PRODUCT.md` | the owner requirement and the profile → jobs → tailored artifacts model |
 | `scripts/qa/check_file_size.py` | the file-size gate |
 | `apps/web/src/server/read-limit.ts` | W6-A: the per-client token bucket on unauthenticated reads (pages host, cv-api public reads), keyed on `CF-Connecting-IP` only; settings `CV_READ_LIMIT_*` in `lib/config.ts` |
@@ -171,30 +169,31 @@ hosts. `build-deploy.yml` is **dispatch-only** (Enclii's reusable build-publish 
 ## Licences
 
 Platform code AGPL-3.0-only; documentation MIT; licence holder Innovaciones MADFAM S.A.S. de C.V.
-(R72). AGPL is the recorded recommendation (audit decision D4) applied as the default for a new
-MADFAM platform repo; **the owner confirms it at merge of the baseline pull request.**
+(R72). AGPL was the recorded recommendation (audit decision D4); **the owner ruled it on 2026-10-22.**
 
 ## Pending rulings
 
 - **Brand / product name** (D2): working label only; naming sweep through LexiDrop. `noindex` stays
   on until ruled.
-- **Licence confirmation** (D4): AGPL-3.0-only applied as the default.
 - **Product scope** (D1): recommended standalone, one core journey (sign in → create → edit →
-  publish); CV import decided with the AI wave.
-- **Repository `homepage`**: set by the coordinator after go-live.
-- **Pages host label** (lane X §3): working label `cv-p.madfam.io`; inert until named. Abuse mailbox `legal@madfam.io`
-  (recommended over `support@`; owner to confirm).
+  publish).
+- **Abuse mailbox**: `legal@madfam.io` on every user page (recommended over `support@`; owner to confirm).
 - **Beta feedback channel** (2026-11-16): where «Enviar comentario» sends (email, the CRM, a form); nothing built until
   ruled.
 - **Profile photo and pronouns**: not stored (a privacy and discrimination question in Mexican CVs).
 - **Assisted writing through Selva**: scope, where inference runs and the copy of «Sugerencias con IA (próximamente)».
 
+Settled (kept here so nobody re-asks): the licence, AGPL-3.0-only (owner, 2026-10-22); the pages host, `cv-p.madfam.io`
+(owner, 2026-10-22); CV import without AI (the LinkedIn export ZIP and profile PDF, JSON Resume) shipped; the privacy
+notice is approved (version in `apps/web/src/lib/copy/privacy.ts`).
+
 ## App routes and W3 directory ownership
 
 Every app page is declared once in `apps/web/src/lib/app-routes.ts` (English under `/en/...`; `:id` is a UUID):
 `/` · `/perfil` · `/empleos` · `/empleos/:id` · `/empleos/:id/adaptar` · `/documentos` · `/documentos/:id` ·
-`/documentos/:id/vista-previa` · `/documentos/:id/imprimir` · `/ajustes`, plus `/empleos/nuevo` and `/empleos/capturar` (W5-J). Each renders inside `AppFrame` and shows an
-honest «En construcción» until its PR lands. The pages host serves `/<slug>` and `/l/<token>`.
+`/documentos/:id/vista-previa` · `/documentos/:id/imprimir` · `/ajustes`, plus `/empleos/nuevo` and `/empleos/capturar` (W5-J). Each renders inside `AppFrame`;
+all of them are built (`e2e/app.spec.ts` checks that none says «En construcción»). The pages host serves `/<slug>` and
+`/l/<token>`.
 
 After W3-1 (foundation) merges, three PRs run in parallel on disjoint directories:
 
@@ -302,8 +301,8 @@ take, field by field, the translation in the new primary language when there is 
 language's translation), keep their value otherwise, and lose the new primary language's entry; a recommendation's
 `text` never moves. The `PUT /profile` body is read in the STORED languages (a translation keyed by the stored primary
 language is a 400) and its response adds `items` when it switched. Renders are identical in both languages before and
-after (`test/profile-text-swap.test.ts`, `test-pg/primary-language.pg.test.ts`). CI minimums after this
-PR: `pg` ≥ 39 passing, `e2e` ≥ 89 passing after the rebase onto #26 (were 34 and 85).
+after (`test/profile-text-swap.test.ts`, `test-pg/primary-language.pg.test.ts`). History: this wave raised the CI
+minimums to `pg` ≥ 39 and `e2e` ≥ 89 (from 34 and 85); the current floors are in «CI lanes».
 
 ## B1: beta access (invite-only) and the first-run guide
 
@@ -337,7 +336,8 @@ carries content or a file name; the label is always `restricted`; recognised tex
 ordinary text intake and its preview, with the `ocr_text` note; a page with no legible text is a failure, never a
 draft; the 512 KiB request buffer (`next.config.ts`, W4-S) is not raised for this; the interface never names the
 service or its engine. The infra wiring (ExternalSecret, env, egress) is a separate activation PR that merges only
-after the machine client exists. CI minimum after this PR: `e2e` ≥ 93 passing (was 89).
+after the machine client exists (PR #32, open). History: this wave raised the `e2e` minimum to 93 (from 89); the
+current floors are in «CI lanes».
 
 ## Privacy notice (2026-11-15)
 
@@ -352,8 +352,8 @@ recommendations received; 2026-11-15.3 was approved on 2026-11-15). A change to 
 text sets it back to `draft` with `pending` shown on the page; only the owner moves it to `approved`. It states only what the code does: **a change to what cv does with
 personal data changes this file in the same pull request, and `version` moves**. The six elements the law requires
 (`REQUIRED_SECTION_IDS`) stay present in both languages (`test/privacy-notice.test.ts`). The only mailbox in it is
-`privacy@madfam.io`. No vendor, engine or service name appears in it. The Spanish text governs. CI minimum after this
-PR: `e2e` ≥ 95 passing (was 93).
+`privacy@madfam.io`. No vendor, engine or service name appears in it. The Spanish text governs. History: this wave
+raised the `e2e` minimum to 95 (from 93); the current floors are in «CI lanes».
 
 ## Rehearsal walk-through (2026-11-15)
 

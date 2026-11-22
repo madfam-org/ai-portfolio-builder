@@ -1,13 +1,16 @@
 # Deployment contract
 
-> Last Updated: 2026-11-16 (`CV_IMPORT_LINKEDIN_PDF` on in production; migration `0004`)
+> Last Updated: 2026-11-21 (status: onboarded and live on four hosts; secret sources point at the ExternalSecret manifests)
 >
 > Boundary: Enclii-first. This file names services, ports, hosts and secret **names**. Operator
 > gates and adapter-gap records live in MADFAM's private ops repository; the first-deploy section
 > below keeps only the public-safe command sequence.
 
-**Status: not yet onboarded.** Build & Deploy is **dispatch-only**: a merge never deploys by itself.
-Declared in [`../enclii.yaml`](../enclii.yaml) with `autoDeploy: false`.
+**Status: onboarded and live** on four hosts (`cv.madfam.io`, `cv-app.madfam.io`, `cv-api.madfam.io`, `cv-p.madfam.io`)
+from one Enclii project and Service `cv`; the first Build & Deploy digest pin landed on 2026-10-22 (git history). Sign-in
+(Janua, invite-only private beta), the database and the Symbiosis HCM market range are configured in production;
+reading images through tlacuilo is built and dormant. Build & Deploy is **dispatch-only**: a merge never deploys by
+itself. Declared in [`../enclii.yaml`](../enclii.yaml) with `autoDeploy: false`.
 
 ## Runtime
 
@@ -29,7 +32,7 @@ Two replicas, surge rollout (`maxUnavailable: 0`), a PodDisruptionBudget
 | Host | Surface | Indexing | robots.txt |
 |---|---|---|---|
 | `cv.madfam.io` | landing: es-MX `/`, en `/en`; the job-link reader page `/lector`, `/en/lector` (W6-A) | `X-Robots-Tag: noindex, nofollow` while `CV_INDEXABLE` is not `true` | allows the R40 AI crawlers and everyone (so crawlers can see the noindex); `Sitemap:` and `/sitemap.xml` only when indexable |
-| `cv-app.madfam.io` | app shell `/`, `/en`; Auth.js `/api/auth/*`; `POST /auth/entrar`, `POST /auth/salir`; the same-origin API proxy `/api/v1/*` | always noindex | disallow all, AI crawlers named |
+| `cv-app.madfam.io` | the app `/`, `/en` and the pages of the core journey (`lib/app-routes.ts`); Auth.js `/api/auth/*`; `POST /auth/entrar`, `POST /auth/salir`; the same-origin API proxy `/api/v1/*` | always noindex | disallow all, AI crawlers named |
 | `cv-api.madfam.io` | `/api/v1/meta`; the owner-scoped API (docs/PRODUCT.md); JSON 404 elsewhere | always noindex | disallow all, AI crawlers named |
 | `cv-p.madfam.io` (pages host, owner-approved 2026-10-22; set by `CV_HOST_PAGES`; W6-A) | `/<slug>` (public artifact), `/l/<token>` (link-shared); the proxy looks each up first (published, unsuspended), anything else is the HTML 404 | per page: `index, follow` only for a public artifact whose owner chose `indexable`; otherwise `noindex, nofollow, noai, noimageai`; `/l/*` also `Cache-Control: private, no-store` and `Referrer-Policy: no-referrer`; public pages `no-store` | allows everyone and names the R40 AI crawlers (so the per-page header is seen); no sitemap |
 | any other Host | `/health`, `/ready` only | — | 404 |
@@ -52,10 +55,11 @@ COOP.
 | `HOSTNAME` | `0.0.0.0` | bind address; also keeps the proxy's rewrites internal (a loopback name would not) |
 | `CV_METRICS_PORT` | `9090` | the internal metrics listener (`GET /metrics` only, on `HOSTNAME`); `off` disables it (tests only); a value that is not a port, or equals `PORT`, stops the server at boot |
 
-## Identity and data (W2): dormant until configured
+## Identity and data (W2): on only when configured
 
 The code for Janua sign-in (Auth.js `next-auth@5.0.0-beta.32`, provider id `janua`) and the owner-scoped data
-model (Drizzle + postgres.js through PgBouncer) ships switched OFF. Merging it changes nothing live:
+model (Drizzle + postgres.js through PgBouncer) switches on only when its settings exist. Production has all of them
+(since 2026-10-22: ExternalSecret `cv-web-auth`, onboarding Secret `cv-secrets`); anywhere they are missing:
 
 | Missing | Behaviour |
 |---|---|
@@ -70,18 +74,18 @@ Nothing reads these at import or build time; nothing throws at boot. The boot lo
 
 | Name | Source | Read by |
 |---|---|---|
-| `AUTH_SECRET` | Vault `secret/cv` `auth_secret` (`enclii secrets intake submit cv/web-session --generate auth_secret`) → ExternalSecret `cv-web-auth` | Auth.js session-cookie encryption (this app's own secret, never the Janua client secret, R42) |
-| `AUTH_JANUA_CLIENT_ID`, `AUTH_JANUA_CLIENT_SECRET` | Vault `secret/cv` `auth_janua_client_id` / `auth_janua_client_secret` (`enclii secrets provision oidc --platform cv-app`) → `cv-web-auth` | Auth.js |
-| `AUTH_JANUA_ISSUER` = `https://auth.madfam.io` | plain env (PR B) | web + API |
+| `AUTH_SECRET` | the cv secret in the store, generated there by the Enclii secret intake (see the ExternalSecret manifests) → ExternalSecret `cv-web-auth` | Auth.js session-cookie encryption (this app's own secret, never the Janua client secret, R42) |
+| `AUTH_JANUA_CLIENT_ID`, `AUTH_JANUA_CLIENT_SECRET` | the cv secret in the store, written by Enclii's OIDC provisioner for the Janua client `cv-app` (see the ExternalSecret manifests) → `cv-web-auth` | Auth.js |
+| `AUTH_JANUA_ISSUER` = `https://auth.madfam.io` | plain env | web + API |
 | `AUTH_PUBLIC_HOSTS` = `cv-app.madfam.io` | plain env (defaults to the app host of the host table) | the only host sign-in answers on; `AUTH_URL` stays unset |
 | `CV_JANUA_AUDIENCE` = `cv-api`, `CV_JANUA_JWKS_URL` = `https://auth.madfam.io/.well-known/jwks.json` | plain env (both default to these) | API token verification |
-| `CV_JANUA_CLIENT_IDS` (optional, comma-separated) | plain env; unset = `AUTH_JANUA_CLIENT_ID` | the Janua clients whose tokens cv-api accepts (the token's `client_id`); another client's token is 403 `wrong_client`; with no client at all the API stays `not_configured` |
+| `CV_JANUA_CLIENT_IDS` (optional, comma-separated) | plain env; unset = `AUTH_JANUA_CLIENT_ID` (production: unset, so only `cv-app`'s tokens) | the Janua clients whose tokens cv-api accepts (the token's `client_id`, or `azp`); another client's token is 403 `wrong_client`; with no client at all the API stays `not_configured`. The app requests no `cv:read` / `cv:write` scopes and no route checks them |
 | `APP_DATABASE_URL` | onboarding Secret `cv-secrets` (runtime role `cv_app`: LOGIN NOSUPERUSER NOBYPASSRLS NOINHERIT, connection limit 8) | the app at runtime (DML only) |
 | `DATABASE_URL` | onboarding Secret `cv-secrets` (the database OWNER) | migrations only (the PreSync Job). The runtime falls back to it only when `NODE_ENV` is development or test |
 | `DIRECT_DATABASE_URL` | onboarding, if provided | migrations, preferred over `DATABASE_URL` |
 | `DATABASE_POOL_MAX` | plain env, default 3 | pool per pod (2 replicas × 3 inside the role's limit of 8) |
 | `HCM_API_URL` = `https://hcm-api.madfam.io` | plain env (W5-H) | the job page's market range (Symbiosis HCM); https only (loopback http for local tests) |
-| `HCM_CLIENT_ID`, `HCM_CLIENT_SECRET` | Vault `secret/cv` `hcm_client_id` / `hcm_client_secret` (`enclii secrets provision oidc --platform cv-hcm-benchmarks`) → ExternalSecret `cv-hcm-client`, read `optional: true` | Janua client credentials for HCM (scope `hcm-benchmarks:read`); absent = benchmark dormant |
+| `HCM_CLIENT_ID`, `HCM_CLIENT_SECRET` | the cv secret in the store, written by Enclii's OIDC provisioner for the platform `cv-hcm-benchmarks` (see the ExternalSecret manifests) → ExternalSecret `cv-hcm-client`, read `optional: true` | Janua client credentials for HCM (scope `hcm-benchmarks:read`); absent = benchmark dormant |
 | `HCM_TOKEN_URL`, `HCM_TIMEOUT_MS` | plain env, optional | token endpoint (default `${AUTH_JANUA_ISSUER}/api/v1/oauth/token`); per-call budget (default 3000 ms, 200-10000) |
 | `TLACUILO_API_URL` | plain env (reading images) | tlacuilo's API origin: https, or plain http to a cluster Service name (`*.svc`, `*.svc.cluster.local`); tlacuilo's API has no public hostname by design |
 | `TLACUILO_CLIENT_ID`, `TLACUILO_CLIENT_SECRET` | the Enclii secret intake → an ExternalSecret, read `optional: true` (added by the activation PR, after the client exists) | Janua client credentials for tlacuilo (scope `tlacuilo:extract`) |
@@ -119,17 +123,19 @@ and exits 0 (the PreSync Job, PR B).
 
 ## Provisioning order (owner / coordinator; each apply only after reading its own dry run)
 
+Done on 2026-10-22 (the wiring PRs are #5, sign-in, and #7, the database, in the git history); kept as the order to
+follow for a re-provisioning.
+
 1. Merge this W2 code (dormant). Its NetworkPolicies add 443 and PgBouncer egress **before** any
    `enclii onboard ensure`; `enclii.yaml` `network.egress` says the same (`[dns, https, pgbouncer]`).
-2. enclii#838 (the `cv-app` Janua client, intake targets `cv/web-oidc` and `cv/web-session`), the Vault writer
-   policy, `secrets provision oidc --platform cv-app`, then
-   `enclii secrets intake submit cv/web-session --generate auth_secret`.
+2. enclii#838 (the `cv-app` Janua client and its intake targets), the store writer policy,
+   `secrets provision oidc --platform cv-app`, then the intake that generates `AUTH_SECRET` inside the store.
 3. Postgres onboarding: `--db-name cv --generate-db-password --app-role cv_app --app-role-connection-limit 8`
    writes `cv-secrets` (`DATABASE_URL` owner, `APP_DATABASE_URL` runtime).
 4. Then, and only then, merge the wiring PR (ExternalSecret `cv-web-auth`, `envFrom` `cv-secrets` and
-   `cv-web-auth`, the plain `AUTH_JANUA_ISSUER` / `AUTH_PUBLIC_HOSTS`, the migrate PreSync Job). Check that
-   `secret/cv` holds `auth_janua_client_id`, `auth_janua_client_secret`, `auth_secret` and that `cv-secrets`
-   holds both URLs first: a missing Secret stops the pods.
+   `cv-web-auth`, the plain `AUTH_JANUA_ISSUER` / `AUTH_PUBLIC_HOSTS`, the migrate PreSync Job). Check first that
+   the cv secret in the store holds the three values `cv-web-auth` reads (see the ExternalSecret manifests) and that
+   `cv-secrets` holds both URLs: a missing Secret stops the pods.
 5. Probe: `/ready` shows `"signIn":"configured","database":"ok"`; `cv-api.madfam.io/api/v1/me` without a token is
    401; one real sign-in on `cv-app.madfam.io`, then «Cerrar sesión» returns to `https://cv-app.madfam.io/`.
 
@@ -137,12 +143,12 @@ and exits 0 (the PreSync Job, PR B).
 
 People's published CVs and portfolios, hosted on MADFAM's own infrastructure: `/<slug>` (public) and `/l/<token>`
 (link-shared). The owner approved the name on 2026-10-22, on the condition that it goes live behind a rate limit.
-This repo now carries `CV_HOST_PAGES=cv-p.madfam.io` in `deployment.yaml` and the domain in `enclii.yaml` (`port: 80`,
-Service `cv`). The e2e suite runs the pages host under that exact name (Chromium maps it to loopback), and it checks the
+**Live:** `CV_HOST_PAGES=cv-p.madfam.io` is in `deployment.yaml`, the domain is in `enclii.yaml` (`port: 80`, Service
+`cv`) and its status entry checks `https://cv-p.madfam.io/health`. The e2e suite runs the pages host under that exact name (Chromium maps it to loopback), and it checks the
 pages CSP, the per-page indexing, the caching, the paper look and the published-link URLs (`https://cv-p.madfam.io/…`).
 
-Activation (coordinator; deploy the image FIRST so the host never answers without the limiter; each apply only after
-reading its own dry run):
+Activation (done; kept as the order for a re-activation. Coordinator; deploy the image FIRST so the host never answers
+without the limiter; each apply only after reading its own dry run):
 
 1. Merge, dispatch Build & Deploy, wait for the digest-pin commit and the rollout (pods log `pages=cv-p.madfam.io`).
 2. `enclii ops domains reconcile cv --project cv --ref <pin sha> --domain cv-p.madfam.io` (dry run), then the same
@@ -230,6 +236,8 @@ build assets are counted, not logged. Alert rules and the dashboard live in MADF
 
 ## First deploy (owner / coordinator steps)
 
+Done in wave 1 (three hosts then; the pages host followed in W6-A, above). Kept as the record of the order.
+
 Run each apply only after reading its own dry run; never paste a dry run and its apply together.
 
 1. Merge the baseline pull request (CI and Image green).
@@ -265,9 +273,10 @@ noindex is `CV_INDEXABLE=true` in `deployment.yaml`, after the brand ruling.
 `GET /api/v1/jobs/:id/benchmark` (owner-scoped) asks Symbiosis HCM's `GET /api/v1/market-benchmarks/` with the job
 title and ISO state only (`apps/web/src/server/hcm/`). The call goes to HCM's public host over the existing HTTPS
 egress to public addresses, the same path cv uses for Janua: no new NetworkPolicy in `cv` or in `symbiosis-hcm`.
-Never part of `/ready`: a broken HCM leaves the panel saying so and nothing else.
+Never part of `/ready`: a broken HCM leaves the panel saying so and nothing else. **Live in production** (the
+ExternalSecret `cv-hcm-client` and `HCM_API_URL` are in `infra/k8s/production/`).
 
-Activation (coordinator, in this order; each apply only after reading its own dry run):
+Activation (done; kept as the order. Coordinator, in this order; each apply only after reading its own dry run):
 
 1. symbiosis-hcm: the market-benchmarks PR (endpoint dormant: empty client allowlist).
 2. enclii: the `cv-hcm-benchmarks` platform and the `cv/hcm-client` intake target; deploy switchyard-api.
@@ -290,9 +299,9 @@ Order to switch it on (coordinator; each step only after the one before it is ve
    NetworkPolicy admits the `cv` namespace.
 2. The machine client for this edge exists in Janua (audience `tlacuilo`, scope `tlacuilo:extract`,
    `client_credentials` only) and its id and secret are in the secret store through the Enclii secret intake.
-3. This repo, one PR (the activation PR): the ExternalSecret for the pair, `TLACUILO_API_URL` on the Deployment, and
-   an egress rule from cv's pods to tlacuilo's API pods on their container port. Never merge it before step 2: an
-   ExternalSecret whose keys do not exist leaves the app Degraded.
+3. This repo, one PR (the activation PR, #32, open and waiting on steps 1 and 2): the ExternalSecret for the pair,
+   `TLACUILO_API_URL` on the Deployment, and an egress rule from cv's pods to tlacuilo's API pods on their container
+   port. Never merge it before step 2: an ExternalSecret whose keys do not exist leaves the app Degraded.
 4. Probe: signed in, `GET /api/v1/jobs/intake/ocr` → `{"enabled": true, …}`; pick a screenshot of a posting on
    `/empleos/nuevo`, agree, and the preview shows its text with the OCR note. The request log line `cv-ocr` carries
    the outcome, bytes and milliseconds, never content.
