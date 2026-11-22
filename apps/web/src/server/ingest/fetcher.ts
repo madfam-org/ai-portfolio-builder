@@ -10,7 +10,7 @@
  * Every response: no cookie or credential is ever sent (no jar, no Authorization, Set-Cookie ignored); the status must
  *   be 2xx; the media type must be in the caller's allow-list; the body is capped (2 MB after decompression: a gzip bomb
  *   stops at the cap); one deadline (8 s) covers the whole chain.
- * The User-Agent names cv and a contact URL. Logs: host and outcome only (callers), never the URL (queries carry tokens).
+ * The User-Agent names cv and a contact URL. Logs: outcome only (callers), never the site or the URL (queries carry tokens).
  *
  * `resolver` and `transport` are injectable so the rejections are unit-tested without a network.
  */

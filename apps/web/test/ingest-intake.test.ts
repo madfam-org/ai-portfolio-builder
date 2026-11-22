@@ -1,7 +1,7 @@
 /**
  * W5-J ATS detection and mapping (synthetic JSON in the documented field names), board policy, and the intake service
  * end to end over a fake network: capture-only boards never connect, ATS API first with page fallback, robots.txt
- * before any page, per-owner ceilings, honest failures, and logs that carry the host and never the URL.
+ * before any page, per-owner ceilings, honest failures, and logs that carry the outcome and never the site, the URL or the content.
  */
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -92,7 +92,7 @@ function deps(n: ReturnType<typeof net>, extra: Partial<IntakeDeps> = {}): Intak
 
 const page = readFileSync(join(FIX, 'jsonld-board.html'), 'utf8');
 
-test('a link: robots.txt, then one page read as JSON-LD; the log has the host and outcome, never the path or query', async () => {
+test('a link: robots.txt, then one page read as JSON-LD; the log has the outcome, never the site, path or query', async () => {
   clearRobotsCache();
   const n = net({
     'empleos.example.org/robots.txt': { status: 200, type: 'text/plain', body: 'User-agent: *\nDisallow: /buscar\n' },
@@ -105,9 +105,10 @@ test('a link: robots.txt, then one page read as JSON-LD; the log has the host an
   assert.equal(r.draft.fields.stateCode!.value, 'MX-JAL');
   assert.deepEqual(n.seen.map((s) => s.path), ['/robots.txt', '/vacante/12345?ref=secret-token']);
   assert.equal(d.lines.length, 1);
-  assert.equal(d.lines[0]!.host, 'empleos.example.org');
   assert.equal(d.lines[0]!.outcome, 'ok');
-  assert.ok(!JSON.stringify(d.lines).includes('secret-token') && !JSON.stringify(d.lines).includes('/vacante'), 'no path or query in logs');
+  assert.equal(d.lines[0]!.host, undefined);
+  const logged = JSON.stringify(d.lines);
+  assert.ok(!logged.includes('empleos') && !logged.includes('secret-token') && !logged.includes('/vacante'), 'no site, path or query in logs');
   clearRobotsCache();
 });
 

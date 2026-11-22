@@ -9,7 +9,8 @@
  *   3. a known ATS → its public API (ats.ts); on any failure, fall through to the page;
  *   4. robots.txt for `madfam-cv` (robots.ts), then ONE page fetch, read as JSON-LD → microdata → Open Graph → text;
  *      a page that says its posting is closed (closed.ts) is `posting_closed`, never a draft of its navigation.
- * A text or a capture is parsed only (no network). Logs: source, host and outcome, never the URL or the content.
+ * A text or a capture is parsed only (no network). Logs: source, outcome and timing, never the site, the URL or the content (the site a person reads can name
+ * an employer; the privacy notice promises route, outcome and duration only).
  */
 import { z } from 'zod';
 import { SOURCE_TEXT_MAX } from '../db/schema.ts';
@@ -87,12 +88,12 @@ async function fromUrl(owner: string, raw: string, deps: IntakeDeps): Promise<In
     url = checkUrl(raw);
   } catch (err) {
     const r = fetchFailure(err);
-    log({ evt: 'cv-intake', source: 'url', host: err instanceof FetchError ? err.host : null, outcome: r.ok ? 'ok' : r.body.reason });
+    log({ evt: 'cv-intake', source: 'url', outcome: r.ok ? 'ok' : r.body.reason });
     return r;
   }
   const host = url.hostname;
   const done = (r: IntakeResult, via: string): IntakeResult => {
-    log({ evt: 'cv-intake', source: 'url', host, via, outcome: r.ok ? 'ok' : r.body.reason, ms: Date.now() - started });
+    log({ evt: 'cv-intake', source: 'url', via, outcome: r.ok ? 'ok' : r.body.reason, ms: Date.now() - started });
     return r;
   };
   const board = captureOnlyBoard(host);
