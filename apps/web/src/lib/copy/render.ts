@@ -137,7 +137,11 @@ export interface DocumentsCopy {
   contentSummaryHint: string;
   /** The summary's hint in a cover letter, whose own body replaces it when written. */
   contentSummaryHintLetter: string;
+  /** …while the letter has a body of its own (it does not print the summary then). */
+  contentSummaryHintLetterBody: string;
   contentLetterHint: string;
+  /** The letter body's hint in the document editor ({max}: its length limit). */
+  contentLetterBodyHint: string;
   contentPublishedNote: string;
   contentSlidesNote: string;
   contentUnsaved: string;
@@ -254,8 +258,10 @@ export const DOCUMENTS_COPY: Record<Locale, DocumentsCopy> = {
     contentSelected: 'En este documento ({n})',
     contentSummaryLabel: 'Resumen de este documento (opcional)',
     contentSummaryHint: 'Encabeza el documento. Si lo dejas vacío, se usa el resumen de tu perfil.',
-    contentSummaryHintLetter: 'En una carta se imprime solo si su cuerpo está vacío. Si lo dejas vacío, se usa el resumen de tu perfil.',
-    contentLetterHint: 'Si dejas el saludo o la despedida vacíos, usamos el texto que ves en gris.',
+    contentSummaryHintLetter: 'Abre esta carta mientras su cuerpo esté vacío. Si lo dejas vacío, se usa el resumen de tu perfil.',
+    contentSummaryHintLetterBody: 'Esta carta no lo imprime: tiene su propio cuerpo.',
+    contentLetterHint: 'Lo que dejes vacío usa el texto que ves en gris.',
+    contentLetterBodyHint: 'Separa los párrafos con una línea en blanco (máximo {max} caracteres). Vacío, la carta abre con el resumen de este documento o, sin él, con el de tu perfil.',
     contentPublishedNote: 'Este documento está publicado: al guardar, quien tenga el enlace verá los cambios.',
     contentSlidesNote: 'Las diapositivas que armaste a mano no cambian aquí; esta lista es la que se usa cuando la presentación no tiene diapositivas propias.',
     contentUnsaved: 'Tienes cambios sin guardar.',
@@ -366,8 +372,10 @@ export const DOCUMENTS_COPY: Record<Locale, DocumentsCopy> = {
     contentSelected: 'In this document ({n})',
     contentSummaryLabel: 'Summary of this document (optional)',
     contentSummaryHint: 'It heads the document. Left empty, your profile summary is used.',
-    contentSummaryHintLetter: 'In a letter it prints only while the letter body is empty. Left empty, your profile summary is used.',
-    contentLetterHint: 'If you leave the greeting or the closing empty, we use the grey text you see.',
+    contentSummaryHintLetter: 'It opens this letter while its body is empty. Left empty, your profile summary is used.',
+    contentSummaryHintLetterBody: 'This letter does not print it: it has a body of its own.',
+    contentLetterHint: 'Whatever you leave empty uses the grey text you see.',
+    contentLetterBodyHint: 'Separate paragraphs with a blank line (at most {max} characters). Left empty, the letter opens with the summary of this document or, without one, with your profile summary.',
     contentPublishedNote: 'This document is published: once you save, anyone with the link sees the changes.',
     contentSlidesNote: 'Slides you built by hand do not change here; this list is used when the presentation has no slides of its own.',
     contentUnsaved: 'You have unsaved changes.',

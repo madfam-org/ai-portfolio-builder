@@ -116,7 +116,7 @@ export function TailorWorkspace({ locale, jobId }: { locale: Locale; jobId: stri
     if (field === 'items') return p.code === 'tooMany' ? fmt(t.tailor.problems.itemsTooMany, { max: LIMITS.items }) : t.tailor.problems.itemsRequired;
     return fmt(t.tailor.problems.tooLong, { max: LIMITS[field] });
   };
-  /** A problem in a folded field (summary, greeting, closing) opens «Más opciones» so the error is seen. */
+  /** A problem in the folded field (the summary) opens «Más opciones» so the error is seen. */
   const moreProblem = formProblem('summary') !== null;
   const itemProblems: ItemProblems = {};
   for (const p of problems) {
@@ -282,8 +282,8 @@ export function TailorWorkspace({ locale, jobId }: { locale: Locale; jobId: stri
             <TextAreaField
               id="tailor-body"
               label={t.tailor.letterBody}
-              hint={t.tailor.letterBodyHint}
-              rows={8}
+              hint={fmt(t.tailor.letterBodyHint, { max: LIMITS.body })}
+              rows={12}
               value={letterBody}
               placeholder={summary.trim() || profileSummary}
               onChange={(e) => setLetterBody(e.target.value)}
@@ -320,7 +320,7 @@ export function TailorWorkspace({ locale, jobId }: { locale: Locale; jobId: stri
             <TextAreaField
               id="tailor-summary"
               label={t.tailor.summary}
-              hint={kinds.includes('cover_letter') ? t.tailor.summaryHintWithLetter : t.tailor.summaryHint}
+              hint={!kinds.includes('cover_letter') ? t.tailor.summaryHint : letterBody.trim() ? t.tailor.summaryHintLetterBody : t.tailor.summaryHintWithLetter}
               rows={4}
               value={summary}
               placeholder={profileSummary}

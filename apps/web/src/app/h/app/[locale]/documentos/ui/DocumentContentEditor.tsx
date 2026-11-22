@@ -159,7 +159,7 @@ export function DocumentContentEditor({ locale, artifact, job }: { locale: Local
           <TextAreaField
             id="doc-summary"
             label={d.contentSummaryLabel}
-            hint={letter ? d.contentSummaryHintLetter : d.contentSummaryHint}
+            hint={!letter ? d.contentSummaryHint : draft.body.trim() ? d.contentSummaryHintLetterBody : d.contentSummaryHintLetter}
             rows={4}
             value={draft.summary}
             placeholder={loaded.profileSummary}
@@ -181,8 +181,8 @@ export function DocumentContentEditor({ locale, artifact, job }: { locale: Local
               <TextAreaField
                 id="doc-body"
                 label={t.tailor.letterBody}
-                hint={t.tailor.letterBodyHint}
-                rows={8}
+                hint={fmt(d.contentLetterBodyHint, { max: LIMITS.body })}
+                rows={12}
                 value={draft.body}
                 placeholder={draft.summary.trim() || loaded.profileSummary}
                 onChange={(e) => setDraft((x) => ({ ...x, body: e.target.value }))}

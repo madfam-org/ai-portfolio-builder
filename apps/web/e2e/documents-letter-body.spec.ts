@@ -58,8 +58,8 @@ test.describe.serial('a cover letter body of its own', () => {
     // In the letter's reading order, with the summary it would otherwise print shown in grey.
     expect(await letter.locator('input, textarea').evaluateAll((els) => els.map((e) => e.id))).toEqual(['tailor-greeting', 'tailor-body', 'tailor-closing']);
     await expect(body).toHaveAttribute('placeholder', PROFILE_SUMMARY);
-    await expect(letter).toContainText('Si lo dejas vacío, la carta abre con el resumen, si hay uno (el texto en gris).');
-    await expect(letter).not.toContainText('Resumen para este empleo');
+    await expect(letter).toContainText('Lo que dejes vacío usa el texto que ves en gris.');
+    await expect(letter).toContainText('Separa los párrafos con una línea en blanco (máximo 5000 caracteres).');
     await body.fill(`${FIRST}\n\n${SECOND}`);
     await page.getByRole('button', { name: 'Crear documentos para este empleo' }).click();
     await expect(page.getByTestId('tailor-created')).toContainText('se crearon 4 borradores');
@@ -95,7 +95,8 @@ test.describe.serial('a cover letter body of its own', () => {
     const editor = page.getByTestId('doc-content-editor');
     const body = editor.getByTestId('doc-letter').getByLabel('Cuerpo de la carta');
     await expect(body).toHaveValue(`${FIRST}\n\n${SECOND}`);
-    await expect(editor).toContainText('En una carta se imprime solo si su cuerpo está vacío.');
+    // The summary says plainly that this letter does not print it while the body is written, and when it does again.
+    await expect(editor).toContainText('Esta carta no lo imprime: tiene su propio cuerpo.');
     await expect(editor.getByTestId('doc-content-state')).toHaveText('Sin cambios pendientes.');
     const edited = 'Un solo párrafo, escrito de nuevo para esta carta.';
     await body.fill(edited);
@@ -116,6 +117,7 @@ test.describe.serial('a cover letter body of its own', () => {
 
     await page.goto(url('app', `/documentos/${letterId}`));
     await editor.getByTestId('doc-letter').getByLabel('Cuerpo de la carta').fill('');
+    await expect(editor).toContainText('Abre esta carta mientras su cuerpo esté vacío.');
     await editor.getByRole('button', { name: 'Guardar contenido' }).click();
     await expect(page.getByRole('status').filter({ hasText: 'Contenido guardado.' })).toBeVisible();
     const content = (await apiAs(OWNER_A, 'GET', `/api/v1/artifacts/${letterId}`)).json!.artifact.content as Json;

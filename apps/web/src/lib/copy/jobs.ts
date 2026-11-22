@@ -117,6 +117,8 @@ export interface JobsCopy {
     summaryHint: string;
     /** The summary's hint while a cover letter is among the documents (a letter body replaces it there). */
     summaryHintWithLetter: string;
+    /** …and while that letter has a body of its own, which it prints instead. */
+    summaryHintLetterBody: string;
     showContact: string;
     showContactHint: string;
     /** Batch 4 (critique #10): the less common choices, folded under the essentials. */
@@ -256,14 +258,15 @@ export const JOBS_COPY: Record<Locale, JobsCopy> = {
       summary: 'Resumen para este empleo (opcional)',
       summaryHint: 'Encabeza los documentos. Si lo dejas vacío, se usa el resumen de tu perfil.',
       summaryHintWithLetter: 'Encabeza los documentos; en la carta, solo si su cuerpo está vacío. Si lo dejas vacío, se usa el resumen de tu perfil.',
+      summaryHintLetterBody: 'Encabeza los documentos, salvo la carta: tiene su propio cuerpo. Si lo dejas vacío, se usa el resumen de tu perfil.',
       showContact: 'Incluir mis datos de contacto',
       showContactHint: 'Correo, teléfono y enlaces de tu perfil.',
       more: 'Más opciones: plantilla y resumen',
       letterLegend: 'Carta de presentación',
-      letterHint: 'Si dejas el saludo o la despedida vacíos, usamos el texto que ves en gris.',
+      letterHint: 'Lo que dejes vacío usa el texto que ves en gris.',
       greeting: 'Saludo',
       letterBody: 'Cuerpo de la carta',
-      letterBodyHint: 'Va entre el saludo y la despedida. Separa los párrafos con una línea en blanco. Si lo dejas vacío, la carta abre con el resumen, si hay uno (el texto en gris).',
+      letterBodyHint: 'Separa los párrafos con una línea en blanco (máximo {max} caracteres). Vacío, la carta abre con el «Resumen para este empleo» (en «Más opciones») o, sin él, con el de tu perfil.',
       closing: 'Despedida',
       willCreate: 'Se crearán estos borradores:',
       create: 'Crear documentos para este empleo',
@@ -408,14 +411,15 @@ export const JOBS_COPY: Record<Locale, JobsCopy> = {
       summary: 'Summary for this job (optional)',
       summaryHint: 'It heads the documents. Leave it empty to use the summary of your profile.',
       summaryHintWithLetter: 'It heads the documents; in the letter, only while its body is empty. Leave it empty to use the summary of your profile.',
+      summaryHintLetterBody: 'It heads the documents, except the letter: it has a body of its own. Leave it empty to use the summary of your profile.',
       showContact: 'Include my contact details',
       showContactHint: 'Email, phone and links from your profile.',
       more: 'More options: template and summary',
       letterLegend: 'Cover letter',
-      letterHint: 'If you leave the greeting or the closing empty, we use the grey text you see.',
+      letterHint: 'Whatever you leave empty uses the grey text you see.',
       greeting: 'Greeting',
       letterBody: 'Letter body',
-      letterBodyHint: 'It goes between the greeting and the closing. Separate paragraphs with a blank line. Left empty, the letter opens with the summary, if there is one (the grey text).',
+      letterBodyHint: 'Separate paragraphs with a blank line (at most {max} characters). Left empty, the letter opens with the «Summary for this job» (under «More options») or, without one, with your profile summary.',
       closing: 'Closing',
       willCreate: 'These drafts will be created:',
       create: 'Create documents for this job',
