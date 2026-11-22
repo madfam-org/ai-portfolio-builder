@@ -56,6 +56,39 @@ export class PublishLimitError extends Error {
   }
 }
 
+/** Creating past an owner's row ceiling (server/api/limits.ts OWNER_QUOTAS): the API answers 429 `quota_exceeded`. */
+export class QuotaExceededError extends Error {
+  readonly table: OwnedTable;
+  readonly limit: number;
+  constructor(table: OwnedTable, limit: number) {
+    super('owner quota reached');
+    this.table = table;
+    this.limit = limit;
+  }
+}
+
+type Queryable = Db | Parameters<Parameters<Db['transaction']>[0]>[0];
+
+/**
+ * Inside a transaction: one owner's writes that count or limit rows run one at a time. A transaction-scoped advisory
+ * lock on the owner, held until the transaction ends, so a count and the write after it cannot interleave with another
+ * such write of the same person (publishes, creates under a ceiling). Other owners never wait on it.
+ */
+async function lockOwner(tx: Queryable, ownerSub: string): Promise<void> {
+  await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${ownerSub}, 0))`);
+}
+
+/**
+ * Inside the transaction that inserts: takes the owner's lock, then refuses (QuotaExceededError) when `adding` more rows
+ * would take the owner past `limit`. Concurrent creates of one person therefore never pass the ceiling together.
+ * `limit` undefined: no ceiling to hold (repository callers other than the API, such as tests).
+ */
+export async function holdQuota(tx: Queryable, ownerSub: string, table: OwnedTable, adding: number, limit: number | undefined): Promise<void> {
+  if (limit === undefined) return;
+  await lockOwner(tx, ownerSub);
+  if ((await ownerRowCount(tx, ownerSub, table)) + adding > limit) throw new QuotaExceededError(table, limit);
+}
+
 /**
  * At most this many DIFFERENT documents published per owner within any 24 hours (lane X §4.8), whatever their state
  * now: withdrawing one does not free its place, and publishing again one already counted adds nothing. Counted from
@@ -204,8 +237,10 @@ export function createRepository(db: Db) {
       ownerSub: string,
       input: Pick<ProfileItem, 'kind' | 'position' | 'content' | 'tags'> & { translations?: ProfileItem['translations'] },
       nameHint?: string,
+      quotaLimit?: number,
     ): Promise<ProfileItem> {
       return db.transaction(async (tx) => {
+        await holdQuota(tx, ownerSub, 'items', 1, quotaLimit);
         const profile = await ensureProfile(ownerSub, tx, nameHint);
         const [row] = await tx
           .insert(profileItems)
@@ -264,10 +299,13 @@ export function createRepository(db: Db) {
       return db.select().from(jobs).where(eq(jobs.ownerSub, ownerSub)).orderBy(desc(jobs.createdAt));
     },
 
-    async createJob(ownerSub: string, input: JobWritable): Promise<Job> {
-      const [row] = await db.insert(jobs).values({ ...input, ownerSub }).returning();
-      if (!row) throw new Error('job insert returned nothing');
-      return row;
+    async createJob(ownerSub: string, input: JobWritable, quotaLimit?: number): Promise<Job> {
+      return db.transaction(async (tx) => {
+        await holdQuota(tx, ownerSub, 'jobs', 1, quotaLimit);
+        const [row] = await tx.insert(jobs).values({ ...input, ownerSub }).returning();
+        if (!row) throw new Error('job insert returned nothing');
+        return row;
+      });
     },
 
     async getJob(ownerSub: string, id: string): Promise<Job | null> {
@@ -307,8 +345,10 @@ export function createRepository(db: Db) {
     async createArtifact(
       ownerSub: string,
       input: { jobId: string | null; kind: string; title: string; locale: string; template: string; content: ArtifactContent },
+      quotaLimit?: number,
     ): Promise<Artifact | null> {
       return db.transaction(async (tx) => {
+        await holdQuota(tx, ownerSub, 'artifacts', 1, quotaLimit);
         if (input.jobId) {
           const [job] = await tx.select({ id: jobs.id }).from(jobs).where(and(eq(jobs.ownerSub, ownerSub), eq(jobs.id, input.jobId)));
           if (!job) return null;
@@ -327,9 +367,11 @@ export function createRepository(db: Db) {
     async createArtifactSet(
       ownerSub: string,
       input: { jobId: string | null; locale: string; template: string; artifacts: { kind: string; title: string; content: ArtifactContent; template?: string }[] },
+      quotaLimit?: number,
     ): Promise<Artifact[] | null> {
       if (input.artifacts.length < 1 || input.artifacts.length > ARTIFACT_SET_MAX) throw new Error('artifact set size out of range');
       return db.transaction(async (tx) => {
+        await holdQuota(tx, ownerSub, 'artifacts', input.artifacts.length, quotaLimit);
         if (input.jobId) {
           const [job] = await tx.select({ id: jobs.id }).from(jobs).where(and(eq(jobs.ownerSub, ownerSub), eq(jobs.id, input.jobId)));
           if (!job) return null;
@@ -392,9 +434,9 @@ export function createRepository(db: Db) {
           : { visibility: 'public', slug: target.slug, shareToken: null, indexable: target.indexable };
       try {
         return await db.transaction(async (tx) => {
-          // One owner's publishes run one at a time (a transaction-scoped advisory lock on the owner), so the count
-          // below and the update after it cannot interleave with another publish of the same person.
-          await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${ownerSub}, 0))`);
+          // One owner's publishes run one at a time (lockOwner), so the count below and the update after it cannot
+          // interleave with another publish of the same person.
+          await lockOwner(tx, ownerSub);
           const [existing] = await tx.select({ suspendedAt: artifacts.suspendedAt }).from(artifacts).where(and(eq(artifacts.ownerSub, ownerSub), eq(artifacts.id, id)));
           if (!existing) return null;
           if (existing.suspendedAt) throw new SuspendedError('artifact suspended');
@@ -512,9 +554,11 @@ export type OwnedTable = 'items' | 'jobs' | 'artifacts';
 
 /**
  * OWNER-SCOPED count of one person's rows in one table, for the per-owner quotas (W4-S). Indexed by `owner_sub`
- * (profile_items_owner_profile_idx, jobs_owner_sub_idx, artifacts_owner_job_idx all lead with it).
+ * (profile_items_owner_profile_idx, jobs_owner_sub_idx, artifacts_owner_job_idx all lead with it). A create checks its
+ * ceiling with this inside its own transaction, under the owner's lock (holdQuota); alone, it only answers «is there
+ * room now» (the job-intake previews, which store nothing).
  */
-export async function ownerRowCount(db: Db, ownerSub: string, table: OwnedTable): Promise<number> {
+export async function ownerRowCount(db: Queryable, ownerSub: string, table: OwnedTable): Promise<number> {
   const t = table === 'items' ? profileItems : table === 'jobs' ? jobs : artifacts;
   const [row] = await db.select({ n: sql<number>`count(*)::int` }).from(t).where(eq(t.ownerSub, ownerSub));
   return row?.n ?? 0;

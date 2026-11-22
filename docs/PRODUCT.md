@@ -282,7 +282,8 @@ do not serve), an OCR engine inside cv (reading images is tlacuilo's job, above)
 Abuse ceilings (`apps/web/src/server/api/limits.ts`; not product tiers, the owner may tune them): a request body is at
 most 256 KiB (413 `body_too_large`; the server never buffers more than 512 KiB of any body, `next.config.ts`), and one
 person holds at most 500 profile items, 500 jobs and 1 000 artifacts (creating past a ceiling is 429
-`quota_exceeded` with `resource` and `limit`; nothing is stored).
+`quota_exceeded` with `resource` and `limit`; nothing is stored). Each create counts and inserts in one transaction
+under the owner's advisory lock, so requests sent together cannot pass a ceiling (`test-pg/limits.pg.test.ts`).
 
 Bodies are validated with zod and strict: an unknown field is a 400, so `owner_sub`, ids, status, tokens and
 timestamps can never be set from a body. The app (`cv-app.madfam.io`) reaches the same handlers through its

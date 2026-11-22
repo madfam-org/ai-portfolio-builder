@@ -9,7 +9,7 @@
  */
 import { asc, desc, eq, sql } from 'drizzle-orm';
 import type { Db } from './client.ts';
-import type { Artifact, Job, Profile, ProfileItem } from './repository.ts';
+import { holdQuota, type Artifact, type Job, type Profile, type ProfileItem } from './repository.ts';
 import { artifacts, jobs, profileItems, profiles } from './schema.ts';
 
 export interface ContactInput {
@@ -58,10 +58,12 @@ export function createDataRights(db: Db) {
     /**
      * Adds the confirmed items after the owner's existing ones (positions max+1 …) and applies the chosen header
      * fields, in one transaction. Creates the profile when absent (display name from the Janua `name` claim unless the
-     * import sets one).
+     * import sets one). `quotaLimit`: the owner's item ceiling, checked under the owner's lock in the same transaction
+     * (QuotaExceededError, nothing written).
      */
-    async importItems(ownerSub: string, input: ImportInput, nameHint?: string): Promise<{ profile: Profile; items: ProfileItem[] }> {
+    async importItems(ownerSub: string, input: ImportInput, nameHint?: string, quotaLimit?: number): Promise<{ profile: Profile; items: ProfileItem[] }> {
       return db.transaction(async (tx) => {
+        await holdQuota(tx, ownerSub, 'items', input.items.length, quotaLimit);
         await tx
           .insert(profiles)
           .values({ ownerSub, displayName: input.profile?.displayName ?? nameHint ?? '' })
