@@ -1,18 +1,24 @@
 /**
- * Server-side Janua OIDC helpers for the web: discovery, refresh-token rotation (single flight) and the
- * RP-initiated logout URL. Reference: voxa apps/web/src/lib/janua-oidc.ts (origin/main 0b5cde0, Apache-2.0).
+ * Server-side Janua OIDC helpers for the web: discovery, refresh-token rotation (single flight), refresh-token
+ * revocation at sign-out (RFC 7009) and the RP-initiated logout URL. Reference: voxa apps/web/src/lib/janua-oidc.ts (origin/main 0b5cde0, Apache-2.0).
  */
 import type { JanuaClientConfig } from '../lib/auth-env.ts';
 
 export interface JanuaEndpoints {
   tokenEndpoint: string;
   endSessionEndpoint: string;
+  /** RFC 7009 token revocation (Janua: `POST /api/v1/oauth/revoke`). */
+  revocationEndpoint: string;
 }
 
 const discoveryCache = new Map<string, Promise<JanuaEndpoints>>();
 
 function fallbackEndpoints(issuer: string): JanuaEndpoints {
-  return { tokenEndpoint: `${issuer}/api/v1/oauth/token`, endSessionEndpoint: `${issuer}/logout` };
+  return {
+    tokenEndpoint: `${issuer}/api/v1/oauth/token`,
+    endSessionEndpoint: `${issuer}/logout`,
+    revocationEndpoint: `${issuer}/api/v1/oauth/revoke`,
+  };
 }
 
 function httpUrl(raw: unknown, fallback: string): string {
@@ -38,6 +44,7 @@ export function januaEndpoints(issuer: string, fetchImpl: typeof fetch = fetch):
         return {
           tokenEndpoint: httpUrl(doc.token_endpoint, fallback.tokenEndpoint),
           endSessionEndpoint: httpUrl(doc.end_session_endpoint, fallback.endSessionEndpoint),
+          revocationEndpoint: httpUrl(doc.revocation_endpoint, fallback.revocationEndpoint),
         };
       } catch {
         discoveryCache.delete(issuer);
@@ -47,6 +54,11 @@ export function januaEndpoints(issuer: string, fetchImpl: typeof fetch = fetch):
     discoveryCache.set(issuer, cached);
   }
   return cached;
+}
+
+/** HTTP Basic client authentication, as at Janua's token endpoint (RFC 6749 §2.3.1). */
+function clientBasicAuth(client: JanuaClientConfig): string {
+  return `Basic ${btoa(`${encodeURIComponent(client.clientId)}:${encodeURIComponent(client.clientSecret)}`)}`;
 }
 
 export interface RefreshedTokens {
@@ -77,7 +89,7 @@ export async function refreshJanuaTokens(refreshToken: string, client: JanuaClie
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        Authorization: `Basic ${btoa(`${encodeURIComponent(client.clientId)}:${encodeURIComponent(client.clientSecret)}`)}`,
+        Authorization: clientBasicAuth(client),
       },
       body: new URLSearchParams({ grant_type: 'refresh_token', refresh_token: refreshToken }),
       cache: 'no-store',
@@ -103,6 +115,48 @@ export async function refreshJanuaTokens(refreshToken: string, client: JanuaClie
     inflight.delete(refreshToken);
   }
 }
+
+/**
+ * What a revocation attempt came to, the only thing sign-out logs (never the token): `revoked` (Janua answered 2xx;
+ * RFC 7009 answers 200 whether or not the token was live), `no_token` (nothing to revoke, no request),
+ * `http_<status>` (Janua refused, e.g. 401 `invalid_client`, 503 when it cannot store the revocation), `timeout`,
+ * `unreachable`.
+ */
+export type RevocationOutcome = 'revoked' | 'no_token' | `http_${number}` | 'timeout' | 'unreachable';
+
+/**
+ * RFC 7009 revocation of a refresh token: `POST <revocation_endpoint>` with `token` and
+ * `token_type_hint=refresh_token`, the client authenticated by HTTP Basic as at the token endpoint. Janua revokes the
+ * token's whole rotation family, so every refresh token minted from it is refused too. Best effort: it never throws,
+ * and gives up after `timeoutMs` (at most 3 s).
+ */
+export async function revokeJanuaRefreshToken(
+  refreshToken: string | undefined,
+  client: JanuaClientConfig,
+  revocationEndpoint: string,
+  opts: { fetchImpl?: typeof fetch; timeoutMs?: number } = {},
+): Promise<RevocationOutcome> {
+  if (!refreshToken) return 'no_token';
+  const timeoutMs = Math.min(Math.max(opts.timeoutMs ?? REVOCATION_TIMEOUT_MS, 0), REVOCATION_TIMEOUT_MS);
+  if (timeoutMs === 0) return 'timeout';
+  const signal = AbortSignal.timeout(timeoutMs);
+  try {
+    const res = await (opts.fetchImpl ?? fetch)(revocationEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', Authorization: clientBasicAuth(client) },
+      body: new URLSearchParams({ token: refreshToken, token_type_hint: 'refresh_token' }),
+      cache: 'no-store',
+      redirect: 'error',
+      signal,
+    });
+    await res.body?.cancel().catch(() => undefined);
+    return res.ok ? 'revoked' : `http_${res.status}`;
+  } catch {
+    return signal.aborted ? 'timeout' : 'unreachable';
+  }
+}
+
+export const REVOCATION_TIMEOUT_MS = 3000;
 
 /** RP-initiated logout URL (top-level GET navigation: the only shape that lets Janua clear its own cookie). */
 export function buildEndSessionUrl(input: { endSessionEndpoint: string; clientId: string; idToken?: string; postLogoutRedirectUri: string }): string {

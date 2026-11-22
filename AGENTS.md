@@ -111,7 +111,7 @@ Kubernetes Service publishes 80; every `enclii.yaml` domain pins `port: 80`. Fla
 | `apps/web/test/` | unit tests (`node:test`, Node type stripping) |
 | `apps/web/test-server/` | smoke test over the built standalone server, per Host |
 | `Dockerfile`, `infra/k8s/production/`, `enclii.yaml`, `.github/workflows/build-deploy.yml` | the one image, its kustomize base (digest pinned by Build & Deploy), the Enclii manifest, the dispatch-only build caller |
-| `apps/web/src/auth.ts`, `src/app/api/auth/`, `src/app/auth/` | Auth.js with the Janua OIDC provider; sign-in, account switching (R44) and RP-logout |
+| `apps/web/src/auth.ts`, `src/app/api/auth/`, `src/app/auth/`, `src/server/sign-out.ts` | Auth.js with the Janua OIDC provider; sign-in, account switching (R44) and RP-logout; sign-out revokes the Janua refresh token first (RFC 7009, best effort, ≤ 3 s; `test/sign-out.test.ts`) |
 | `apps/web/src/lib/auth-env.ts`, `public-origin.ts`, `api-routes.ts` | the env contract and dormancy rules; the public-origin allow-list and CSRF guard; the API route table (shared by the proxy and the handler) |
 | `apps/web/src/server/` | `janua.ts` (RS256 JWKS verification), `db/` (schema, client, migrations runner, owner-scoped repository), `api/` (handler, zod bodies, the deterministic job match) |
 | `apps/web/drizzle/` | committed SQL migrations: `0000` the initial schema, `0001` grants the `cv_app` runtime role, `0002` typed job columns, `0003` bilingual `translations`, `0004` the `recommendation` item kind |
@@ -159,7 +159,7 @@ Dockerfile's pinned `node:22-alpine` (every `actions/setup-node` reads it) and e
 `.github/workflows/` takes `--frozen-lockfile --ignore-scripts`, like the Dockerfile (the `guards` job checks both;
 `image.yml` fails when the built image's `node --version` differs from `.nvmrc`, so a base-digest bump that moves Node
 moves `.nvmrc` in the same PR). `ci.yml`: `agent-docs` (required files and markers), `web` (frozen install, lint,
-typecheck, unit tests ≥ 426 passing and none skipped, build, standalone smoke ≥ 13 passing; raise a floor when a PR adds tests), `pg` (the real-Postgres suite on a `postgres:16-alpine`
+typecheck, unit tests ≥ 435 passing and none skipped, build, standalone smoke ≥ 13 passing; raise a floor when a PR adds tests), `pg` (the real-Postgres suite on a `postgres:16-alpine`
 service container, as the `cv_app` role; fails on fewer than 52 passing tests), `e2e` (Playwright on GitHub-hosted runners:
 `npx playwright install --with-deps chromium`, the built server, its own Postgres service; fails on fewer than 110
 passing specs or any failed, flaky or skipped; raise the floor when a PR adds specs; a failed run uploads the
