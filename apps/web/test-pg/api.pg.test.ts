@@ -162,7 +162,7 @@ test('public reads return only what the published page prints: no title, no publ
   assert.equal(extra.status, 201, JSON.stringify(extra.body));
   const extraId = extra.body?.artifact.id as string;
   assert.equal((await api('DELETE', `/api/v1/profile/items/${goneId}`, { sub: A })).status, 204);
-  const stored = await h.sql`update artifacts set content = content || ${h.sql.json({ greeting: 'Saludo guardado que un CV no imprime' })} where id = ${extraId} and owner_sub = ${A} returning content`;
+  const stored = await h.sql`update artifacts set content = content || ${JSON.stringify({ greeting: 'Saludo guardado que un CV no imprime' })}::jsonb where id = ${extraId} and owner_sub = ${A} returning content`;
   assert.equal(stored.length, 1);
   rowsRead += stored.length;
   assert.equal((stored[0]!.content as { greeting?: string }).greeting, 'Saludo guardado que un CV no imprime', 'the row holds both extras');
