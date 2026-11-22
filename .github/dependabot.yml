@@ -40,7 +40,8 @@ updates:
       time: "07:00"
       timezone: America/Mexico_City
     ignore:
-      # The runtime stays on Node 22 LTS; digest and minor bumps of node:22-alpine still arrive.
+      # The runtime stays on Node 22 LTS; digest and minor bumps of node:22-alpine still arrive. A bump that moves Node
+      # fails image.yml until .nvmrc names the new version (CI's setup-node reads .nvmrc).
       - dependency-name: node
         update-types: ["version-update:semver-major"]
 

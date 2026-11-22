@@ -62,8 +62,8 @@ jobs:
           set -euo pipefail
           corepack enable
           pnpm --version
-      - name: Install (frozen lockfile)
-        run: pnpm install --frozen-lockfile
+      - name: Install (frozen lockfile, no package scripts, as the Dockerfile)
+        run: pnpm install --frozen-lockfile --ignore-scripts
       - name: Lint (eslint, zero warnings)
         run: pnpm lint
       - name: Typecheck (tsc --noEmit, strict)
@@ -130,8 +130,8 @@ jobs:
           set -euo pipefail
           corepack enable
           pnpm --version
-      - name: Install (frozen lockfile)
-        run: pnpm install --frozen-lockfile
+      - name: Install (frozen lockfile, no package scripts, as the Dockerfile)
+        run: pnpm install --frozen-lockfile --ignore-scripts
       - name: The runtime role, as Enclii onboarding creates it (LOGIN NOSUPERUSER NOBYPASSRLS NOINHERIT, limit 8)
         run: |
           set -euo pipefail
@@ -184,8 +184,8 @@ jobs:
           set -euo pipefail
           corepack enable
           pnpm --version
-      - name: Install (frozen lockfile)
-        run: pnpm install --frozen-lockfile
+      - name: Install (frozen lockfile, no package scripts, as the Dockerfile)
+        run: pnpm install --frozen-lockfile --ignore-scripts
       - name: The runtime role, as Enclii onboarding creates it
         run: |
           set -euo pipefail
@@ -237,6 +237,21 @@ jobs:
           # The pattern is written with a character class so this file does not match itself.
           if git grep -n -I -i -E 'madfam[.]com' -- .; then echo "domain-guard: files=$files FAIL"; exit 1; fi
           echo "domain-guard: files=$files findings=0 OK"
+      - name: CI runs the image's Node and installs without package scripts
+        # .nvmrc names the exact Node inside the Dockerfile's pinned base (image.yml checks that against the built
+        # image); setup-node reads it, so a bare major here would let CI float ahead of production.
+        run: |
+          set -euo pipefail
+          nvmrc=$(cat .nvmrc)
+          if ! printf '%s' "$nvmrc" | grep -Eqx '22\.[0-9]+\.[0-9]+'; then echo "node-pin: .nvmrc='$nvmrc' FAIL (want an exact 22.x.y)"; exit 1; fi
+          # The pattern is written with a character class so these lines do not match themselves; git grep finding
+          # nothing fails the step (pipefail), which is the read-proof failure.
+          found=$(git grep -n -E 'pnpm[[:space:]]+install' -- '.github/workflows/*.yml')
+          installs=$(printf '%s\n' "$found" | awk -F: '$3 !~ /^[[:space:]]*#/ {n++} END {print n+0}')
+          bare=$(printf '%s\n' "$found" | awk -F: '$3 !~ /^[[:space:]]*#/ && $0 !~ /--ignore-scripts/')
+          if [ "$installs" -lt 1 ]; then echo "node-pin: installs=0 FAIL (nothing to scan)"; exit 1; fi
+          if [ -n "$bare" ]; then echo "$bare"; echo "node-pin: installs=$installs FAIL (every install takes --ignore-scripts)"; exit 1; fi
+          echo "node-pin: node=$nvmrc installs=$installs all --ignore-scripts OK"
 
   secrets:
     name: Secret scan (gitleaks)

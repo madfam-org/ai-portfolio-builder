@@ -55,8 +55,8 @@ jobs:
           set -euo pipefail
           corepack enable
           pnpm --version
-      - name: Install (frozen lockfile)
-        run: pnpm install --frozen-lockfile
+      - name: Install (frozen lockfile, no package scripts, as the Dockerfile)
+        run: pnpm install --frozen-lockfile --ignore-scripts
       - name: The runtime role, as Enclii onboarding creates it
         run: |
           set -euo pipefail

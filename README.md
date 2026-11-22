@@ -48,11 +48,11 @@ is not maintained.
 
 ## Develop
 
-Node 22 (≥ 22.18) and pnpm via corepack:
+Node 22 (≥ 22.18; `.nvmrc` names the exact version the production image runs) and pnpm via corepack:
 
 ```bash
 corepack enable
-pnpm install --frozen-lockfile
+pnpm install --frozen-lockfile --ignore-scripts   # as CI and the Dockerfile: no package install scripts
 pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm test:server
 # with a throwaway Postgres (see AGENTS.md "Commands"): pnpm test:pg, then pnpm test:e2e (Playwright, Chromium)
 CV_HOST_LANDING=cv.localhost CV_HOST_APP=cv-app.localhost CV_HOST_API=cv-api.localhost pnpm --filter @cv/web dev

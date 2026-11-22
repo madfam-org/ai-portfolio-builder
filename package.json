@@ -9,7 +9,7 @@
   },
   "packageManager": "pnpm@9.15.0",
   "engines": {
-    "node": ">=22.18"
+    "node": ">=22.18 <23"
   },
   "scripts": {
     "lint": "pnpm --filter @cv/web run lint",

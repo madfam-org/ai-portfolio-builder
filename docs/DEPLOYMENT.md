@@ -14,8 +14,9 @@ itself. Declared in [`../enclii.yaml`](../enclii.yaml) with `autoDeploy: false`.
 
 ## Runtime
 
-One container (root [`../Dockerfile`](../Dockerfile), two stages, `node:22-alpine` pinned by digest,
-pnpm via corepack with the frozen lockfile, Next.js standalone output) on port 3000. uid 1001,
+One container (root [`../Dockerfile`](../Dockerfile), two stages, `node:22-alpine` pinned by digest
+(`.nvmrc` names the exact Node inside it, so CI runs the same one), pnpm via corepack with the frozen lockfile and
+no package install scripts (`--ignore-scripts`, as every CI install), Next.js standalone output) on port 3000. uid 1001,
 read-only root filesystem (only `/tmp` and `/app/.next/cache` writable, emptyDir in Kubernetes),
 drop ALL capabilities, seccomp RuntimeDefault, no service-account token, `enableServiceLinks: false`
 (a Service named `cv` would otherwise inject `CV_PORT` and friends into the app's `CV_*` namespace).
