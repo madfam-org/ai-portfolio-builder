@@ -52,11 +52,39 @@ export function parseRobots(text: string): Group[] {
   return groups;
 }
 
-function ruleMatches(pattern: string, path: string): boolean {
+/** Rules past these bounds are not matched literally: a Disallow then matches every path, an Allow none (it can only refuse more). */
+export const ROBOTS_RULE_LIMITS = { maxLength: 512, maxWildcards: 16 } as const;
+
+/**
+ * `*` (any run) and a trailing `$` (end of path), matched in linear time without a regular expression: the literal
+ * segments between wildcards are found left to right (the leftmost match is always the right choice for `*`-only
+ * patterns); with `$`, the last segment must end the path and the others must fit before it.
+ */
+function globMatches(pattern: string, path: string): boolean {
   const anchored = pattern.endsWith('$');
-  const body = anchored ? pattern.slice(0, -1) : pattern;
-  const re = new RegExp(`^${body.split('*').map((p) => p.replace(/[.+?^${}()|[\]\\]/g, '\\$&')).join('.*')}${anchored ? '$' : ''}`);
-  return re.test(path);
+  const segments = (anchored ? pattern.slice(0, -1) : pattern).split('*');
+  const first = segments[0]!;
+  if (segments.length === 1) return anchored ? path === first : path.startsWith(first);
+  if (!path.startsWith(first)) return false;
+  const last = segments[segments.length - 1]!;
+  let at = first.length;
+  let end = path.length;
+  if (anchored) {
+    if (!path.endsWith(last) || path.length - last.length < at) return false;
+    end = path.length - last.length;
+  }
+  for (const segment of segments.slice(1, anchored ? -1 : undefined)) {
+    const found = path.indexOf(segment, at);
+    if (found === -1 || found + segment.length > end) return false;
+    at = found + segment.length;
+  }
+  return true;
+}
+
+function ruleMatches(rule: Rule, pattern: string, path: string): boolean {
+  const wildcards = pattern.split('*').length - 1;
+  if (pattern.length > ROBOTS_RULE_LIMITS.maxLength || wildcards > ROBOTS_RULE_LIMITS.maxWildcards) return !rule.allow;
+  return globMatches(pattern, path);
 }
 
 /** Percent-encoding is normalised on both sides so `/empleo%C3%B3` and `/empleoó` compare equal. */
@@ -77,7 +105,7 @@ export function robotsAllows(groups: readonly Group[], pathWithQuery: string, to
   let best: Rule | null = null;
   for (const r of group.rules) {
     const pattern = normalisePath(r.path);
-    if (!ruleMatches(pattern, path)) continue;
+    if (!ruleMatches(r, pattern, path)) continue;
     const len = pattern.replace(/\$$/, '').length;
     const bestLen = best ? normalisePath(best.path).replace(/\$$/, '').length : -1;
     if (len > bestLen || (len === bestLen && r.allow && !best!.allow)) best = r;
