@@ -28,14 +28,17 @@ test('sign-in is dormant unless every AUTH_* value is set', () => {
   assert.deepEqual(januaClientConfig(FULL), { issuer: 'https://auth.madfam.io', clientId: 'id', clientSecret: 'cs' });
 });
 
-test('the API verifier needs only the issuer; audience cv-api and the JWKS default from it', () => {
+test('the API verifier needs the issuer and an accepted client; audience cv-api and the JWKS default from the issuer', () => {
   assert.equal(verifierConfig({}), null);
-  assert.equal(verifierConfig({ AUTH_JANUA_ISSUER: 'http://auth.madfam.io' }), null, 'plain http is refused off loopback');
-  assert.deepEqual(verifierConfig({ AUTH_JANUA_ISSUER: 'https://auth.madfam.io' }), {
+  assert.equal(verifierConfig({ AUTH_JANUA_ISSUER: 'https://auth.madfam.io' }), null, 'no accepted client: dormant (fail closed)');
+  assert.equal(verifierConfig({ AUTH_JANUA_ISSUER: 'http://auth.madfam.io', AUTH_JANUA_CLIENT_ID: 'id' }), null, 'plain http is refused off loopback');
+  assert.deepEqual(verifierConfig({ AUTH_JANUA_ISSUER: 'https://auth.madfam.io', AUTH_JANUA_CLIENT_ID: 'id' }), {
     issuer: 'https://auth.madfam.io',
     audience: 'cv-api',
     jwksUrl: 'https://auth.madfam.io/.well-known/jwks.json',
+    clientIds: ['id'],
   });
+  assert.deepEqual(verifierConfig({ AUTH_JANUA_ISSUER: 'https://auth.madfam.io', AUTH_JANUA_CLIENT_ID: 'id', CV_JANUA_CLIENT_IDS: ' a, b ,a,' })?.clientIds, ['a', 'b'], 'CV_JANUA_CLIENT_IDS wins over the app client');
 });
 
 test('runtime uses APP_DATABASE_URL; DATABASE_URL (the owner) only in development/test; migrations use the owner', () => {

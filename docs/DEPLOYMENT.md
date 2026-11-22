@@ -75,6 +75,7 @@ Nothing reads these at import or build time; nothing throws at boot. The boot lo
 | `AUTH_JANUA_ISSUER` = `https://auth.madfam.io` | plain env (PR B) | web + API |
 | `AUTH_PUBLIC_HOSTS` = `cv-app.madfam.io` | plain env (defaults to the app host of the host table) | the only host sign-in answers on; `AUTH_URL` stays unset |
 | `CV_JANUA_AUDIENCE` = `cv-api`, `CV_JANUA_JWKS_URL` = `https://auth.madfam.io/.well-known/jwks.json` | plain env (both default to these) | API token verification |
+| `CV_JANUA_CLIENT_IDS` (optional, comma-separated) | plain env; unset = `AUTH_JANUA_CLIENT_ID` | the Janua clients whose tokens cv-api accepts (the token's `client_id`); another client's token is 403 `wrong_client`; with no client at all the API stays `not_configured` |
 | `APP_DATABASE_URL` | onboarding Secret `cv-secrets` (runtime role `cv_app`: LOGIN NOSUPERUSER NOBYPASSRLS NOINHERIT, connection limit 8) | the app at runtime (DML only) |
 | `DATABASE_URL` | onboarding Secret `cv-secrets` (the database OWNER) | migrations only (the PreSync Job). The runtime falls back to it only when `NODE_ENV` is development or test |
 | `DIRECT_DATABASE_URL` | onboarding, if provided | migrations, preferred over `DATABASE_URL` |

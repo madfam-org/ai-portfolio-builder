@@ -54,6 +54,17 @@ test('wrong audience is 403; wrong issuer, expired, unknown key and no sub are 4
   }
 });
 
+test('a valid token issued to another client, or to no client, is 403 wrong_client; azp is read when client_id is absent', async () => {
+  const wrong = { ok: false, status: 403, error: 'wrong_client' };
+  assert.deepEqual(await authenticate(`Bearer ${await issuer.token({ sub: 'a', client_id: 'another-janua-client' })}`, issuer.config), wrong);
+  assert.deepEqual(await authenticate(`Bearer ${await issuer.token({ sub: 'a', client_id: undefined })}`, issuer.config), wrong);
+  assert.deepEqual(await authenticate(`Bearer ${await issuer.token({ sub: 'service-account:x', client_id: 'machine-client' })}`, issuer.config), wrong);
+  const viaAzp = await authenticate(`Bearer ${await issuer.token({ sub: 'a', client_id: undefined, azp: issuer.config.clientIds[0] })}`, issuer.config);
+  assert.equal(viaAzp.ok && viaAzp.sub, 'a');
+  const two = await authenticate(`Bearer ${await issuer.token({ sub: 'b', client_id: 'cv-app-next' })}`, { ...issuer.config, clientIds: ['cv-web-test', 'cv-app-next'] });
+  assert.equal(two.ok && two.sub, 'b', 'every listed client is accepted');
+});
+
 test('JWKS unreachable is 503 (fail closed), never anonymous', async () => {
   const token = await issuer.token({ sub: 'a' });
   const r = await authenticate(`Bearer ${token}`, { ...issuer.config, jwksUrl: 'http://127.0.0.1:9/.well-known/jwks.json' });
