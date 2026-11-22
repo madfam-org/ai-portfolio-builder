@@ -4,6 +4,9 @@
  *
  * - RS256 only, against Janua's JWKS (remote, cached 10 minutes); HS256, `none` and every other alg: 401 (R42).
  * - Missing, unparseable, bad signature, wrong issuer, expired, no `sub`: 401. Wrong audience: 403.
+ * - Issued to another client (`client_id`, or `azp`, not in `cfg.clientIds`; none at all included): 403. The audience
+ *   alone is not enough: any Janua client configured with audience cv-api would otherwise be accepted, and the
+ *   invite-only beta gate lives in Janua's admission to the cv-app client.
  * - JWKS unreachable or unusable (cold cache): 503 with Retry-After. Never "anonymous allowed" (fail closed).
  * - No Janua call on the request path beyond the cached JWKS (R106). The owner key is the verified `sub` only.
  */
@@ -37,10 +40,20 @@ export async function verifyAccessToken(token: string, cfg: VerifierConfig): Pro
     clockTolerance: 30,
   });
   if (typeof payload.sub !== 'string' || payload.sub === '') throw new errors.JWTClaimValidationFailed('missing sub', payload, 'sub');
+  const client = typeof payload.client_id === 'string' ? payload.client_id : typeof payload.azp === 'string' ? payload.azp : null;
+  if (!client || !cfg.clientIds.includes(client)) throw new WrongClientError();
   return payload;
 }
 
-export type AuthFailure = { ok: false; status: 401 | 403 | 503; error: 'missing_token' | 'invalid_token' | 'wrong_audience' | 'jwks_unavailable' };
+/** A valid token issued to a client cv-api does not accept. */
+export class WrongClientError extends Error {
+  constructor() {
+    super('token issued to another client');
+    this.name = 'WrongClientError';
+  }
+}
+
+export type AuthFailure = { ok: false; status: 401 | 403 | 503; error: 'missing_token' | 'invalid_token' | 'wrong_audience' | 'wrong_client' | 'jwks_unavailable' };
 export type AuthResult = { ok: true; sub: string; claims: JWTPayload } | AuthFailure;
 
 const INVALID_TOKEN_CODES = new Set([
@@ -57,6 +70,7 @@ const INVALID_TOKEN_CODES = new Set([
 
 /** Maps a verification error to the answer: the token's fault is 401/403, the JWKS's fault is 503. */
 export function classify(err: unknown): AuthFailure {
+  if (err instanceof WrongClientError) return { ok: false, status: 403, error: 'wrong_client' };
   if (err instanceof errors.JWTClaimValidationFailed && err.claim === 'aud') return { ok: false, status: 403, error: 'wrong_audience' };
   if (err instanceof errors.JOSEError && INVALID_TOKEN_CODES.has(err.code)) return { ok: false, status: 401, error: 'invalid_token' };
   // decodeProtectedHeader rejects garbage with JWSInvalid (handled above) or a TypeError on non-strings.

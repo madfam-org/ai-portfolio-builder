@@ -73,16 +73,33 @@ export interface VerifierConfig {
   issuer: string;
   audience: string;
   jwksUrl: string;
+  /** The Janua clients whose access tokens cv-api accepts (the token's `client_id`, or `azp`). */
+  clientIds: string[];
 }
 
-/** What cv-api needs to verify a bearer token: the issuer (required) and its JWKS and audience (defaults). */
+/**
+ * The clients cv-api accepts: CV_JANUA_CLIENT_IDS (comma-separated) or, unset, the app's own AUTH_JANUA_CLIENT_ID.
+ * Janua stamps the requesting client's id on every access token it mints, refreshes included.
+ */
+function apiClientIds(env: Env): string[] {
+  const raw = value(env, 'CV_JANUA_CLIENT_IDS');
+  const ids = raw ? raw.split(',').map((id) => id.trim()) : [value(env, 'AUTH_JANUA_CLIENT_ID') ?? ''];
+  return [...new Set(ids.filter((id) => id !== ''))];
+}
+
+/**
+ * What cv-api needs to verify a bearer token: the issuer and at least one accepted client (both required; without
+ * them the API stays dormant, fail closed), and its JWKS and audience (defaults).
+ */
 export function verifierConfig(env: Env): VerifierConfig | null {
   const issuer = januaIssuer(env);
-  if (!issuer) return null;
+  const clientIds = apiClientIds(env);
+  if (!issuer || clientIds.length === 0) return null;
   return {
     issuer,
     audience: value(env, 'CV_JANUA_AUDIENCE') ?? DEFAULT_API_AUDIENCE,
     jwksUrl: value(env, 'CV_JANUA_JWKS_URL') ?? `${issuer}/.well-known/jwks.json`,
+    clientIds,
   };
 }
 
