@@ -392,6 +392,18 @@ text as the hint, and «Copiar el texto en español como punto de partida» (fil
 «Faltan N textos en inglés». No machine or AI translation is offered: Selva's restricted tier is not live, and no
 seam is wired.
 
+**Changing the primary language** (2026-11-21) swaps the texts, never re-labels them. When a save of the header
+names another primary language, the server, in ONE transaction, goes over the header and every one of the person's
+items, field by field (`lib/profile-text-swap.ts`, `repository.putProfile`): a field with a translation in the new
+primary language takes it as its value and its previous value becomes the old language's translation; a field without
+one keeps its value and nothing is added; the new primary language's entry is then removed. A recommendation's words
+never move (only its role and relationship). So every document prints the same text in both languages before and
+after, and switching back restores the rows. The one change: a translation of a field that was empty in the old
+primary language (never printed) becomes the field's text. The request body is read in the languages it was edited in
+(the stored ones), its response carries the swapped items, and the editor shows them at once. Before this rule a
+switch only re-labelled the profile (the translations stayed keyed by the new primary language, so the editor and the
+documents stopped reading them); such a profile is repaired by switching back.
+
 **Per-job overrides** belong to ONE language, the language of the documents they are typed for (a document has one
 locale). Switching the tailoring workspace's language keeps the selection and its order, puts that language's
 overrides, summary, greeting and closing away, and brings back the ones typed for the other language. An override

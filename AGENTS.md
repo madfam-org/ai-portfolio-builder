@@ -158,8 +158,8 @@ whatever its base** (a PR stacked on another PR's branch is checked too; since 2
 `permissions: contents: read`; every action pinned to a full commit SHA; no `secrets: inherit`; no
 `|| true` masks. `ci.yml`: `agent-docs` (required files and markers), `web` (frozen install, lint,
 typecheck, unit tests, build, standalone smoke), `pg` (the real-Postgres suite on a `postgres:16-alpine`
-service container, as the `cv_app` role; fails on fewer than 44 passing tests), `e2e` (Playwright on GitHub-hosted runners:
-`npx playwright install --with-deps chromium`, the built server, its own Postgres service; fails on fewer than 105
+service container, as the `cv_app` role; fails on fewer than 46 passing tests), `e2e` (Playwright on GitHub-hosted runners:
+`npx playwright install --with-deps chromium`, the built server, its own Postgres service; fails on fewer than 106
 passing specs or any failed, flaky or skipped; raise the floor when a PR adds specs; a failed run uploads the
 Playwright traces as `e2e-traces`, kept 7 days), `guards` (file size, forbidden-domain grep),
 `secrets` (gitleaks over every commit after the legacy base `7959f356`, plus the checked-out tree;
@@ -296,7 +296,13 @@ Rules: a document in the primary language reads the stored text only (byte-for-b
 print text and render hashes); proper names, dates, URLs, levels and codes stay single; no machine or AI translation
 (the Selva seam stays off until its restricted tier is live); per-job overrides belong to the language of the
 documents they are typed for; the public projection carries only the document's own language (since 2026-11-21 the
-text arrives already in it: `lib/shared-page.ts`). CI minimums after this
+text arrives already in it: `lib/shared-page.ts`). **Changing the primary language swaps the texts** (2026-11-21,
+`lib/profile-text-swap.ts`, `repository.putProfile`): in one transaction the header and every one of the owner's items
+take, field by field, the translation in the new primary language when there is one (the old text becomes the old
+language's translation), keep their value otherwise, and lose the new primary language's entry; a recommendation's
+`text` never moves. The `PUT /profile` body is read in the STORED languages (a translation keyed by the stored primary
+language is a 400) and its response adds `items` when it switched. Renders are identical in both languages before and
+after (`test/profile-text-swap.test.ts`, `test-pg/primary-language.pg.test.ts`). CI minimums after this
 PR: `pg` ≥ 39 passing, `e2e` ≥ 89 passing after the rebase onto #26 (were 34 and 85).
 
 ## B1: beta access (invite-only) and the first-run guide

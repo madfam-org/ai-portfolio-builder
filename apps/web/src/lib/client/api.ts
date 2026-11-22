@@ -110,7 +110,8 @@ export function createApiClient(fetchImpl: Fetch = (i, init) => fetch(i, init), 
     me: () => call<{ sub: string }>('GET', '/me'),
 
     getProfile: () => call<{ profile: ProfileDto | null; items: ItemDto[] }>('GET', '/profile'),
-    putProfile: (body: ProfileInput) => call<{ profile: ProfileDto }>('PUT', '/profile', body),
+    /** W7 (B4): `items` is present when `locale` changed the primary language (every item, its texts swapped). */
+    putProfile: (body: ProfileInput) => call<{ profile: ProfileDto; items?: ItemDto[] }>('PUT', '/profile', body),
     listItems: () => call<{ items: ItemDto[] }>('GET', '/profile/items'),
     createItem: (body: ItemCreateInput) => call<{ item: ItemDto }>('POST', '/profile/items', body),
     getItem: (itemId: string) => call<{ item: ItemDto }>('GET', `/profile/items/${id(itemId)}`),

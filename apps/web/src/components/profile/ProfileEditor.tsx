@@ -291,7 +291,15 @@ export function ProfileEditor({ locale, nameHint, linkedInPdf = false }: { local
         initialMode={headerMode ?? undefined}
         copy={copy}
         appCopy={appCopy}
-        onSaved={setProfile}
+        onSaved={(saved, swapped) => {
+          setProfile(saved);
+          // W7 (B4): the primary language changed and the server swapped every item's texts: show them, and close an
+          // open item form (its fields were written in the previous languages).
+          if (swapped) {
+            setItems(swapped);
+            setEditing(null);
+          }
+        }}
       />
       {/* Batch 4: the contents list appears once there is something to jump to, and names only the kinds in use. */}
       {filledKinds.length > 0 ? (
