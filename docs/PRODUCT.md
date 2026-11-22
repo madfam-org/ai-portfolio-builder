@@ -126,9 +126,13 @@ coordinator's DNS and tunnel steps run. Its reads, and cv-api's public reads, ar
 
 ### Tailoring before AI: `GET /api/v1/jobs/:id/match`
 
-A deterministic, AI-free score of each profile item against a job posting (`keyword-overlap-v2`, in
+A deterministic, AI-free score of each profile item against a job posting (`keyword-overlap-v3`, in
 `apps/web/src/server/api/match.ts`): Spanish and English text is lower-cased and stripped of accents and
-stopwords (v2: also everyday filler such as «up», «best», «always», «cada»); a tag scores 3 when all its words appear
+stopwords (v2: also everyday filler such as «up», «best», «always», «cada»; v3: their plurals too, «nuevos»,
+«grandes», «others», which v2 let through because it checked before folding the plural). Words shorter than two
+letters are dropped, except, since v3, the languages «C» and «R» and the acronym «IT» when written exactly so in
+capitals (a lowercase «it» stays the English pronoun; every other all-caps word, such as a heading's «EN» or «Y»,
+follows the ordinary rules). A tag scores 3 when all its words appear
 in the posting and each other matching word of the item scores 1, counting only words about the work (v2: not the
 item's place, enums or a recommender's relation; a recommendation scores 0, it is someone else's words); items are
 ranked by score, then position. The tailoring page pre-selects the items that scored, plus the current job, in CV

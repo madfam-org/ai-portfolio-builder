@@ -2,11 +2,15 @@
  * `GET /api/v1/jobs/:id/match`: a deterministic, AI-free relevance score of each profile item against one job
  * posting. It gives per-job tailoring value before Selva lands (W6) and never calls the network.
  *
- * Heuristic `keyword-overlap-v2` (docs/PRODUCT.md):
+ * Heuristic `keyword-overlap-v3` (docs/PRODUCT.md):
  * 1. Normalise (es + en): lowercase, strip diacritics (NFD), keep letters, digits and the tech marks `+ # .`
  *    inside a word (c++, c#, node.js), drop stopwords of both languages (function words AND the everyday filler of
  *    any text: «up», «set», «best», «always», «muy», «cada» …), drop tokens shorter than 2 characters, fold a plural
- *    `s` on plain words longer than 4 characters.
+ *    `s` on plain words longer than 4 characters. v3: a token is dropped when its raw OR its folded form is a stopword
+ *    (v2 checked before the fold, so «nuevos», «grandes», «others» scored); and two exceptions are kept as written in
+ *    capitals: the one-letter languages `C` and `R` (`KEPT_LETTERS`) and the acronym `IT` (`KEPT_ACRONYMS`). Only
+ *    those exact uppercase forms: a lowercase «c» or «it», and every other all-caps word («EN», «CON», «Y»), follow
+ *    the ordinary rules, so an all-caps heading never turns a stopword into a term.
  * 2. Job terms: the set of normalised tokens of the job title and the posting text.
  * 3. For each item: a tag scores 3 when every token of the tag appears in the job terms; each other distinct
  *    content token found in the job terms scores 1. Content tokens come from the item's WORDS about the work: not
@@ -63,13 +67,29 @@ export function surfaceForms(text: string): Map<string, string> {
   return forms;
 }
 
+/** v3: one-letter names of programming languages, kept only when written as a capital («C», «R»). */
+const KEPT_LETTERS = new Set(['C', 'R']);
+/** v3: all-caps acronyms that are also a stopword or too short; kept only exactly as written («IT», not «it»). */
+const KEPT_ACRONYMS = new Set(['IT']);
+
+function foldPlural(token: string): string {
+  return token.length > 4 && /^[a-z]+$/.test(token) && token.endsWith('s') && !token.endsWith('ss') ? token.slice(0, -1) : token;
+}
+
 export function normalise(text: string): string[] {
-  const plain = text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  const plain = text.normalize('NFD').replace(/[̀-ͯ]/g, '');
   const out: string[] = [];
-  for (const raw of plain.split(/[^a-z0-9+#.]+/)) {
-    const token = raw.replace(/^[.]+|[.]+$/g, '');
+  for (const raw of plain.split(/[^A-Za-z0-9+#.]+/)) {
+    const cased = raw.replace(/^[.]+|[.]+$/g, '');
+    const token = cased.toLowerCase();
+    if (KEPT_LETTERS.has(cased) || KEPT_ACRONYMS.has(cased)) {
+      out.push(token);
+      continue;
+    }
     if (token.length < 2 || STOPWORDS.has(token) || /^[0-9.]+$/.test(token)) continue;
-    out.push(token.length > 4 && /^[a-z]+$/.test(token) && token.endsWith('s') && !token.endsWith('ss') ? token.slice(0, -1) : token);
+    const folded = foldPlural(token);
+    if (STOPWORDS.has(folded)) continue;
+    out.push(folded);
   }
   return out;
 }
@@ -95,7 +115,7 @@ export interface MatchItemInput {
 }
 
 export interface MatchResult {
-  algorithm: 'keyword-overlap-v2';
+  algorithm: 'keyword-overlap-v3';
   jobTerms: number;
   coveredTerms: number;
   items: { itemId: string; kind: string; score: number; matchedTags: string[]; matchedTerms: string[] }[];
@@ -135,7 +155,7 @@ export function matchItems(job: { title: string; sourceText: string; company?: s
     .slice(0, 20)
     .map(([t]) => show(t));
   return {
-    algorithm: 'keyword-overlap-v2',
+    algorithm: 'keyword-overlap-v3',
     jobTerms: freq.size,
     coveredTerms: covered.size,
     items: scored.map(({ position: _position, matchedTerms, ...rest }) => ({ ...rest, matchedTerms: matchedTerms.map(show).sort() })),

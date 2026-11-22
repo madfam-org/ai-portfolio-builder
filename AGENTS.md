@@ -129,7 +129,7 @@ Kubernetes Service publishes 80; every `enclii.yaml` domain pins `port: 80`. Fla
 | `apps/web/src/components/jobs/document-edit.ts`, `src/app/h/app/[locale]/documentos/ui/DocumentContentEditor.tsx` | editing a document's content in place (same `SelectionEditor`; one PATCH that keeps what it does not show); `test/jobs-document-edit.test.ts`, `e2e/documents.spec.ts` |
 | `apps/web/src/components/paper/print-pages.ts`, `src/app/h/app/[locale]/documentos/ui/PrintView.tsx`, `src/components/render/template-classes.ts` | the print view's «Aprox. N páginas» (print rules re-scoped onto a hidden copy, paginated like print) and its «Usar Compacta» offer; `test/print-pages.test.ts`, `e2e/templates.spec.ts` (estimate = PDF pages) |
 | `apps/web/src/components/ui/useUnsavedGuard.ts` | asks before leaving a page with unsaved changes (profile header, document content) |
-| `apps/web/src/server/api/match.ts` | the AI-free job match, `keyword-overlap-v2`; `test/match.test.ts` |
+| `apps/web/src/server/api/match.ts` | the AI-free job match, `keyword-overlap-v3`; `test/match.test.ts` |
 
 ## Commands
 
@@ -387,8 +387,11 @@ posting. Rules that now hold ([`docs/PRODUCT.md`](docs/PRODUCT.md) has the produ
 - **Recommendations received** are an item kind (`recommendation`, migration `0004`): the recommender's words are
   printed verbatim in quotation marks, never translated (`ITEM_TEXT_FIELDS` has only `role`, `relationship`) and never
   overridden per job (`render/model.ts` ignores overrides; the tailoring editor hides them). They score 0 in the match.
-- **Match `keyword-overlap-v2`**: filler words of both languages are stopwords; an item's place, enums, codes and a
-  recommender's relationship never score. Bump the version name whenever the scoring changes (it is shown in the UI).
+- **Match `keyword-overlap-v3`**: filler words of both languages are stopwords; an item's place, enums, codes and a
+  recommender's relationship never score. v3 (2026-11-21): a token is dropped when its raw OR plural-folded form is a
+  stopword («nuevos», «others» no longer score), and the capital letters `C`, `R` and the acronym `IT` are kept
+  (`KEPT_LETTERS`, `KEPT_ACRONYMS`: exact uppercase only, so all-caps headings never turn stopwords into terms). Bump
+  the version name whenever the scoring changes (it is shown in the UI).
 - **The pre-selection follows CV reading order** (kind in `ITEM_KIND_ORDER`, then the person's own order), never the
   score; the current job is always in. An added item lands in its CV place.
 - **A cover letter** prints at most three roles or projects (title, organisation, dates); its greeting and closing,
