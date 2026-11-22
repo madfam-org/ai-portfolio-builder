@@ -160,7 +160,8 @@ whatever its base** (a PR stacked on another PR's branch is checked too; since 2
 typecheck, unit tests, build, standalone smoke), `pg` (the real-Postgres suite on a `postgres:16-alpine`
 service container, as the `cv_app` role; fails on fewer than 39 passing tests), `e2e` (Playwright on GitHub-hosted runners:
 `npx playwright install --with-deps chromium`, the built server, its own Postgres service; fails on fewer than 104
-passing specs or any failed, flaky or skipped; raise the floor when a PR adds specs), `guards` (file size, forbidden-domain grep),
+passing specs or any failed, flaky or skipped; raise the floor when a PR adds specs; a failed run uploads the
+Playwright traces as `e2e-traces`, kept 7 days), `guards` (file size, forbidden-domain grep),
 `secrets` (gitleaks over every commit after the legacy base `7959f356`, plus the checked-out tree;
 the legacy history was scanned in full by the 2026-10-22 audit). `image.yml` builds the Dockerfile on
 pull requests that touch its inputs (no push) and smoke-tests it read-only as uid 1001 across all
