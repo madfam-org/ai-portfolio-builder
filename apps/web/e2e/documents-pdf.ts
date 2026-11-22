@@ -1,7 +1,8 @@
 /**
  * TEST-ONLY: reads what a Chromium `page.pdf()` contains, to prove the print view yields REAL text (the text layer ATS
  * parsers read) on the chosen paper. Minimal on purpose: FlateDecode streams, ToUnicode CMaps (bfchar/bfrange) and
- * hex-string text operators per font; enough for Skia's output, not a general PDF parser.
+ * hex-string text operators per font; enough for Skia's output, not a general PDF parser. Fail closed: a stream it
+ * cannot read throws instead of contributing no text.
  */
 import { inflateSync } from 'node:zlib';
 
@@ -21,16 +22,15 @@ function objects(pdf: Buffer): Map<number, PdfObject> {
       continue;
     }
     const start = body.indexOf('\n', at) + 1;
-    const end = body.lastIndexOf('endstream');
-    const raw = Buffer.from(body.slice(start, end).replace(/\r?\n$/, ''), 'latin1');
-    let stream: Buffer | null = raw;
-    if (/FlateDecode/.test(body.slice(0, at))) {
-      try {
-        stream = inflateSync(raw);
-      } catch {
-        stream = null;
-      }
-    }
+    // The stream is exactly /Length bytes. Chromium writes `<data>\nendstream`, and compressed data can itself end in
+    // CR or LF: trimming an end-of-line before `endstream` once cut a real byte, inflate failed, and that page's text
+    // vanished from the result without a word (a flaky «… is printed» failure). Indirect lengths are not supported.
+    const length = /\/Length (\d+)\b(?!\s+\d+\s+R)/.exec(body.slice(0, at));
+    if (!length) throw new Error(`readPdf: object ${m[1]} has a stream without a direct /Length`);
+    const raw = Buffer.from(body.slice(start, start + Number(length[1])), 'latin1');
+    if (!/^\r?\n?endstream/.test(body.slice(start + Number(length[1])))) throw new Error(`readPdf: object ${m[1]}: /Length does not end at endstream`);
+    // A stream that cannot be decoded is a failure, never an empty read (reading nothing must not pass).
+    const stream = /FlateDecode/.test(body.slice(0, at)) ? inflateSync(raw) : raw;
     out.set(Number(m[1]), { dict: body.slice(0, at), stream });
   }
   return out;

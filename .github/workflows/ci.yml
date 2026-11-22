@@ -186,6 +186,16 @@ jobs:
           passed=$(grep -Eo '^ *[0-9]+ passed' "$out" | grep -Eo '[0-9]+' | tail -1)
           if grep -Eq '^ *[0-9]+ (failed|flaky|skipped)' "$out" || [ -z "$passed" ] || [ "$passed" -lt 104 ]; then echo "e2e: passed=${passed:-none} FAIL (expected >= 104 passing, none failed, flaky or skipped)"; exit 1; fi
           echo "e2e: passed=$passed OK"
+      # A failed run keeps its evidence: Playwright retains a trace per failed test (playwright.config.ts). Synthetic
+      # personas and data only; seven days.
+      - name: Traces of failed specs
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: e2e-traces
+          path: apps/web/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
 
   guards:
     name: Guards (file size, forbidden domain)
