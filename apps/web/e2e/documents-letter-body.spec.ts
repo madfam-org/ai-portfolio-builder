@@ -107,10 +107,12 @@ test.describe.serial('a cover letter body of its own', () => {
         window.dispatchEvent(e);
         return e.defaultPrevented;
       });
-    expect(await asksBeforeLeaving()).toBe(true);
+    // The guard's listener is (un)registered in an effect after the render that shows the state: poll, never probe once.
+    await expect.poll(asksBeforeLeaving).toBe(true);
     await editor.getByRole('button', { name: 'Guardar contenido' }).click();
     await expect(page.getByRole('status').filter({ hasText: 'Contenido guardado.' })).toBeVisible();
-    expect(await asksBeforeLeaving()).toBe(false);
+    await expect(editor.getByTestId('doc-content-state')).toHaveText('Sin cambios pendientes.');
+    await expect.poll(asksBeforeLeaving).toBe(false);
     expect((await apiAs(OWNER_A, 'GET', `/api/v1/artifacts/${letterId}`)).json!.artifact.content.body).toBe(edited);
     await page.goto(url('app', `/documentos/${letterId}/vista-previa`));
     await expect(page.locator('[data-part="letter-text"] p')).toHaveText([edited]);

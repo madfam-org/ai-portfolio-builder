@@ -119,11 +119,12 @@ test('editing the content in place: remove, add, adjust the text, an emptied clo
       window.dispatchEvent(e);
       return e.defaultPrevented;
     });
-  expect(await asksBeforeLeaving()).toBe(true);
+  // The listener is (un)registered in an effect after the render that shows the state: poll, never probe once.
+  await expect.poll(asksBeforeLeaving).toBe(true);
   await editor.getByRole('button', { name: 'Guardar contenido' }).click();
   await expect(page.getByRole('status').filter({ hasText: 'Contenido guardado.' })).toBeVisible();
   await expect(editor.getByTestId('doc-content-state')).toHaveText('Sin cambios pendientes.');
-  expect(await asksBeforeLeaving()).toBe(false);
+  await expect.poll(asksBeforeLeaving).toBe(false);
 
   const after = (await apiAs(OWNER_A, 'GET', `/api/v1/artifacts/${id}`)).json!.artifact.content as Record<string, unknown>;
   expect(after.items).toEqual([{ itemId: exp, override: { summary: 'Solo en esta carta.' } }, { itemId: skill }]);
