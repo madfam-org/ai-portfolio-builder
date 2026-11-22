@@ -159,7 +159,7 @@ Dockerfile's pinned `node:22-alpine` (every `actions/setup-node` reads it) and e
 `.github/workflows/` takes `--frozen-lockfile --ignore-scripts`, like the Dockerfile (the `guards` job checks both;
 `image.yml` fails when the built image's `node --version` differs from `.nvmrc`, so a base-digest bump that moves Node
 moves `.nvmrc` in the same PR). `ci.yml`: `agent-docs` (required files and markers), `web` (frozen install, lint,
-typecheck, unit tests ≥ 435 passing and none skipped, build, standalone smoke ≥ 13 passing; raise a floor when a PR adds tests), `pg` (the real-Postgres suite on a `postgres:16-alpine`
+typecheck, unit tests ≥ 436 passing and none skipped, build, standalone smoke ≥ 13 passing; raise a floor when a PR adds tests), `pg` (the real-Postgres suite on a `postgres:16-alpine`
 service container, as the `cv_app` role; fails on fewer than 52 passing tests), `e2e` (Playwright on GitHub-hosted runners:
 `npx playwright install --with-deps chromium`, the built server, its own Postgres service; fails on fewer than 110
 passing specs or any failed, flaky or skipped; raise the floor when a PR adds specs; a failed run uploads the
@@ -376,6 +376,11 @@ journey, add it to the walk.
   The public API follows the same rule (2026-11-21): cv-api's two public reads and the pages host get
   `lib/shared-page.ts sharedRenderData`, only what the page prints (no title, no publication time, no profile summary
   under the document's own, no other language), and `test/shared-page.test.ts` proves it renders the same markup.
+  Since 2026-11-21 the content too is projected per kind (`projectContent`: what `buildDocModel` and that kind's view
+  read, and only the items it references); the test's fixtures store fields no page prints (an override of a deleted
+  item, ignored override fields, `greeting` on a CV, slides on a CV, unknown fields) and the markup and the render
+  baseline stay identical. A renderer that starts reading a content field must add it to `projectContent` in the same
+  PR (the comparison fails otherwise).
   A change to renderer markup moves `test/fixtures/bilingual/render-baseline.json`: regenerate it with
   `CV_WRITE_RENDER_BASELINE=1` and check that only the intended cases changed.
 - **The match shows words, not tokens.** `matchedTerms` / `missingTerms` carry the posting's own spelling

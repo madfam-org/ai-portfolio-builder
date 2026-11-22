@@ -36,8 +36,12 @@ An artifact is private until its owner publishes it:
   (`indexable`, default off).
 - Both public reads answer with only what the published page prints (`apps/web/src/lib/shared-page.ts`): never the
   document's title (the owner's private label), its publication time, the profile's summary when the document has
-  its own, or text in another language than the document's (`indexable` is the one extra field, the page's robots
-  choice).
+  its own (or does not print one: a presentation, a portfolio with an intro), or text in another language than the
+  document's (`indexable` is the one extra field, the page's robots choice). Since 2026-11-21 the document's content
+  is projected to what the renderer of its kind reads (`projectContent`): no reference to or adjustment of an item
+  deleted since, only the adjustment fields that kind applies, a cover letter's listed roles and projects only, a
+  presentation's own slides without the blocks they replace, `intro` on a portfolio and `greeting`/`closing` on a
+  cover letter only, no `showContact` and no other stored field; only the items that content references are carried.
 - Unpublishing returns the artifact to private `ready`; the token and the slug stop working at once. Drafts and
   private artifacts are never readable publicly, a link artifact is never reachable by slug and a public one
   never by token (database CHECK constraints plus tests).

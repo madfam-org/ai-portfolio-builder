@@ -149,4 +149,36 @@ test('public reads return only what the published page prints: no title, no publ
   assert.equal(bySlug.body?.profile.summary, '', 'the document prints its own summary, so the profile summary is not carried');
   assert.equal(bySlug.body?.artifact.content.summary, 'Resumen propio del documento');
   assert.equal(byLink.body?.profile.summary, 'Datos', 'without a summary of its own, the document prints the profile summary');
+
+  // Stored content the page never prints: an override of an item deleted since, and a greeting on a CV (no API write
+  // accepts one there; a stored row can still hold it). Neither reaches the public JSON (lib/shared-page.ts).
+  const gone = await api('POST', '/api/v1/profile/items', { sub: A, body: { kind: 'skill', content: { name: 'Habilidad borrada después' } } });
+  assert.equal(gone.status, 201, JSON.stringify(gone.body));
+  const goneId = gone.body?.item.id as string;
+  const extra = await api('POST', '/api/v1/artifacts', {
+    sub: A,
+    body: { kind: 'cv', title: TITLE, locale: 'es-MX', content: { items: [...selection, { itemId: goneId, override: { title: 'Título adaptado de lo borrado' } }], showContact: false } },
+  });
+  assert.equal(extra.status, 201, JSON.stringify(extra.body));
+  const extraId = extra.body?.artifact.id as string;
+  assert.equal((await api('DELETE', `/api/v1/profile/items/${goneId}`, { sub: A })).status, 204);
+  const stored = await h.sql`update artifacts set content = content || ${JSON.stringify({ greeting: 'Saludo guardado que un CV no imprime' })}::jsonb where id = ${extraId} and owner_sub = ${A} returning content`;
+  assert.equal(stored.length, 1);
+  rowsRead += stored.length;
+  assert.equal((stored[0]!.content as { greeting?: string }).greeting, 'Saludo guardado que un CV no imprime', 'the row holds both extras');
+  assert.ok(JSON.stringify(stored[0]!.content).includes(goneId));
+  assert.equal((await api('POST', `/api/v1/artifacts/${extraId}/publish`, { sub: A, body: { visibility: 'public', slug: 'ana-cv-extras' } })).status, 200);
+  const extras = await api('GET', '/api/v1/public/a/ana-cv-extras');
+  assert.equal(extras.status, 200);
+  rowsRead += 1;
+  const extrasJson = JSON.stringify(extras.body);
+  for (const absent of [goneId, 'Título adaptado de lo borrado', 'Saludo guardado que un CV no imprime', 'greeting', 'showContact']) {
+    assert.equal(extrasJson.includes(absent), false, `not in the public JSON: ${absent}`);
+  }
+  assert.deepEqual(Object.keys(extras.body?.artifact.content ?? {}).sort(), ['blocks', 'items']);
+  assert.deepEqual(
+    (extras.body?.artifact.content.items as { itemId: string }[]).map((r) => r.itemId),
+    selection.map((r) => r.itemId),
+    'the remaining selection, in order',
+  );
 });
