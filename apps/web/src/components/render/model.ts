@@ -87,6 +87,15 @@ const ITEM_KINDS: readonly ItemKind[] = ['experience', 'education', 'skill', 'pr
 const ARTIFACT_KINDS: readonly ArtifactKind[] = ['cv', 'portfolio', 'presentation', 'cover_letter'];
 const COMPACT: ReadonlySet<ItemKind> = new Set(['skill', 'language', 'link']);
 
+/** A profile item kind the renderers draw (an item of any other kind is skipped). */
+export function isItemKind(kind: string): kind is ItemKind {
+  return (ITEM_KINDS as readonly string[]).includes(kind);
+}
+
+/** A cover letter lists at most this many entries of these kinds, title, organisation and dates only (CoverLetterView). */
+export const LETTER_ENTRIES = 3;
+export const LETTER_KINDS: ReadonlySet<ItemKind> = new Set(['experience', 'project']);
+
 export const str = (v: unknown): string | null => (typeof v === 'string' && v.trim() !== '' ? v.trim() : null);
 const rec = (v: unknown): Rec => (v && typeof v === 'object' && !Array.isArray(v) ? (v as Rec) : {});
 const strings = (v: unknown): string[] => (Array.isArray(v) ? v.map(str).filter((s): s is string => s !== null) : []);

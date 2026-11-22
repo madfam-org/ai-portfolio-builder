@@ -1,8 +1,9 @@
 /**
  * What a shared page receives (lib/shared-page.ts sharedRenderData, used by both public reads): exactly what its
  * renderer prints. Read-proof: every kind × template × locale renders the SAME markup from the shared data as from the
- * owner's full data (with and without translations, with and without the document's own summary), and without
- * translations the shared data still matches test/fixtures/bilingual/render-baseline.json.
+ * owner's full data (with and without translations, with and without the document's own summary, with stored fields
+ * the page never prints), and without translations the shared data still matches
+ * test/fixtures/bilingual/render-baseline.json, extras included.
  */
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -13,7 +14,7 @@ import type { RenderData } from '../src/components/render/model.ts';
 import { sharedRenderData } from '../src/lib/shared-page.ts';
 import { localizeRenderData } from '../src/components/render/localize.ts';
 import { CONTACT, data } from './render-fixtures.ts';
-import { renderMatrix } from './render-matrix.ts';
+import { MATRIX_SELECTION, renderMatrix } from './render-matrix.ts';
 
 register('./render-loader.mjs', import.meta.url);
 const { createElement } = await import('react');
@@ -49,6 +50,52 @@ function withoutOwnSummary(d: RenderData): RenderData {
   return { ...d, artifact: { ...d.artifact, content } };
 }
 
+/**
+ * Stored content the page never prints: an override (and a reference) of an item deleted since, an override of an item
+ * of a kind no renderer draws, a field of an override no renderer reads, a blank text block, an unknown top-level field
+ * and, on every kind but a presentation, slides (MATRIX_SELECTION already stores `intro`, `greeting` and `closing` on
+ * every kind, and a highlights override the cover letter does not print). None of it changes the owner's own render.
+ */
+const NOT_PRINTED = ['Título de un elemento borrado', 'borrado-1', 'Elemento de tipo desconocido', 'Nota privada de la adaptación', 'Nota interna del documento', 'Diapositiva que no se imprime'];
+function withStoredExtras(d: RenderData): RenderData {
+  const content = d.artifact.content as Record<string, unknown>;
+  const refs = (content.items as { itemId: string; override?: Record<string, unknown> }[]).map((r) =>
+    r.itemId === 'e1' ? { ...r, override: { ...r.override, note: 'Nota privada de la adaptación' } } : r,
+  );
+  return {
+    ...d,
+    artifact: {
+      ...d.artifact,
+      content: {
+        ...content,
+        items: [...refs, { itemId: 'borrado-1', override: { title: 'Título de un elemento borrado', summary: 'x', highlights: ['y'] } }, { itemId: 'u1', override: { title: 'z' } }],
+        blocks: [...(content.blocks as unknown[]), { heading: '   ', body: '  ' }],
+        internalNote: 'Nota interna del documento',
+        ...(d.artifact.kind === 'presentation' ? {} : { slides: [{ title: 'Diapositiva que no se imprime', itemIds: ['e1'] }] }),
+      },
+    },
+    items: [...d.items, { id: 'u1', kind: 'unknown_kind', content: { name: 'Elemento de tipo desconocido' } }],
+  };
+}
+
+/** A recommendation with an override (never applied) and a repeated reference (printed twice, as the owner sees it). */
+function withRecommendation(d: RenderData): RenderData {
+  const content = d.artifact.content as Record<string, unknown>;
+  const refs = content.items as unknown[];
+  return {
+    ...d,
+    artifact: { ...d.artifact, content: { ...content, items: [...refs, { itemId: 'r1', override: { title: 'Título que no se aplica', summary: 's' } }, { itemId: 'e2' }] } },
+    items: [...d.items, { id: 'r1', kind: 'recommendation', content: { name: 'Berta Ejemplo', relationship: 'Jefa directa', text: 'Muy buena colega.' } }],
+  };
+}
+
+/** Slides of its own on every kind (only a presentation prints them, and then not the text blocks or the selection). */
+function withOwnSlides(d: RenderData): RenderData {
+  const extras = withStoredExtras(d);
+  const slides = [{ title: 'Mi trayectoria', body: 'Texto de la diapositiva', itemIds: ['e1', 'borrado-1', 'u1', 'p1'] }, { title: '', itemIds: [] }];
+  return { ...extras, artifact: { ...extras.artifact, content: { ...(extras.artifact.content as object), slides } } };
+}
+
 test('every kind × template × locale renders the same markup from the shared data as from the owner data (read-proof)', () => {
   const variants: [string, (d: RenderData) => RenderData][] = [
     ['plain', (d) => d],
@@ -56,6 +103,10 @@ test('every kind × template × locale renders the same markup from the shared d
     ['translated', (d) => translated(d)],
     ['translated, no own summary', (d) => translated(withoutOwnSummary(d))],
     ['English primary', (d) => translated(withoutOwnSummary(d), 'en')],
+    ['stored extras', withStoredExtras],
+    ['stored extras, translated, no own summary', (d) => translated(withStoredExtras(withoutOwnSummary(d)))],
+    ['recommendation override, repeated reference', withRecommendation],
+    ['slides of its own', withOwnSlides],
   ];
   let compared = 0;
   for (const [name, variant] of variants) {
@@ -67,7 +118,7 @@ test('every kind × template × locale renders the same markup from the shared d
       compared += 1;
     }
   }
-  assert.ok(compared >= 5 * 32, `cases compared: ${compared}`);
+  assert.ok(compared >= 9 * 32, `cases compared: ${compared}`);
 });
 
 test('without translations the shared data renders the committed render baseline', () => {
@@ -76,6 +127,39 @@ test('without translations the shared data renders the committed render baseline
   assert.ok(Object.keys(hashes).length >= 32, `baseline cases: ${Object.keys(hashes).length}`);
   assert.deepEqual(Object.keys(now).sort(), Object.keys(hashes).sort());
   for (const [key, hash] of Object.entries(hashes)) assert.equal(now[key], hash, key);
+  const extras = renderMatrix((d) => render(sharedRenderData(withStoredExtras(d))), templatesFor);
+  for (const [key, hash] of Object.entries(hashes)) assert.equal(extras[key], hash, `stored extras: ${key}`);
+});
+
+test('the content carries only what the renderer of its kind reads; only the items it references are carried', () => {
+  const kinds = ['cv', 'portfolio', 'presentation', 'cover_letter'] as const;
+  const shared = Object.fromEntries(kinds.map((k) => [k, sharedRenderData(withStoredExtras(data(k, { ...MATRIX_SELECTION }, { contact: CONTACT })))])) as Record<(typeof kinds)[number], ReturnType<typeof sharedRenderData>>;
+  for (const kind of kinds) {
+    const json = JSON.stringify(shared[kind]);
+    for (const text of NOT_PRINTED) assert.equal(json.includes(text), false, `${kind}: ${text}`);
+    assert.equal(json.includes('showContact'), false, `${kind}: showContact`);
+  }
+  const keys = (k: (typeof kinds)[number]) => Object.keys(shared[k].artifact.content as object).sort();
+  const ids = (k: (typeof kinds)[number]) => shared[k].items.map((i) => i.id);
+  assert.deepEqual(keys('cv'), ['blocks', 'items', 'summary']);
+  assert.deepEqual(keys('portfolio'), ['blocks', 'intro', 'items'], 'the intro is printed in place of the summary');
+  assert.deepEqual(keys('presentation'), ['blocks', 'items'], 'no slide prints a summary or an intro');
+  assert.deepEqual(keys('cover_letter'), ['blocks', 'closing', 'greeting', 'items', 'summary']);
+  assert.equal(shared.portfolio.profile.summary, '');
+  assert.equal(shared.presentation.profile.summary, '');
+  assert.deepEqual(ids('cv'), ['e1', 'e2', 'd1', 's1', 's2', 'l1', 'p1', 'c1', 'x1']);
+  assert.deepEqual(ids('cover_letter'), ['e1', 'e2', 'p1'], 'the letter lists at most three roles or projects');
+  assert.deepEqual((shared.cover_letter.artifact.content as { items: unknown[] }).items, [{ itemId: 'e1', override: { title: 'Líder de datos' } }, { itemId: 'e2' }, { itemId: 'p1' }]);
+  assert.deepEqual((shared.cv.artifact.content as { items: unknown[] }).items[0], { itemId: 'e1', override: { title: 'Líder de datos', highlights: ['Logro adaptado'] } });
+
+  const deck = sharedRenderData(withOwnSlides(data('presentation', { ...MATRIX_SELECTION })));
+  assert.deepEqual(deck.artifact.content, {
+    items: [{ itemId: 'e1', override: { title: 'Líder de datos', highlights: ['Logro adaptado'] } }],
+    slides: [{ title: 'Mi trayectoria', body: 'Texto de la diapositiva', itemIds: ['e1', 'p1'] }, { title: '', itemIds: [] }],
+  });
+  assert.deepEqual(deck.items.map((i) => i.id), ['e1', 'p1']);
+  const rec = sharedRenderData(withRecommendation(data('cv', { items: [] })));
+  assert.deepEqual(rec.artifact.content, { items: [{ itemId: 'r1' }, { itemId: 'e2' }], blocks: [] }, 'a recommendation is never overridden');
 });
 
 test('the title is never carried, even when the input has one', () => {

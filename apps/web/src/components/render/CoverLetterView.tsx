@@ -1,4 +1,4 @@
-import type { DocModel } from './model.ts';
+import { LETTER_ENTRIES, LETTER_KINDS, type DocModel } from './model.ts';
 import { ContactLine, EntryView, Paragraphs } from './parts.tsx';
 import { RENDER_COPY } from '../../lib/copy/render.ts';
 import s from './render.module.css';
@@ -10,10 +10,9 @@ import s from './render.module.css';
  * of the selection, at most `LETTER_ENTRIES`, each as role, organisation and dates: the CV carries the details;
  * skills, languages and recommendations stay in the CV), the closing and the name as the signature. Nothing is added
  * unseen: no date, no recipient; the greeting and closing the person left empty were shown as the fields'
- * placeholders before the letter was created (components/jobs/tailoring.ts `letterDefaults`).
+ * placeholders before the letter was created (components/jobs/tailoring.ts `letterDefaults`). `LETTER_ENTRIES` and
+ * `LETTER_KINDS` live in model.ts, where lib/shared-page.ts reads them too.
  */
-export const LETTER_ENTRIES = 3;
-const LETTER_KINDS = new Set(['experience', 'project']);
 
 export function CoverLetterView({ model }: { model: DocModel }) {
   const t = RENDER_COPY[model.locale];
