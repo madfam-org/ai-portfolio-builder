@@ -82,6 +82,17 @@ test('CSRF: the pages host (same site, user content) and other sibling hosts are
   assert.equal(isSameOriginRequest(post('https://cv-app.madfam.io'), {}), true);
 });
 
+test('CSRF: the scheme counts too: an http Origin is not cv-app\'s https origin (loopback development follows its header)', () => {
+  const post = (host: string, origin: string, proto?: string) =>
+    new Request('http://0.0.0.0:3000/api/v1/jobs', { method: 'POST', headers: { host, origin, ...(proto ? { 'x-forwarded-proto': proto } : {}) } });
+  assert.equal(isSameOriginRequest(post('cv-app.madfam.io', 'http://cv-app.madfam.io'), {}), false);
+  assert.equal(isSameOriginRequest(post('cv-app.madfam.io', 'http://cv-app.madfam.io', 'http'), {}), false, 'a forwarded http never downgrades a real host');
+  assert.equal(isSameOriginRequest(post('cv-app.madfam.io', 'https://cv-app.madfam.io:443'), {}), true, 'the default port is the same origin');
+  const local = { AUTH_PUBLIC_HOSTS: 'cv-app.localhost' };
+  assert.equal(isSameOriginRequest(post('cv-app.localhost:3000', 'http://cv-app.localhost:3000', 'http'), local), true);
+  assert.equal(isSameOriginRequest(post('cv-app.localhost:3000', 'https://cv-app.localhost:3000', 'http'), local), false);
+});
+
 test('a session sealed under the __Host- name is read back under sessionCookieName(); a __Secure- one is not a session', async () => {
   // The same getToken call the server makes (server/server-session.ts, documentos/load.ts): name and salt = sessionCookieName.
   const { encode, getToken } = await import('next-auth/jwt');
