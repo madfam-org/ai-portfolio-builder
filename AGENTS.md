@@ -160,7 +160,7 @@ Dockerfile's pinned `node:22-alpine` (every `actions/setup-node` reads it) and e
 `image.yml` fails when the built image's `node --version` differs from `.nvmrc`, so a base-digest bump that moves Node
 moves `.nvmrc` in the same PR). `ci.yml`: `agent-docs` (required files and markers), `web` (frozen install, lint,
 typecheck, unit tests ≥ 438 passing and none skipped, build, standalone smoke ≥ 13 passing; raise a floor when a PR adds tests), `pg` (the real-Postgres suite on a `postgres:16-alpine`
-service container, as the `cv_app` role; fails on fewer than 52 passing tests), `e2e` (Playwright on GitHub-hosted runners:
+service container, as the `cv_app` role; fails on fewer than 55 passing tests), `e2e` (Playwright on GitHub-hosted runners:
 `npx playwright install --with-deps chromium`, the built server, its own Postgres service; fails on fewer than 110
 passing specs or any failed, flaky or skipped; raise the floor when a PR adds specs; a failed run uploads the
 Playwright traces as `e2e-traces`, kept 7 days), `guards` (file size, forbidden-domain grep, the Node pin and `--ignore-scripts`),
@@ -428,6 +428,10 @@ posting. Rules that now hold ([`docs/PRODUCT.md`](docs/PRODUCT.md) has the produ
   withdrawn ones included. `published_at` is the last publication and is kept on unpublish and on a status change; the
   count and the update run in one transaction under `pg_advisory_xact_lock(hashtextextended(owner_sub, 0))`; the 429's
   `Retry-After` is the time until the oldest of those publications is 24 hours old (`test-pg/publish-limit.pg.test.ts`).
+- **Row ceilings** (2026-11-22): every create under an owner quota (items, the import batch, jobs, artifacts, artifact
+  sets) passes its limit to the repository, which takes the same owner lock and counts inside the transaction that
+  inserts (`holdQuota`, 429 `quota_exceeded`); concurrent creates at the ceiling take exactly the room left
+  (`test-pg/limits.pg.test.ts`). The job-intake previews store nothing and only ask whether one more job fits.
 - **Stacked PRs**: after the parent is squash-merged, `git rebase --onto origin/main <parent-branch> <child>` and push
   with `--force-with-lease` (own branches only).
 - **LinkedIn**: import only what the person downloads themselves (the data-export ZIP, «Save to PDF»); no LinkedIn API

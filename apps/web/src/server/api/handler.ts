@@ -14,13 +14,13 @@ import {
   PrimaryTranslationError,
   JobHasArtifactsError,
   PublishLimitError,
+  QuotaExceededError,
   SlugTakenError,
   SuspendedError,
   createRepository,
   getLinkArtifactByToken,
   getPublicArtifactBySlug,
   ownerRowCount,
-  type OwnedTable,
   type Repository,
 } from '../db/repository.ts';
 import { ARTIFACT_KINDS, LOCALES } from '../db/schema.ts';
@@ -71,8 +71,6 @@ export interface ApiDeps {
   ocr?: OcrDeps;
 }
 
-/** Throws 429 `quota_exceeded` when creating `adding` more rows would take the owner past the table's ceiling. */
-type QuotaCheck = (table: OwnedTable, adding: number) => Promise<void>;
 
 export function json(status: number, body: unknown, extra: Record<string, string> = {}): Response {
   return new Response(status === 204 ? null : JSON.stringify(body), {
@@ -164,29 +162,32 @@ export async function handleApi(request: Request, segments: readonly string[], d
 
   try {
     const nameHint = typeof auth.claims.name === 'string' ? auth.claims.name.slice(0, 200) : undefined;
-    const quotas = { ...OWNER_QUOTAS, ...deps.quotas };
-    const quota: QuotaCheck = async (table, adding) => {
-      const limit = quotas[table];
-      if ((await ownerRowCount(handle!.db, auth.sub, table)) + adding > limit) throw new HttpError(429, { error: 'quota_exceeded', resource: table, limit });
+    // Per-owner ceilings: every create passes its table's limit to the repository, which checks it under the owner's
+    // lock in the transaction that inserts (repository.ts holdQuota), so concurrent creates never pass it together.
+    const quotas: OwnerQuotas = { ...OWNER_QUOTAS, ...deps.quotas };
+    // The job-intake previews store nothing: they only ask whether one more job would fit, before any work.
+    const roomForJob = async () => {
+      if ((await ownerRowCount(handle!.db, auth.sub, 'jobs')) + 1 > quotas.jobs) throw new QuotaExceededError('jobs', quotas.jobs);
     };
-    if (route.name === 'items-batch' || route.name === 'me' || route.name === 'me-export') return await dataRights(handle!.db, quota, auth.sub, nameHint, route.name, request);
+    if (route.name === 'items-batch' || route.name === 'me' || route.name === 'me-export') return await dataRights(handle!.db, quotas, auth.sub, nameHint, route.name, request);
     if (route.name === 'job-intake') {
       // W5-J: the job ceiling first, so nobody fetches a page they could not save; then the preview (nothing stored).
       const input = await readJson(request);
-      await quota('jobs', 1);
+      await roomForJob();
       return await intakeResponse(auth.sub, input, deps.intake);
     }
     if (route.name === 'job-intake-ocr') {
       // Whether reading images is on (GET), or one page image → its text through tlacuilo (POST). Nothing stored.
       if (method === 'GET') return ocrStatus(deps.env, deps.ocr);
-      await quota('jobs', 1);
+      await roomForJob();
       return await ocrPage(auth.sub, request, deps.env, deps.ocr);
     }
     // W5-H: owner-scoped read of the job, then Symbiosis HCM with the title and state only (server/hcm/route.ts).
     if (route.name === 'job-benchmark') return await jobBenchmark(createRepository(handle!.db), auth.sub, route.ids[0] ?? '', deps.env, deps.hcm);
-    return await dispatch(createRepository(handle!.db), quota, auth.sub, nameHint, route.name, route.ids, method, request);
+    return await dispatch(createRepository(handle!.db), quotas, auth.sub, nameHint, route.name, route.ids, method, request);
   } catch (err) {
     if (err instanceof HttpError) return json(err.status, err.body);
+    if (err instanceof QuotaExceededError) return json(429, { error: 'quota_exceeded', resource: err.table, limit: err.limit });
     if (err instanceof ForeignItemsError) return json(422, { error: 'unknown_item_ids', itemIds: err.ids });
     if (err instanceof PrimaryTranslationError) return json(400, { error: 'invalid_body', issues: [{ path: `translations.${err.locale}`, message: err.message }] });
     if (err instanceof SlugTakenError) return json(409, { error: 'slug_taken' });
@@ -202,7 +203,7 @@ function artifactContent(kind: string, value: unknown): ArtifactContent {
   return parse(schema, value);
 }
 
-async function dispatch(repo: Repository, quota: QuotaCheck, sub: string, nameHint: string | undefined, name: string, ids: string[], method: string, request: Request): Promise<Response> {
+async function dispatch(repo: Repository, quotas: OwnerQuotas, sub: string, nameHint: string | undefined, name: string, ids: string[], method: string, request: Request): Promise<Response> {
   const [id = ''] = ids;
   const url = new URL(request.url);
   switch (name) {
@@ -221,8 +222,7 @@ async function dispatch(repo: Repository, quota: QuotaCheck, sub: string, nameHi
       const body = parse(itemCreateBody, await readJson(request));
       const content = parse(ITEM_CONTENT[body.kind], body.content);
       const translations = itemTexts(body.kind, body.translations) ?? null;
-      await quota('items', 1);
-      return json(201, { item: view(await repo.createItem(sub, { ...body, content, translations }, nameHint)) });
+      return json(201, { item: view(await repo.createItem(sub, { ...body, content, translations }, nameHint, quotas.items)) });
     }
     case 'items-reorder': {
       const body = parse(itemReorderBody, await readJson(request));
@@ -243,8 +243,7 @@ async function dispatch(repo: Repository, quota: QuotaCheck, sub: string, nameHi
     case 'jobs': {
       if (method === 'GET') return json(200, { jobs: (await repo.listJobs(sub)).map(view) });
       const body = parse(jobCreateBody, await readJson(request));
-      await quota('jobs', 1);
-      return json(201, { job: view(await repo.createJob(sub, body)) });
+      return json(201, { job: view(await repo.createJob(sub, body, quotas.jobs)) });
     }
     case 'job': {
       if (method === 'GET') {
@@ -278,16 +277,14 @@ async function dispatch(repo: Repository, quota: QuotaCheck, sub: string, nameHi
       }
       const body = parse(artifactCreateBody, await readJson(request));
       const content = artifactContent(body.kind, body.content);
-      await quota('artifacts', 1);
-      const row = await repo.createArtifact(sub, { ...body, content });
+      const row = await repo.createArtifact(sub, { ...body, content }, quotas.artifacts);
       // A job id that is absent or another person's: the same 404 as any other foreign id.
       return row ? json(201, { artifact: view(row) }) : notFound();
     }
     case 'artifacts-batch': {
       const body = parse(artifactSetBody, await readJson(request));
       const items = body.artifacts.map((a) => ({ kind: a.kind, title: a.title, content: artifactContent(a.kind, a.content), template: a.template }));
-      await quota('artifacts', items.length);
-      const rows = await repo.createArtifactSet(sub, { jobId: body.jobId, locale: body.locale, template: body.template, artifacts: items });
+      const rows = await repo.createArtifactSet(sub, { jobId: body.jobId, locale: body.locale, template: body.template, artifacts: items }, quotas.artifacts);
       return rows ? json(201, { artifacts: rows.map(view) }) : notFound();
     }
     case 'artifact': {
@@ -318,12 +315,12 @@ async function dispatch(repo: Repository, quota: QuotaCheck, sub: string, nameHi
 
 /**
  * W4-I: the import batch, the export and the deletion (server/db/data-rights.ts), owner-scoped like everything else.
- * - `POST /profile/items/batch`: every item validated against its kind before anything is written; then the owner's
- *   item ceiling (429 `quota_exceeded`); then one transaction (all or none). 201 with the created items and the profile.
+ * - `POST /profile/items/batch`: every item validated against its kind before anything is written; then one
+ *   transaction (all or none) that first holds the owner's item ceiling (429 `quota_exceeded`). 201 with the created items and the profile.
  * - `GET /me/export[?format=full|json-resume]`: a download (`Content-Disposition: attachment`), never cached.
  * - `DELETE /me` with `{"confirm":"delete-all-my-data"}`: every row of the owner, in one transaction; 200 with counts.
  */
-async function dataRights(db: Parameters<typeof createDataRights>[0], quota: QuotaCheck, sub: string, nameHint: string | undefined, name: string, request: Request): Promise<Response> {
+async function dataRights(db: Parameters<typeof createDataRights>[0], quotas: OwnerQuotas, sub: string, nameHint: string | undefined, name: string, request: Request): Promise<Response> {
   const rights = createDataRights(db);
   if (name === 'items-batch') {
     const body = parse(itemBatchBody, await readJson(request));
@@ -334,9 +331,9 @@ async function dataRights(db: Parameters<typeof createDataRights>[0], quota: Quo
       }
       return { kind: it.kind, content: r.data, tags: it.tags };
     });
-    // W4-S ceiling: an import never takes the owner past OWNER_QUOTAS.items (429 quota_exceeded, nothing written).
-    await quota('items', items.length);
-    const { profile, items: rows } = await rights.importItems(sub, { items, profile: body.profile }, nameHint);
+    // W4-S ceiling: an import never takes the owner past OWNER_QUOTAS.items (429 quota_exceeded, nothing written),
+    // checked in the import's own transaction under the owner's lock.
+    const { profile, items: rows } = await rights.importItems(sub, { items, profile: body.profile }, nameHint, quotas.items);
     return json(201, { profile: view(profile), items: rows.map(view) });
   }
   if (name === 'me-export') {
