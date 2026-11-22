@@ -5,7 +5,7 @@
  * Rules:
  * - Overrides live only in the artifact's `content.items[].override` (W2 `ARTIFACT_CONTENT`). Nothing here writes a
  *   profile item: the core profile never changes because of one job (a unit and an e2e test re-read it).
- * - The pre-selection is the API's keyword match (`keyword-overlap-v2`): items that scored above zero, plus any
+ * - The pre-selection is the API's keyword match (`keyword-overlap-v3`): items that scored above zero, plus any
  *   experience marked current (the job a reader looks for first), laid out as a CV reads: by kind in the profile's
  *   section order (`ITEM_KIND_ORDER`), then in the person's own order within a kind (the score decides WHAT is
  *   picked, never the order: a ranked list would put a recommendation before education and roles out of date

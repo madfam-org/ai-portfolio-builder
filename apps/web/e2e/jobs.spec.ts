@@ -87,7 +87,7 @@ test.describe.serial('jobs, pipeline and tailoring', () => {
     await expect(page.getByRole('heading', { level: 1, name: title })).toBeVisible();
     const panel = page.getByTestId('match-panel');
     await expect(panel.getByRole('heading', { name: 'Coincidencia por palabras clave (sin IA)' })).toBeVisible();
-    await expect(panel).toContainText('keyword-overlap-v2');
+    await expect(panel).toContainText('keyword-overlap-v3');
 
     const match = (await apiAs(OWNER_A, 'GET', `/api/v1/jobs/${jobId}/match`)).json!;
     await expect(page.getByTestId('match-coverage')).toHaveText(`El anuncio tiene ${match.jobTerms} términos distintos; tu perfil cubre ${match.coveredTerms}.`);
