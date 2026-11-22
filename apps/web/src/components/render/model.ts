@@ -19,7 +19,8 @@ type Rec = Record<string, unknown>;
 
 /** What a renderer receives: the public projection's shape (server/db/repository.ts PublicArtifact). */
 export interface RenderData {
-  artifact: { kind: string; title: string; locale: string; template: string; content: unknown };
+  /** No title: the document's title is the owner's private label, never printed (it often names the employer). */
+  artifact: { kind: string; locale: string; template: string; content: unknown };
   /** W7 (B4): `locale` is the profile's primary language (absent: es-MX); `translations` its other-language text. */
   profile: { displayName: string; headline: string; summary: string; contact?: unknown; locale?: string; translations?: unknown };
   items: { id: string; kind: string; content: unknown; translations?: unknown }[];
@@ -66,8 +67,6 @@ export interface DocModel {
   kind: ArtifactKind;
   template: string;
   locale: Locale;
-  /** The owner's private label for the document. NEVER rendered: it often names the employer applied to. */
-  title: string;
   name: string | null;
   /** What the document is headed with: the person's name, or the kind of document when there is no name. */
   heading: string;
@@ -334,7 +333,6 @@ export function buildDocModel(raw: RenderData): DocModel {
     kind: artifactKind(data.artifact.kind),
     template: data.artifact.template,
     locale,
-    title: data.artifact.title,
     name: str(data.profile.displayName),
     heading: str(data.profile.displayName) ?? APP_COPY[locale].kinds[artifactKind(data.artifact.kind)],
     headline: str(data.profile.headline),
@@ -350,18 +348,19 @@ export function buildDocModel(raw: RenderData): DocModel {
 }
 
 /**
- * The owner's own view of an artifact (preview, print), in the SAME shape as the public projection
- * (server/db/repository.ts publicProjection): only the referenced items, and the contact only when `showContact`.
+ * The owner's own view of an artifact (preview, print): only the referenced items, and the contact only when
+ * `showContact`. A shared page gets `lib/shared-page.ts sharedRenderData` of this (server/db/repository.ts
+ * publicProjection), which renders the same markup.
  */
 export function ownerRenderData(
-  artifact: { kind: string; title: string; locale: string; template: string; content: unknown },
+  artifact: { kind: string; locale: string; template: string; content: unknown },
   profile: { displayName: string; headline: string; summary: string; contact: unknown; locale?: string; translations?: unknown } | null,
   items: readonly { id: string; kind: string; content: unknown; translations?: unknown }[],
 ): RenderData {
   const content = readContent(artifact.content);
   const ids = new Set([...content.items.map((i) => i.itemId), ...(content.slides ?? []).flatMap((s) => s.itemIds)]);
   return {
-    artifact: { kind: artifact.kind, title: artifact.title, locale: artifact.locale, template: artifact.template, content: artifact.content },
+    artifact: { kind: artifact.kind, locale: artifact.locale, template: artifact.template, content: artifact.content },
     profile: {
       displayName: profile?.displayName ?? '',
       headline: profile?.headline ?? '',

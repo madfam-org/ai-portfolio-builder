@@ -98,7 +98,7 @@ test('presentation slides: the artifact\'s own (with their items) or one per sec
 });
 
 test('empty and malformed content renders nothing invented', () => {
-  const m = buildDocModel({ artifact: { kind: 'cv', title: 'T', locale: 'es-MX', template: 'base', content: null }, profile: { displayName: '', headline: '', summary: '' }, items: [] });
+  const m = buildDocModel({ artifact: { kind: 'cv', locale: 'es-MX', template: 'base', content: null }, profile: { displayName: '', headline: '', summary: '' }, items: [] });
   assert.deepEqual([m.name, m.headline, m.summary, m.contact, m.sections.length, m.blocks.length], [null, null, null, null, 0, 0]);
   assert.deepEqual(readContent({ items: 'nope', blocks: [{ body: '' }], showContact: 'yes' }), { items: [], blocks: [], showContact: false, slides: [], summary: undefined });
   assert.equal(buildDocModel(data('unknown-kind', { items: [] })).kind, 'cv');

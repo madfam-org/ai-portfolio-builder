@@ -6,6 +6,7 @@
 import assert from 'node:assert/strict';
 import { register } from 'node:module';
 import { test } from 'node:test';
+import type { RenderData } from '../src/components/render/model.ts';
 import { CONTACT, XSS, data } from './render-fixtures.ts';
 
 register('./render-loader.mjs', import.meta.url);
@@ -126,7 +127,8 @@ test('user text is inert in every kind and every field; an empty document prints
     const html = render(d);
     assert.ok(html.includes('&lt;img src=x onerror=&quot;alert(1)&quot;&gt;'), kind);
     assertSafe(html);
-    const empty = render({ artifact: { kind, title: 'Vacío', locale: 'es-MX', template: 'base', content: {} }, profile: { displayName: '', headline: '', summary: '' }, items: [] });
+    // A title that reached the renderer anyway (the data carries none) is still never printed.
+    const empty = render({ artifact: { kind, title: 'Vacío', locale: 'es-MX', template: 'base', content: {} } as RenderData['artifact'], profile: { displayName: '', headline: '', summary: '' }, items: [] });
     assertSafe(empty);
     assert.doesNotMatch(empty, /Vacío/, `${kind}: the private title is never printed`);
     assert.match(empty, /<h1[^>]*>(CV|Portafolio|Presentación|Carta de presentación)<\/h1>/, `${kind}: without a name the kind is the heading`);
@@ -159,12 +161,12 @@ test('the document\'s private title is never rendered: every kind heads with the
   const SECRET = 'CV · Empresa Confidencial Ejemplo';
   for (const kind of ['cv', 'portfolio', 'presentation', 'cover_letter'] as const) {
     const withName = data(kind, { items: [] });
-    withName.artifact.title = SECRET;
+    Object.assign(withName.artifact, { title: SECRET });
     const named = render(withName);
     assert.ok(!named.includes('Empresa Confidencial'), `${kind}: the title does not appear`);
     assert.ok(headings(named)[0]?.startsWith('h1:Ana'), `${kind}: headed with the person`);
     const noName = data(kind, { items: [] });
-    noName.artifact.title = SECRET;
+    Object.assign(noName.artifact, { title: SECRET });
     noName.profile.displayName = '';
     const anonymous = render(noName);
     assert.ok(!anonymous.includes('Empresa Confidencial'), `${kind}: no title even without a name`);

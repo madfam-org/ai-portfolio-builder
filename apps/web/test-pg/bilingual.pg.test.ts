@@ -115,9 +115,11 @@ test('the database refuses a translations value that is not a JSON object, even 
   await assert.rejects(h.sql`update profiles set translations = ${JSON.stringify({ en: { summary: 'x'.repeat(70_000) } })}::jsonb where owner_sub = ${A}`, /profiles_translations_check/);
 });
 
-test('public projection: only the document language, only the fields it shows; a Spanish document carries none', async () => {
-  const items = (await api('GET', '/api/v1/profile', A)).body?.items as { id: string }[];
+test('public projection: the text already in the document language, no translations and no primary text it replaces; a Spanish document carries the stored text', async () => {
+  const mine = (await api('GET', '/api/v1/profile', A)).body;
+  const items = mine?.items as { id: string; content: Record<string, unknown> }[];
   rowsRead += items.length;
+  const stored = items.find((i) => i.id === itemId)!.content;
   const set = await api('POST', '/api/v1/artifacts/batch', A, {
     locale: 'en',
     artifacts: [{ kind: 'cv', title: 'CV (English)', content: { items: items.map((i) => ({ itemId: i.id })), showContact: false } }],
@@ -130,13 +132,18 @@ test('public projection: only the document language, only the fields it shows; a
   assert.equal(enLink.status, 200);
   const en = await getLinkArtifactByToken(h.db, enLink.body?.artifact.shareToken as string);
   assert.ok(en);
-  assert.equal(en.profile.locale, 'es-MX');
-  assert.deepEqual(en.profile.translations, { en: { headline: HEADER_EN.en.headline, summary: HEADER_EN.en.summary } }, 'no place without the contact');
-  assert.deepEqual(en.items.find((i) => i.id === itemId)?.translations, EXPERIENCE_EN);
+  assert.deepEqual(en.profile, { displayName: mine?.profile.displayName, headline: HEADER_EN.en.headline, summary: HEADER_EN.en.summary }, 'no place without the contact; no translations, no primary language');
+  const exp = en.items.find((i) => i.id === itemId);
+  assert.deepEqual(exp, { id: itemId, kind: 'experience', content: { ...stored, ...EXPERIENCE_EN.en } }, 'translated fields replace the primary text; the organisation stays');
+  assert.equal((en.items.find((i) => i.kind === 'language')?.content as { name: string }).name, 'English', 'the language from its ISO 639 code');
+  const enJson = JSON.stringify(en);
+  for (const spanish of [HEADER.headline, HEADER.summary, EXPERIENCE.role, EXPERIENCE.highlights[0]!]) assert.equal(enJson.includes(spanish), false, `not carried: ${spanish}`);
   const sp = await getLinkArtifactByToken(h.db, esLink.body?.artifact.shareToken as string);
   assert.ok(sp);
-  assert.equal(sp.profile.translations, undefined, 'a document in the primary language reads no translation');
-  assert.ok(sp.items.every((i) => i.translations === undefined));
+  assert.deepEqual(sp.profile, { displayName: mine?.profile.displayName, headline: HEADER.headline, summary: HEADER.summary, contact: mine?.profile.contact }, 'a document in the primary language reads the stored text');
+  assert.deepEqual(sp.items.find((i) => i.id === itemId)?.content, stored);
+  const spJson = JSON.stringify(sp);
+  for (const english of [HEADER_EN.en.headline, HEADER_EN.en.location, EXPERIENCE_EN.en.role]) assert.equal(spJson.includes(english), false, `not carried: ${english}`);
   rowsRead += en.items.length + sp.items.length;
 });
 

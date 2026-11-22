@@ -120,3 +120,33 @@ test('the full path: profile, items, job, tailored artifact, match, publish, pub
   assert.equal((await api('POST', `/api/v1/artifacts/${artId}/unpublish`, { sub: A })).status, 200);
   assert.equal((await api('GET', `/api/v1/public/s/${token}`)).status, 404);
 });
+
+test('public reads return only what the published page prints: no title, no publication time; the profile summary only when the document has none', async () => {
+  const items = (await api('GET', '/api/v1/profile', { sub: A })).body?.items as { id: string }[];
+  rowsRead += items.length;
+  assert.ok(items.length > 0, `items: ${items.length}`);
+  const selection = items.map((i) => ({ itemId: i.id }));
+  // The owner's private label names the employer applied to, as it usually does.
+  const TITLE = 'CV · Empresa Confidencial Ejemplo';
+  const own = await api('POST', '/api/v1/artifacts', { sub: A, body: { kind: 'cv', title: TITLE, locale: 'es-MX', content: { summary: 'Resumen propio del documento', items: selection, showContact: false } } });
+  const plain = await api('POST', '/api/v1/artifacts', { sub: A, body: { kind: 'cv', title: TITLE, locale: 'es-MX', content: { items: selection, showContact: false } } });
+  assert.equal(own.status, 201, JSON.stringify(own.body));
+  assert.equal(plain.status, 201, JSON.stringify(plain.body));
+  assert.equal((await api('POST', `/api/v1/artifacts/${own.body?.artifact.id}/publish`, { sub: A, body: { visibility: 'public', slug: 'ana-resumen-propio' } })).status, 200);
+  const link = await api('POST', `/api/v1/artifacts/${plain.body?.artifact.id}/publish`, { sub: A, body: { visibility: 'link' } });
+  assert.equal(link.status, 200);
+
+  const bySlug = await api('GET', '/api/v1/public/a/ana-resumen-propio');
+  const byLink = await api('GET', `/api/v1/public/s/${link.body?.artifact.shareToken}`);
+  for (const read of [bySlug, byLink]) {
+    assert.equal(read.status, 200);
+    rowsRead += 1;
+    assert.equal(JSON.stringify(read.body).includes('Empresa Confidencial'), false, 'the title is nowhere in the public JSON');
+    assert.deepEqual(Object.keys(read.body?.artifact ?? {}).sort(), ['content', 'indexable', 'kind', 'locale', 'template']);
+    assert.deepEqual(Object.keys(read.body?.profile ?? {}).sort(), ['displayName', 'headline', 'summary'], 'no contact, no primary language, no translations');
+    assert.ok(read.body?.items.every((i: Record<string, unknown>) => Object.keys(i).sort().join() === 'content,id,kind'));
+  }
+  assert.equal(bySlug.body?.profile.summary, '', 'the document prints its own summary, so the profile summary is not carried');
+  assert.equal(bySlug.body?.artifact.content.summary, 'Resumen propio del documento');
+  assert.equal(byLink.body?.profile.summary, 'Datos', 'without a summary of its own, the document prints the profile summary');
+});

@@ -11,8 +11,7 @@ import { and, asc, desc, eq, gt, inArray, isNull, ne, sql, type SQL } from 'driz
 import type { Db } from './client.ts';
 import { artifacts, jobs, profileItems, profiles } from './schema.ts';
 import { referencedItemIds, type ArtifactContent } from '../api/validation.ts';
-import type { ItemKind } from '../../lib/copy/app.ts';
-import { HEADER_TEXT_FIELDS, ITEM_TEXT_FIELDS, contentLocale, projectTranslations, type Translations } from '../../lib/profile-text.ts';
+import { sharedRenderData, type SharedRenderData } from '../../lib/shared-page.ts';
 
 export type Profile = typeof profiles.$inferSelect;
 export type ProfileItem = typeof profileItems.$inferSelect;
@@ -360,14 +359,13 @@ export function createRepository(db: Db) {
 
 export type Repository = ReturnType<typeof createRepository>;
 
-export interface PublicArtifact {
-  artifact: Pick<Artifact, 'kind' | 'title' | 'locale' | 'template' | 'content' | 'publishedAt' | 'indexable'>;
-  /**
-   * W7 (B4): `locale` is the profile's primary language; `translations` carries ONLY the artifact's own locale, and only
-   * when it is not the primary one (lib/profile-text.ts projectTranslations), the place only with the contact.
-   */
-  profile: { displayName: string; headline: string; summary: string; contact?: unknown; locale?: string; translations?: Translations };
-  items: (Pick<ProfileItem, 'id' | 'kind' | 'content'> & { translations?: Translations })[];
+/**
+ * What both public reads return (and the pages host renders): only what the published page prints
+ * (lib/shared-page.ts): no title, no publication time, the text already in the document's language, the profile's
+ * summary only when the document has none of its own; plus `indexable`, the page's robots choice.
+ */
+export interface PublicArtifact extends SharedRenderData {
+  artifact: SharedRenderData['artifact'] & Pick<Artifact, 'indexable'>;
 }
 
 async function publicProjection(db: Db, row: Artifact): Promise<PublicArtifact> {
@@ -381,25 +379,18 @@ async function publicProjection(db: Db, row: Artifact): Promise<PublicArtifact> 
         .where(and(eq(profileItems.ownerSub, row.ownerSub), inArray(profileItems.id, ids)))
     : [];
   const [profile] = await db.select().from(profiles).where(eq(profiles.ownerSub, row.ownerSub));
-  const primary = contentLocale(profile?.locale);
-  const target = contentLocale(row.locale);
-  const headerFields = content.showContact ? HEADER_TEXT_FIELDS : HEADER_TEXT_FIELDS.filter((f) => f !== 'location');
-  const headerTexts = projectTranslations(profile?.translations, primary, target, headerFields);
-  return {
-    artifact: { kind: row.kind, title: row.title, locale: row.locale, template: row.template, content: row.content, publishedAt: row.publishedAt, indexable: row.indexable },
+  const shared = sharedRenderData({
+    artifact: { kind: row.kind, locale: row.locale, template: row.template, content: row.content },
     profile: {
       displayName: profile?.displayName ?? '',
       headline: profile?.headline ?? '',
       summary: profile?.summary ?? '',
       ...(content.showContact ? { contact: profile?.contact ?? {} } : {}),
-      ...(profile ? { locale: primary } : {}),
-      ...(headerTexts ? { translations: headerTexts } : {}),
+      ...(profile ? { locale: profile.locale, translations: profile.translations } : {}),
     },
-    items: items.map(({ translations, ...item }) => {
-      const texts = projectTranslations(translations, primary, target, ITEM_TEXT_FIELDS[item.kind as ItemKind] ?? []);
-      return texts ? { ...item, translations: texts } : item;
-    }),
-  };
+    items,
+  });
+  return { ...shared, artifact: { ...shared.artifact, indexable: row.indexable } };
 }
 
 /** The one rule of both public reads: published, unsuspended, and shared the way it is asked for. */

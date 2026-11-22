@@ -34,6 +34,10 @@ An artifact is private until its owner publishes it:
 - **`public`**: a slug the owner chooses (3–64 characters, `a-z 0-9 -`, never a reserved word such as `api`,
   `admin`, `health`); readable at `GET /api/v1/public/a/<slug>`. Search indexing is the owner's explicit choice
   (`indexable`, default off).
+- Both public reads answer with only what the published page prints (`apps/web/src/lib/shared-page.ts`): never the
+  document's title (the owner's private label), its publication time, the profile's summary when the document has
+  its own, or text in another language than the document's (`indexable` is the one extra field, the page's robots
+  choice).
 - Unpublishing returns the artifact to private `ready`; the token and the slug stop working at once. Drafts and
   private artifacts are never readable publicly, a link artifact is never reachable by slug and a public one
   never by token (database CHECK constraints plus tests).
@@ -399,4 +403,5 @@ profile is empty and is refused (with the reason) otherwise, so languages never 
 **Limits.** zod bounds every translated field with the limit of the field it translates; a CHECK bounds the whole
 value (a JSON object, at most 64 KiB); the 256 KiB body cap and the per-owner quotas (`server/api/limits.ts`) are
 unchanged. Owner-scoped like every column (cross-owner tests in `test-pg/bilingual.pg.test.ts`); the public
-projection carries only the document's own language, and the contact's place only when the contact is shown.
+projection carries the text already in the document's own language (a translated field replaces the primary text;
+no translations travel), and the contact's place only when the contact is shown.

@@ -338,7 +338,7 @@ export function tailorMissing(input: {
   });
   const p = input.profile;
   return localizeRenderData({
-    artifact: { kind: 'cv', title: '', locale: input.locale, template: 'base', content: { items, ...(input.summary.trim() ? { summary: input.summary.trim() } : {}), showContact: input.showContact } },
+    artifact: { kind: 'cv', locale: input.locale, template: 'base', content: { items, ...(input.summary.trim() ? { summary: input.summary.trim() } : {}), showContact: input.showContact } },
     profile: {
       displayName: '',
       headline: p?.headline ?? '',
