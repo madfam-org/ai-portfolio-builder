@@ -102,6 +102,7 @@ export interface ArtifactDto {
   slug: string | null;
   content: ArtifactContent;
   indexable: boolean;
+  /** The LAST time it was published, kept after it is withdrawn (the daily limit counts it); `status` says whether it is shared now. */
   publishedAt: string | null;
   suspendedAt: string | null;
   suspendedReason: string | null;

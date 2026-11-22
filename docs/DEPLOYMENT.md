@@ -187,8 +187,8 @@ update artifacts set suspended_at = null, suspended_reason = null where id = '<a
 ```
 
 A suspended artifact is never served by the public reads or the pages host (404 at once: user pages are `no-store`),
-and its owner's publish answers 409 `suspended`. Publishing is also rate-limited to 20 artifacts per owner per 24 hours
-(429 `publish_limit`). Abuse reports arrive at `legal@madfam.io` from the link on every user page.
+and its owner's publish answers 409 `suspended`. Publishing is also rate-limited to 20 different artifacts per owner per 24 hours,
+withdrawn ones included (429 `publish_limit` with `Retry-After`). Abuse reports arrive at `legal@madfam.io` from the link on every user page.
 
 ## Network
 

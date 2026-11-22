@@ -93,8 +93,11 @@ coordinator's DNS and tunnel steps run. Its reads, and cv-api's public reads, ar
   in quotation marks, verbatim (never translated, never adjusted per job).
 - **Publish** from `/documentos/:id`: private, by link (`/l/<token>` on the pages host; never indexed; «Cambiar enlace»
   rotates it) or public at a chosen address (reserved words refused; «Permitir que buscadores indexen esta página» maps
-  to `indexable`, off by default). At most 20 different documents published per 24 hours (429 `publish_limit`, stated in
-  the UI). A suspended document says so and cannot be shared. Publishing is off while the pages host is not configured.
+  to `indexable`, off by default). At most 20 different documents published per 24 hours (429 `publish_limit` with a
+  `Retry-After` of the seconds until the oldest of those publications is 24 hours old, stated in the UI). A document
+  counts once, by its last publication, whether or not it is still shared: withdrawing it does not free its place, and
+  publishing it again (another link, a public address) adds nothing. `published_at` therefore keeps the last
+  publication after a withdrawal; `status` and `visibility` say whether the document is shared now. A suspended document says so and cannot be shared. Publishing is off while the pages host is not configured.
 
 ### Templates (W4-T)
 
@@ -251,7 +254,7 @@ do not serve), an OCR engine inside cv (reading images is tlacuilo's job, above)
 | `GET /api/v1/jobs/:id/benchmark` | W5-H: the job's market income range from Symbiosis HCM (INEGI ENOE); 503 `not_configured` while dormant, 503 `benchmark_unavailable` when HCM cannot answer |
 | `GET /api/v1/artifacts?job_id=&kind=`, `POST /api/v1/artifacts`; `GET`, `PATCH`, `DELETE /api/v1/artifacts/:id` | artifacts |
 | `POST /api/v1/artifacts/batch` `{jobId?, locale?, template?, artifacts: [{kind, title, content, template?}] (1-4)}` (templates: the registry allowlist per kind) | several artifacts for one job in ONE transaction: all or none |
-| `POST /api/v1/artifacts/:id/publish` `{visibility:'link'}` or `{visibility:'public', slug, indexable?}`; `POST /api/v1/artifacts/:id/unpublish` | sharing (publishing: at most 20 per owner per 24 h, then 429 `publish_limit`) |
+| `POST /api/v1/artifacts/:id/publish` `{visibility:'link'}` or `{visibility:'public', slug, indexable?}`; `POST /api/v1/artifacts/:id/unpublish` | sharing (publishing: at most 20 different documents per owner per 24 h, withdrawn ones included, then 429 `publish_limit` with `Retry-After`) |
 | `GET /api/v1/public/a/:slug`, `GET /api/v1/public/s/:token` | public reads (no token) |
 | `POST /api/v1/profile/items/batch` `{items: [{kind, content, tags?}] (≤300), profile?: {displayName?, headline?, summary?, contact?}}` | W4-I import: every item validated per kind, appended after the existing ones, chosen header fields applied (contact links added by URL), ONE transaction: all or none |
 | `GET /api/v1/me/export[?format=full\|json-resume]` | W4-I «Descargar mis datos»: everything the owner holds (`schema: "madfam-cv-export"`, `version: 1`; share state included; never the owner key) or the profile as JSON Resume v1.0.0; `Content-Disposition: attachment`, `no-store` |

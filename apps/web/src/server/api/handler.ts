@@ -190,7 +190,7 @@ export async function handleApi(request: Request, segments: readonly string[], d
     if (err instanceof SlugTakenError) return json(409, { error: 'slug_taken' });
     if (err instanceof SuspendedError) return json(409, { error: 'suspended' });
     if (err instanceof JobHasArtifactsError) return json(409, { error: 'job_has_artifacts' });
-    if (err instanceof PublishLimitError) return json(429, { error: 'publish_limit' }, { 'Retry-After': '3600' });
+    if (err instanceof PublishLimitError) return json(429, { error: 'publish_limit' }, { 'Retry-After': String(err.retryAfter) });
     return dbFailure(err);
   }
 }
