@@ -34,6 +34,8 @@ test('the .com domain that is not MADFAM\'s appears nowhere in the tree (madfam.
 
 test('no legacy platform artefacts in the tree (Supabase, Prisma, Vercel, Railway, Stripe, HF; next-auth only as the pinned Janua client)', () => {
   const files = trackedFiles();
+  // Read-proof: a scan that read nothing must not pass.
+  assert.ok(files.length >= 100, `listed only ${files.length} files`);
   const banned = /(^|\/)(vercel\.json|railway\.toml|supabase|prisma|schema\.prisma|\.env\.staging)($|\/)/i;
   assert.deepEqual(files.filter((f) => banned.test(f)), []);
   const pkg = readFileSync(join(root, 'apps', 'web', 'package.json'), 'utf8');
@@ -43,6 +45,31 @@ test('no legacy platform artefacts in the tree (Supabase, Prisma, Vercel, Railwa
   // next-auth is back for W2, as the Janua OIDC client only, pinned exactly (lane J §3.1); never the legacy major.
   const deps = (JSON.parse(pkg) as { dependencies: Record<string, string> }).dependencies;
   assert.equal(deps['next-auth'], '5.0.0-beta.32');
+});
+
+/**
+ * The seams are consumed, never rebuilt (AGENTS.md): no direct LLM provider, payment, legacy platform or third-party
+ * analytics package anywhere in the dependency tree. The lockfile is read too, so a transitive one is caught.
+ */
+const FORBIDDEN_PACKAGES = [
+  'openai', '@anthropic-ai/sdk', '@google/generative-ai', '@google/genai', 'cohere-ai', '@mistralai/mistralai', 'groq-sdk',
+  'replicate', 'ollama', '@huggingface/inference', 'stripe', '@stripe/stripe-js', '@supabase/supabase-js', '@prisma/client',
+  'prisma', '@vercel/analytics', 'posthog-js', 'posthog-node', 'react-ga4',
+];
+
+test('no LLM provider, payment, legacy platform or analytics package in either package.json or the lockfile', () => {
+  const lock = readFileSync(join(root, 'pnpm-lock.yaml'), 'utf8');
+  const manifests = [readFileSync(join(root, 'package.json'), 'utf8'), readFileSync(join(root, 'apps', 'web', 'package.json'), 'utf8')];
+  // Read-proof: the lockfile must list the packages we know are there.
+  const listed = lock.match(/^ {2}'?(@?[^@\s']+)@[^:]+:$/gm) ?? [];
+  assert.ok(listed.length >= 100 && lock.includes('\n  next@'), `lockfile lists only ${listed.length} packages`);
+  const hits: string[] = [];
+  for (const name of FORBIDDEN_PACKAGES) {
+    const escaped = name.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
+    if (new RegExp(`^ {2}'?${escaped}@`, 'm').test(lock)) hits.push(`pnpm-lock.yaml: ${name}`);
+    for (const m of manifests) if (m.includes(`"${name}"`)) hits.push(`package.json: ${name}`);
+  }
+  assert.deepEqual(hits, []);
 });
 
 /** Source files under apps/web/src (read-proof counted). */
