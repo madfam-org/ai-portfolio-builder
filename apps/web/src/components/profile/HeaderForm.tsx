@@ -7,7 +7,7 @@ import { Notice } from '@/components/ui/States';
 import { useToast } from '@/components/ui/Toast';
 import { useUnsavedGuard } from '@/components/ui/useUnsavedGuard';
 import { api, apiErrorMessage } from '@/lib/client/api';
-import type { ContentLocale, ProfileDto } from '@/lib/client/types';
+import type { ContentLocale, ItemDto, ProfileDto } from '@/lib/client/types';
 import type { AppCopy } from '@/lib/copy/app';
 import { BILINGUAL_COPY } from '@/lib/copy/bilingual';
 import type { ProfileCopy } from '@/lib/copy/profile';
@@ -53,10 +53,13 @@ type HeaderBody = { displayName: string; headline: string; summary: string; loca
 
 /**
  * Header values → the `PUT /profile` body (same rules as profileBody + contactSchema), or the errors per field.
- * W7 (B4): `translatedAs` is the language the translated values are written in (the saved profile's other language);
- * when the person also changes the primary language to that one, the translations are left as stored (not sent).
+ * W7 (B4): `translatedAs` is the language the translated values are written in (the saved profile's other language).
+ * The body is always written in the SAVED languages, even when the person also changes the primary one: the server
+ * then swaps the texts of the header and of every item to the new primary language (lib/profile-text-swap.ts).
+ * `stored` false (no profile saved yet: nothing to swap, the server reads the body in its own `locale`): translations
+ * written in the language that becomes the primary one are not sent, as before.
  */
-export function headerBody(values: HeaderValues, translatedAs?: ContentLocale): { body: HeaderBody | null; errors: FieldErrors; translationErrors: FieldErrors } {
+export function headerBody(values: HeaderValues, translatedAs?: ContentLocale, stored = true): { body: HeaderBody | null; errors: FieldErrors; translationErrors: FieldErrors } {
   const head = formToContent(HEADER_FIELDS, { displayName: values.displayName, headline: values.headline, summary: values.summary });
   const contact = formToContent(CONTACT_FIELDS, { email: values.email, phone: values.phone, location: values.location, links: values.links });
   const errors = { ...head.errors, ...contact.errors };
@@ -70,7 +73,7 @@ export function headerBody(values: HeaderValues, translatedAs?: ContentLocale): 
       summary: str(head.content.summary),
       locale: values.locale,
       contact: contact.content,
-      ...(translatedAs && translatedAs !== values.locale ? { translations: tr.translations } : {}),
+      ...(translatedAs && (stored || translatedAs !== values.locale) ? { translations: tr.translations } : {}),
     },
     errors: {},
     translationErrors: {},
@@ -100,7 +103,8 @@ export function HeaderForm({
   initialMode?: ContentLocale;
   copy: ProfileCopy;
   appCopy: AppCopy;
-  onSaved: (profile: ProfileDto) => void;
+  /** `items`: every item with its texts swapped, when the save changed the primary language. */
+  onSaved: (profile: ProfileDto, items?: ItemDto[]) => void;
 }) {
   const h = copy.header;
   const toast = useToast();
@@ -136,7 +140,7 @@ export function HeaderForm({
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (state === 'saving') return;
-    const { body, errors: found, translationErrors } = headerBody(values, other);
+    const { body, errors: found, translationErrors } = headerBody(values, other, profile !== null);
     if (!body) {
       setErrors(found);
       setTrErrors(translationErrors);
@@ -160,7 +164,9 @@ export function HeaderForm({
     setValues(next);
     setSaved(JSON.stringify(next));
     setState('saved');
-    onSaved(res.data.profile);
+    // W7 (B4): a new primary language: the form shows its (swapped) main text; the switch now offers the other one.
+    if (res.data.profile.locale !== primary) setMode(res.data.profile.locale);
+    onSaved(res.data.profile, res.data.items);
   }
 
   const err = (name: string) => errorText(copy, errors[name]);

@@ -12,6 +12,9 @@ import type { Db } from './client.ts';
 import { artifacts, jobs, profileItems, profiles } from './schema.ts';
 import { referencedItemIds, type ArtifactContent } from '../api/validation.ts';
 import { sharedRenderData, type SharedRenderData } from '../../lib/shared-page.ts';
+import { contentLocale } from '../../lib/profile-text.ts';
+import { swapHeaderTexts, swapItemTexts } from '../../lib/profile-text-swap.ts';
+import type { ItemKind } from '../../lib/copy/app.ts';
 
 export type Profile = typeof profiles.$inferSelect;
 export type ProfileItem = typeof profileItems.$inferSelect;
@@ -31,6 +34,14 @@ export class ForeignItemsError extends Error {
   constructor(ids: string[]) {
     super('content references profile items that do not exist for this owner');
     this.ids = ids;
+  }
+}
+/** W7 (B4): a profile translation keyed by the profile's own primary language (its text belongs in the fields). */
+export class PrimaryTranslationError extends Error {
+  readonly locale: string;
+  constructor(locale: string) {
+    super('the primary language is written in the fields themselves');
+    this.locale = locale;
   }
 }
 export class SlugTakenError extends Error {}
@@ -107,30 +118,81 @@ export function createRepository(db: Db) {
       return { profile: profile ?? null, items };
     },
 
-    /** Full replace of the editable fields; `displayName` omitted keeps the stored one (or the name hint on creation). */
+    /**
+     * Full replace of the editable fields; `displayName` omitted keeps the stored one (or the name hint on creation).
+     *
+     * W7 (B4): the texts and `translations` of the body are read in the profile's STORED primary language (the one the
+     * person was editing). When `locale` names another one, the header and EVERY one of the owner's items swap their
+     * texts to it in the same transaction (lib/profile-text-swap.ts), and `items` returns the swapped rows; otherwise
+     * `items` is absent. A translation keyed by the stored primary language is refused (PrimaryTranslationError).
+     */
     async putProfile(
       ownerSub: string,
       // W7 (B4): `translations` undefined keeps the stored ones (clients from before W7-B4 never send it); null clears.
       input: Pick<Profile, 'headline' | 'summary' | 'locale' | 'contact'> & { displayName?: string; translations?: Profile['translations'] },
       nameHint?: string,
-    ): Promise<Profile> {
-      const fields = {
-        headline: input.headline,
-        summary: input.summary,
-        locale: input.locale,
-        contact: input.contact,
-        ...(input.translations === undefined ? {} : { translations: input.translations }),
-      };
-      const [row] = await db
-        .insert(profiles)
-        .values({ ownerSub, displayName: input.displayName ?? nameHint ?? '', ...fields })
-        .onConflictDoUpdate({
-          target: profiles.ownerSub,
-          set: { ...fields, ...(input.displayName === undefined ? {} : { displayName: input.displayName }), updatedAt: now },
-        })
-        .returning();
-      if (!row) throw new Error('profile upsert returned nothing');
-      return row;
+    ): Promise<{ profile: Profile; items?: ProfileItem[] }> {
+      return db.transaction(async (tx) => {
+        // The row lock serialises two saves of the same profile and holds item inserts (their FK) until the commit.
+        const [stored] = await tx.select().from(profiles).where(eq(profiles.ownerSub, ownerSub)).for('update');
+        const from = contentLocale(stored?.locale ?? input.locale);
+        const to = contentLocale(input.locale);
+        if (input.translations && typeof input.translations === 'object' && from in input.translations) throw new PrimaryTranslationError(from);
+        const contact = (input.contact ?? {}) as Record<string, unknown>;
+        let fields = {
+          headline: input.headline,
+          summary: input.summary,
+          locale: input.locale,
+          contact: input.contact,
+          ...(input.translations === undefined ? {} : { translations: input.translations }),
+        };
+        const switching = stored !== undefined && from !== to;
+        if (switching) {
+          const location = typeof contact.location === 'string' ? contact.location : undefined;
+          const kept = input.translations === undefined ? stored.translations : input.translations;
+          const swapped = swapHeaderTexts({ headline: input.headline, summary: input.summary, location }, kept, from, to);
+          const { location: _old, ...rest } = contact;
+          fields = {
+            ...fields,
+            headline: swapped.header.headline,
+            summary: swapped.header.summary,
+            contact: swapped.header.location === undefined ? rest : { ...rest, location: swapped.header.location },
+            translations: swapped.translations,
+          };
+        }
+        const [row] = await tx
+          .insert(profiles)
+          .values({ ownerSub, displayName: input.displayName ?? nameHint ?? '', ...fields })
+          .onConflictDoUpdate({
+            target: profiles.ownerSub,
+            set: { ...fields, ...(input.displayName === undefined ? {} : { displayName: input.displayName }), updatedAt: now },
+          })
+          .returning();
+        if (!row) throw new Error('profile upsert returned nothing');
+        if (!switching) return { profile: row };
+        const items = await tx
+          .select()
+          .from(profileItems)
+          .where(eq(profileItems.ownerSub, ownerSub))
+          .orderBy(asc(profileItems.position), asc(profileItems.createdAt))
+          .for('update');
+        const out: ProfileItem[] = [];
+        for (const item of items) {
+          const swapped = swapItemTexts(item.kind as ItemKind, item.content, item.translations, from, to);
+          if (!swapped.changed) {
+            out.push(item);
+            continue;
+          }
+          const [updated] = await tx
+            .update(profileItems)
+            .set({ content: swapped.content, translations: swapped.translations, updatedAt: now })
+            .where(and(eq(profileItems.ownerSub, ownerSub), eq(profileItems.id, item.id)))
+            .returning();
+          if (!updated) throw new Error('item swap returned nothing');
+          out.push(updated);
+        }
+        return { profile: row, items: out };
+      });
     },
 
     // ---- profile items ---------------------------------------------------------------------------------------

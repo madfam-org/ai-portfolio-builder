@@ -11,6 +11,7 @@ import { verifierConfig } from '../../lib/auth-env.ts';
 import type { DbHandle } from '../db/client.ts';
 import {
   ForeignItemsError,
+  PrimaryTranslationError,
   JobHasArtifactsError,
   PublishLimitError,
   SlugTakenError,
@@ -187,6 +188,7 @@ export async function handleApi(request: Request, segments: readonly string[], d
   } catch (err) {
     if (err instanceof HttpError) return json(err.status, err.body);
     if (err instanceof ForeignItemsError) return json(422, { error: 'unknown_item_ids', itemIds: err.ids });
+    if (err instanceof PrimaryTranslationError) return json(400, { error: 'invalid_body', issues: [{ path: `translations.${err.locale}`, message: err.message }] });
     if (err instanceof SlugTakenError) return json(409, { error: 'slug_taken' });
     if (err instanceof SuspendedError) return json(409, { error: 'suspended' });
     if (err instanceof JobHasArtifactsError) return json(409, { error: 'job_has_artifacts' });
@@ -210,7 +212,9 @@ async function dispatch(repo: Repository, quota: QuotaCheck, sub: string, nameHi
         return json(200, { profile: profile ? view(profile) : null, items: items.map(view) });
       }
       const body = parse(profileBody, await readJson(request));
-      return json(200, { profile: view(await repo.putProfile(sub, { ...body, translations: profileTexts(body.translations, body.locale) }, nameHint)) });
+      // W7 (B4): a new `locale` swaps the header's and every item's texts (repository putProfile); `items` then carries them.
+      const saved = await repo.putProfile(sub, { ...body, translations: profileTexts(body.translations) }, nameHint);
+      return json(200, { profile: view(saved.profile), ...(saved.items ? { items: saved.items.map(view) } : {}) });
     }
     case 'items': {
       if (method === 'GET') return json(200, { items: (await repo.listItems(sub)).map(view) });
@@ -362,14 +366,12 @@ async function dataRights(db: Parameters<typeof createDataRights>[0], quota: Quo
 
 /**
  * W7 (B4): the header's translations as stored. Undefined (not sent) keeps the stored ones; null clears them. A
- * translation keyed by the profile's own primary locale is refused (400): that text belongs in the fields themselves.
+ * translation keyed by the profile's STORED primary locale is refused (400) by the repository, which reads that locale
+ * in the same transaction (PrimaryTranslationError): that text belongs in the fields themselves.
  */
-function profileTexts(raw: unknown, primary: string): Translations | null | undefined {
+function profileTexts(raw: unknown): Translations | null | undefined {
   if (raw === undefined) return undefined;
   if (raw === null) return null;
-  if (raw && typeof raw === 'object' && primary in raw) {
-    throw new HttpError(400, { error: 'invalid_body', issues: [{ path: `translations.${primary}`, message: 'the primary language is written in the fields themselves' }] });
-  }
   return cleanTranslations(raw, HEADER_TEXT_FIELDS);
 }
 
