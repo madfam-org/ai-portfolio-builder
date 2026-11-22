@@ -178,6 +178,10 @@ secondary ones), how to limit use or disclosure, that nothing is transferred, ho
   cv offers no bookmarklet or extension on linkedin.com.
 - **Export and deletion** on `/ajustes`: «Descargar mis datos» (full JSON), «Exportar como JSON Resume», «Eliminar mis
   datos» behind a typed «ELIMINAR»; the Janua account is managed in Janua (linked, never deleted from here).
+- **«Cerrar sesión»** ends the session for real (2026-11-21): cv revokes its Janua refresh token before sending the
+  person to Janua's sign-out, so a copy of the session cookie taken earlier stops working within minutes instead of
+  after 7 idle days; if Janua cannot be reached, sign-out still completes ([`DEPLOYMENT.md`](DEPLOYMENT.md) «Signing
+  out revokes the Janua refresh token»).
 
 ### Job intake (W5-J): link, ATS, paste, file, browser capture
 

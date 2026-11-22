@@ -103,7 +103,16 @@ Nothing reads these at import or build time; nothing throws at boot. The boot lo
   included) from planting one (cookie tossing). Loopback development keeps Auth.js's plain names.
 - «Iniciar sesión», «Cambiar de cuenta» (`prompt=select_account`), «Entrar como otra persona» (`prompt=login`)
   are plain form POSTs to `/auth/entrar`; «Cerrar sesión» is `POST /auth/salir` (RP-initiated logout). Both are
-  same-origin only (403) and POST only (405 on GET). The app's CSP allows `form-action 'self'` plus the issuer
+  same-origin only (403) and POST only (405 on GET).
+- **Signing out revokes the Janua refresh token** (2026-11-21, `src/server/sign-out.ts`): the session cookie is
+  stateless and carries the refresh token, so before the redirect `/auth/salir` reads the session server-side and posts
+  the token to Janua's RFC 7009 `revocation_endpoint` (from discovery; `<issuer>/api/v1/oauth/revoke` when discovery
+  cannot be read) with `token_type_hint=refresh_token` and cv's client credentials by HTTP Basic, as at the token
+  endpoint. Janua revokes the token's whole rotation family, so a copy of the cookie taken before sign-out stops
+  refreshing; its access token stays valid until it expires (minutes), as for any offline-verified token. Best effort
+  inside one 3 s budget (discovery included): a Janua failure or delay never blocks sign-out, the cookie is always
+  expired, and the log line is `{"evt":"cv-signout","revoke":"<outcome>","ms":…}` (`revoked`, `http_<status>`,
+  `timeout`, `unreachable`), never the token (`test/sign-out.test.ts`, against `test-support/janua-revoke-fake.ts`). The app's CSP allows `form-action 'self'` plus the issuer
   origin; the landing keeps `form-action 'none'`.
 - **Session lifetime (W6-A, owner directive 2026-10-22):** 7 days without use (`SESSION_OPTIONS` in
   `lib/auth-env.ts`; Auth.js's default is 30). JWT sessions: every session read (each app page and same-origin API call)
@@ -201,7 +210,7 @@ withdrawn ones included (429 `publish_limit` with `Retry-After`). Abuse reports 
 ## Network
 
 Ingress: the app port from the Cloudflare tunnel only. Egress: DNS; TCP 443 to public addresses only (fulcra's
-`allow-https-egress` shape; Janua discovery, JWKS, token and logout); PgBouncer `app: pgbouncer` in namespace
+`allow-https-egress` shape; Janua discovery, JWKS, token, revocation and logout); PgBouncer `app: pgbouncer` in namespace
 `data` on 6432 (the rule Enclii's generator renders for `egress: [pgbouncer]`). Keep `enclii.yaml` `network` and
 `network-policy.yaml` in step: `enclii onboard ensure` renders policies from `enclii.yaml`.
 
