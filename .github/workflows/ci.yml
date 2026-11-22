@@ -68,12 +68,34 @@ jobs:
         run: pnpm lint
       - name: Typecheck (tsc --noEmit, strict)
         run: pnpm typecheck
-      - name: Unit tests (node:test)
-        run: pnpm test
+      - name: Unit tests (node:test; fail closed, read-proof)
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/unit-tests.log"
+          status=0
+          pnpm test > "$out" 2>&1 || status=$?
+          cat "$out"
+          if [ "$status" != 0 ]; then echo "unit: FAIL exit=$status"; exit "$status"; fi
+          pass=$(grep -E ' pass [0-9]+$' "$out" | awk '{print $NF}' | tail -1)
+          fail=$(grep -E ' fail [0-9]+$' "$out" | awk '{print $NF}' | tail -1)
+          skipped=$(grep -E ' skipped [0-9]+$' "$out" | awk '{print $NF}' | tail -1)
+          if [ -z "$pass" ] || [ "$pass" -lt 408 ] || [ "$fail" != 0 ] || [ "${skipped:-0}" != 0 ]; then echo "unit: tests pass=${pass:-none} fail=${fail:-none} skipped=${skipped:-none} FAIL (expected >= 408 passing, none failed or skipped)"; exit 1; fi
+          echo "unit: tests pass=$pass fail=$fail OK"
       - name: Next.js production build (standalone output)
         run: pnpm build
-      - name: Standalone server smoke (status and headers per Host)
-        run: pnpm test:server
+      - name: Standalone server smoke (status and headers per Host; fail closed, read-proof)
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/server-tests.log"
+          status=0
+          pnpm test:server > "$out" 2>&1 || status=$?
+          cat "$out"
+          if [ "$status" != 0 ]; then echo "server: FAIL exit=$status"; exit "$status"; fi
+          pass=$(grep -E ' pass [0-9]+$' "$out" | awk '{print $NF}' | tail -1)
+          fail=$(grep -E ' fail [0-9]+$' "$out" | awk '{print $NF}' | tail -1)
+          skipped=$(grep -E ' skipped [0-9]+$' "$out" | awk '{print $NF}' | tail -1)
+          if [ -z "$pass" ] || [ "$pass" -lt 13 ] || [ "$fail" != 0 ] || [ "${skipped:-0}" != 0 ]; then echo "server: tests pass=${pass:-none} fail=${fail:-none} skipped=${skipped:-none} FAIL (expected >= 13 passing, none failed or skipped)"; exit 1; fi
+          echo "server: tests pass=$pass fail=$fail OK"
 
   pg:
     name: Postgres suite (owner-scoped data on a real Postgres 16, as the cv_app role)
@@ -126,7 +148,7 @@ jobs:
           if [ "$status" != 0 ]; then echo "pg: FAIL exit=$status"; exit "$status"; fi
           pass=$(grep -E ' pass [0-9]+$' "$out" | awk '{print $NF}')
           fail=$(grep -E ' fail [0-9]+$' "$out" | awk '{print $NF}')
-          if [ -z "$pass" ] || [ "$pass" -lt 46 ] || [ "$fail" != 0 ]; then echo "pg: tests pass=${pass:-none} fail=${fail:-none} FAIL (expected >= 46 passing)"; exit 1; fi
+          if [ -z "$pass" ] || [ "$pass" -lt 49 ] || [ "$fail" != 0 ]; then echo "pg: tests pass=${pass:-none} fail=${fail:-none} FAIL (expected >= 49 passing)"; exit 1; fi
           echo "pg: tests pass=$pass fail=$fail OK"
 
   e2e:

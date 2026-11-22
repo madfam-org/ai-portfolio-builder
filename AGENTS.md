@@ -157,8 +157,8 @@ Public repository: every job runs on **GitHub-hosted** runners (R116). `ci.yml` 
 whatever its base** (a PR stacked on another PR's branch is checked too; since 2026-11-16) and on pushes to `main`. Top-level
 `permissions: contents: read`; every action pinned to a full commit SHA; no `secrets: inherit`; no
 `|| true` masks. `ci.yml`: `agent-docs` (required files and markers), `web` (frozen install, lint,
-typecheck, unit tests, build, standalone smoke), `pg` (the real-Postgres suite on a `postgres:16-alpine`
-service container, as the `cv_app` role; fails on fewer than 46 passing tests), `e2e` (Playwright on GitHub-hosted runners:
+typecheck, unit tests ≥ 408 passing and none skipped, build, standalone smoke ≥ 13 passing; raise a floor when a PR adds tests), `pg` (the real-Postgres suite on a `postgres:16-alpine`
+service container, as the `cv_app` role; fails on fewer than 49 passing tests), `e2e` (Playwright on GitHub-hosted runners:
 `npx playwright install --with-deps chromium`, the built server, its own Postgres service; fails on fewer than 106
 passing specs or any failed, flaky or skipped; raise the floor when a PR adds specs; a failed run uploads the
 Playwright traces as `e2e-traces`, kept 7 days), `guards` (file size, forbidden-domain grep),
