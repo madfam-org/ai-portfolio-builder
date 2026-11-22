@@ -1,21 +1,22 @@
-# Enclii manifest: cv (MADFAM CV, working label; NOT yet onboarded; autoDeploy false, builds are dispatched).
+# Enclii manifest: cv (MADFAM CV, working label; onboarded and live; autoDeploy false, builds are dispatched).
 #
-# Decided topology (owner-named hosts, 2026-10-22; the Pliego three-host pattern): ONE project and ONE service,
-# both `cv` (namespace `cv`). One container serves all three hosts, routed by the Host header
+# Decided topology (owner-named hosts, 2026-10-22; the Pliego multi-host pattern): ONE project and ONE service,
+# both `cv` (namespace `cv`). One container serves all four hosts, routed by the Host header
 # (apps/web/src/lib/routing.ts):
 #   cv.madfam.io      landing (es-MX default, en); noindex until the brand is ruled (CV_INDEXABLE)
-#   cv-app.madfam.io  the app (pre-launch shell now; Janua sign-in next wave); never indexed
+#   cv-app.madfam.io  the app (Janua sign-in; invite-only private beta, gated in Janua); never indexed
 #   cv-api.madfam.io  API (/health, /ready, /api/v1/...); never indexed
+#   cv-p.madfam.io    the pages people publish (/<slug>, /l/<token>; CV_HOST_PAGES); indexed only per page, by choice
 # Flat labels only (never api.cv.madfam.io). A later split adds services without changing hosts.
 #
 # Tunnel routes: Enclii derives each domain's route from the Service document that declares it, on the
 # domain's `port:`; the Kubernetes Service publishes 80 and the container listens on 3000, so every domain
 # pins `port: 80`. metadata.name IS the Kubernetes Service name.
 #
-# W2 adds dormant code for Janua sign-in (Auth.js) and owner-scoped data (Postgres via PgBouncer); it stays off
-# until its settings exist (docs/DEPLOYMENT.md). Secrets are referenced by NAME only and reach the store only
-# through `enclii secrets intake` (AUTH_*) or onboarding (`cv-secrets`: DATABASE_URL, APP_DATABASE_URL).
-# Never `enclii secrets set`.
+# Janua sign-in (Auth.js) and owner-scoped data (Postgres via PgBouncer) are configured in production; the code keeps
+# each one off wherever its settings are missing (docs/DEPLOYMENT.md). Secrets are referenced by NAME only and reach
+# the store only through Enclii's OIDC provisioner and `enclii secrets intake` (AUTH_*, HCM_*) or onboarding
+# (`cv-secrets`: DATABASE_URL, APP_DATABASE_URL). Never `enclii secrets set`.
 apiVersion: enclii.dev/v1
 kind: Project
 metadata:
@@ -31,7 +32,7 @@ kind: Service
 metadata:
   name: cv
   project: cv
-  description: MADFAM CV (working label); landing, app shell and API from one container, routed by Host
+  description: MADFAM CV (working label); landing, app, API and published pages from one container, routed by Host
 spec:
   domains:
     - name: cv.madfam.io
@@ -56,7 +57,7 @@ spec:
         href: https://cv.madfam.io
         group: cv
         family: MADFAM Platform
-        description: Landing (pre-launch; noindex until the brand is ruled)
+        description: Landing (invite-only private beta; noindex until the brand is ruled)
         assertContains: '"status":"ok"'
         assertNotContains: "localhost:"
       - name: cv app
@@ -64,7 +65,7 @@ spec:
         href: https://cv-app.madfam.io
         group: cv
         family: MADFAM Platform
-        description: App shell (pre-launch; Janua sign-in arrives in the next wave)
+        description: App (Janua sign-in; invite-only private beta)
         assertContains: '"status":"ok"'
         assertNotContains: "localhost:"
       - name: cv API
@@ -72,7 +73,15 @@ spec:
         href: https://cv-api.madfam.io/api/v1/meta
         group: cv
         family: MADFAM Platform
-        description: API (readiness; checks Postgres once configured)
+        description: API (readiness; checks Postgres)
+        assertContains: '"status":"ok"'
+        assertNotContains: "localhost:"
+      - name: cv pages
+        url: https://cv-p.madfam.io/health
+        href: https://cv-p.madfam.io
+        group: cv
+        family: MADFAM Platform
+        description: Published pages (the CVs and portfolios people choose to publish; rate limited reads)
         assertContains: '"status":"ok"'
         assertNotContains: "localhost:"
 
@@ -121,6 +130,8 @@ spec:
 
   dependencies:
     - platform: enclii
-      reason: deploy, the three domains, tunnel routes, status; secrets intake from the next wave
+      reason: deploy, the four domains, tunnel routes, status, secrets intake and the OIDC provisioner
     - platform: janua
-      reason: identity from the next wave (the app signs people in; the API verifies RS256 tokens of audience cv-api); janua.client.yaml holds the names
+      reason: identity (the cv-app client signs people in, invite-only through the cv entitlement; the API verifies RS256 tokens of audience cv-api issued to cv-app); janua.client.yaml holds the names
+    - platform: symbiosis-hcm
+      reason: the job page's market income range (INEGI ENOE aggregates; client credentials, scope hcm-benchmarks:read; only the job title and state leave cv)

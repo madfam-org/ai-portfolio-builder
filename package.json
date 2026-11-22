@@ -2,7 +2,7 @@
   "name": "ai-portfolio-builder",
   "private": true,
   "license": "AGPL-3.0-only",
-  "description": "MADFAM CV (working label): the pre-launch landing, app shell and API for cv.madfam.io, cv-app.madfam.io and cv-api.madfam.io, served from one container.",
+  "description": "MADFAM CV (working label), in an invite-only private beta: the landing, app, API and published pages for cv.madfam.io, cv-app.madfam.io, cv-api.madfam.io and cv-p.madfam.io, served from one container.",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/madfam-org/ai-portfolio-builder.git"

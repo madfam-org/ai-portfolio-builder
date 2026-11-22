@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "license": "AGPL-3.0-only",
-  "description": "One Next.js process for three hosts: the landing (cv.madfam.io), the app shell (cv-app.madfam.io) and the API (cv-api.madfam.io), routed by Host.",
+  "description": "One Next.js process for four hosts: the landing (cv.madfam.io), the app (cv-app.madfam.io), the API (cv-api.madfam.io) and the published pages (cv-p.madfam.io), routed by Host.",
   "type": "module",
   "scripts": {
     "dev": "next dev --port 3000",

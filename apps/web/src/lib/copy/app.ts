@@ -52,8 +52,6 @@ export interface AppCopy {
   navLabel: string;
   accountLabel: string;
   skip: string;
-  /** The honest placeholder of a page whose PR has not landed yet. */
-  construction: { badge: string; body: string; next: Record<AppRouteName, string> };
   homeIntro: string;
   homeCards: { name: 'profile' | 'jobs' | 'artifacts'; body: string }[];
   /** Data-layer states (lib/client/api.ts error kinds). */
@@ -112,24 +110,6 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     navLabel: 'Secciones de la app',
     accountLabel: 'Cuenta',
     skip: 'Saltar al contenido',
-    construction: {
-      badge: 'En construcción',
-      body: 'Esta sección todavía no está lista. No hay datos de ejemplo: cuando esté lista, aquí verás solo lo que tú captures.',
-      next: {
-        home: 'Desde aquí llegarás a tu perfil, tus empleos y tus documentos.',
-        profile: 'Aquí capturarás una sola vez tu experiencia, estudios, proyectos, habilidades e idiomas.',
-        jobs: 'Aquí guardarás el texto de cada vacante y el estado de cada postulación.',
-        job: 'Aquí verás una vacante, tus notas y los documentos que prepares para ella.',
-        jobTailor: 'Aquí compararás tu perfil con la vacante por palabras clave (sin IA) y elegirás qué destacar.',
-        jobNew: 'Aquí agregarás una vacante desde un enlace, un texto, un archivo o tu navegador.',
-        jobCapture: 'Aquí revisarás la vacante que capturó tu navegador antes de guardarla.',
-        artifacts: 'Aquí estarán tus CV, portafolios, presentaciones y cartas.',
-        artifact: 'Aquí editarás un documento y decidirás si lo compartes con un enlace o lo publicas.',
-        artifactPreview: 'Aquí verás el documento tal como lo verá quien lo abra.',
-        artifactPrint: 'Aquí estará la versión para imprimir o guardar como PDF desde tu navegador.',
-        settings: 'Aquí estarán los ajustes de tu cuenta y de tus datos.',
-      },
-    },
     homeIntro: 'Tu perfil, los empleos a los que te postulas y los documentos que preparas para cada uno.',
     homeCards: [
       { name: 'profile', body: 'Tu trayectoria, una sola vez.' },
@@ -210,24 +190,6 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     navLabel: 'App sections',
     accountLabel: 'Account',
     skip: 'Skip to content',
-    construction: {
-      badge: 'Under construction',
-      body: 'This section is not ready yet. There is no sample data: once it is ready, you will see only what you enter here.',
-      next: {
-        home: 'From here you will reach your profile, your jobs and your documents.',
-        profile: 'Here you will enter, once, your experience, education, projects, skills and languages.',
-        jobs: 'Here you will save the text of each job posting and the status of each application.',
-        job: 'Here you will see one job, your notes and the documents you prepare for it.',
-        jobTailor: 'Here you will compare your profile with the posting by keywords (no AI) and choose what to highlight.',
-        jobNew: 'Here you will add a posting from a link, a text, a file or your browser.',
-        jobCapture: 'Here you will review the posting your browser captured before saving it.',
-        artifacts: 'Here you will find your CVs, portfolios, presentations and letters.',
-        artifact: 'Here you will edit a document and decide whether to share it with a link or publish it.',
-        artifactPreview: 'Here you will see the document as the people you share it with will see it.',
-        artifactPrint: 'Here you will find the version to print or save as PDF from your browser.',
-        settings: 'Here you will find the settings of your account and your data.',
-      },
-    },
     homeIntro: 'Your profile, the jobs you apply to and the documents you prepare for each of them.',
     homeCards: [
       { name: 'profile', body: 'Your career, entered once.' },

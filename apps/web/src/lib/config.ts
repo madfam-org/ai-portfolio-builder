@@ -8,8 +8,8 @@
 /** The three owner-named hosts, always served. */
 export type CoreRole = 'landing' | 'app' | 'api';
 /**
- * `pages`: the user-content host (public and link-shared artifacts, W3). Its label is NOT ruled yet (working label
- * `cv-p.madfam.io`), so the row is INERT until `CV_HOST_PAGES` names a host: no request is routed to it before then.
+ * `pages`: the user-content host (public and link-shared artifacts, W3). Production names `cv-p.madfam.io` (owner-approved,
+ * W6-A); the row stays INERT wherever `CV_HOST_PAGES` is unset: no request is routed to it then.
  */
 export type Role = CoreRole | 'pages';
 

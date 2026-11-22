@@ -2,8 +2,8 @@
 
 A job-specific CV and portfolio builder from Innovaciones MADFAM: you enter your core profile once, add the
 jobs you apply to, and get a tailored CV, portfolio and presentation for each job, which you review, edit and
-publish ([docs/PRODUCT.md](docs/PRODUCT.md)). **Incubating, pre-launch.** The product name is not ruled yet;
-"MADFAM CV" is a working label.
+publish ([docs/PRODUCT.md](docs/PRODUCT.md)). **Incubating, in an invite-only private beta.** The product name is not
+ruled yet; "MADFAM CV" is a working label.
 
 ## What is live, honestly
 

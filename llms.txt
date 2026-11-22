@@ -1,11 +1,11 @@
 # MADFAM CV (working label) — ai-portfolio-builder
 
-> A job-specific CV and portfolio builder from Innovaciones MADFAM, incubating and pre-launch: one core profile,
-> the jobs a person applies to, and a tailored CV, portfolio and presentation per job. One container serves
-> three hosts routed by Host: cv.madfam.io (landing, es-MX and en; noindex until the brand is ruled),
-> cv-app.madfam.io (app shell; Janua sign-in built, dormant until configured) and cv-api.madfam.io
-> (/api/v1/meta and the owner-scoped API, dormant until a database is configured). /health and /ready answer on
-> any Host. The old code is preserved at the git tag legacy-2025-09. No live accounts, AI or prices yet.
+> A job-specific CV and portfolio builder from Innovaciones MADFAM, incubating, in an invite-only private beta: one
+> core profile, the jobs a person applies to, and a tailored CV, portfolio and presentation per job. One container
+> serves four hosts routed by Host: cv.madfam.io (landing, es-MX and en; noindex until the brand is ruled),
+> cv-app.madfam.io (the app; Janua sign-in, invite-only accounts gated in Janua), cv-api.madfam.io (/api/v1/meta and
+> the owner-scoped API on Postgres) and cv-p.madfam.io (the pages people choose to publish). /health and /ready
+> answer on any Host. The old code is preserved at the git tag legacy-2025-09. No open sign-up, AI or prices yet.
 
 Boundary: public repository. Operational detail lives in MADFAM's private ops repository under the
 repo-boundary contract (docs/REPO_BOUNDARY.md).
@@ -17,18 +17,19 @@ repo-boundary contract (docs/REPO_BOUNDARY.md).
 - Identity is Janua, money is Dhanam, LLMs only through Selva, deploy is Enclii, analytics self-hosted Plausible only.
 - No invented proof, no prices, no secrets in the tree; madfam.io is the only MADFAM domain.
 - Every data row is owned by a Janua `sub`; repository functions take ownerSub first; other owners' ids are 404.
-- Sign-in and data are dormant (503 not_configured) until their settings exist.
+- Sign-in and data are configured in production; wherever their settings are missing they answer 503 not_configured
+  (dormant by default).
 - Public repo CI runs on GitHub-hosted runners; every action is SHA-pinned; Build & Deploy is dispatch-only.
-- A fourth host for user pages (public /<slug>, link-shared /l/<token>; working label cv-p.madfam.io) is inert until
-  CV_HOST_PAGES names it; per-page indexing is the owner's choice, link pages are never indexed or cached.
-- App pages are declared once (apps/web/src/lib/app-routes.ts): /perfil, /empleos, /empleos/:id, /empleos/:id/adaptar,
-  /documentos, /documentos/:id, /documentos/:id/vista-previa, /documentos/:id/imprimir, /ajustes (en under /en);
-  W5-J adds /empleos/nuevo and /empleos/capturar.
+- The fourth host, cv-p.madfam.io, serves user pages (public /<slug>, link-shared /l/<token>; CV_HOST_PAGES, inert
+  wherever it is unset); per-page indexing is the page owner's choice, link pages are never indexed or cached.
+- App pages are declared once (apps/web/src/lib/app-routes.ts): /, /perfil, /empleos, /empleos/nuevo,
+  /empleos/capturar, /empleos/:id, /empleos/:id/adaptar, /documentos, /documentos/:id, /documentos/:id/vista-previa,
+  /documentos/:id/imprimir, /ajustes (en under /en); all of them are built.
 - Job intake (W5-J) never stores before the person confirms; links are fetched once, only on an explicit POST, through
   an SSRF guard that respects robots.txt and never fetches boards whose terms forbid it (those use the person's own
-  browser capture). No crawling, no login to boards, no AI, no OCR in cv.
-- W6-A: the pages host is cv-p.madfam.io (owner-approved; CV_HOST_PAGES set in production, live once DNS and the tunnel
-  route exist). Unauthenticated reads (pages host, cv-api /api/v1/public/*) are rate limited per client
+  browser capture). No crawling, no login to boards, no AI, no OCR engine in cv (images go to tlacuilo, built and
+  dormant).
+- W6-A: the pages host is cv-p.madfam.io (owner-approved; CV_HOST_PAGES set in production; live). Unauthenticated reads (pages host, cv-api /api/v1/public/*) are rate limited per client
   (CF-Connecting-IP only, token bucket 60 + 60/min per pod, 429 with Retry-After). Sign-in sessions expire after 7 days
   without use. cv.madfam.io/lector (es-MX) and /en/lector explain the job-link reader; its User-Agent links there.
 
@@ -49,12 +50,12 @@ repo-boundary contract (docs/REPO_BOUNDARY.md).
 - `apps/web/src/server/`: Janua token verification, the Drizzle schema and owner-scoped repository, the API handler
 - `apps/web/src/server/metrics*.ts`: observability; `/metrics` on the internal port 9090 only (never a public host), route-template labels, JSON request logs without PII
 - `apps/web/drizzle/`: committed SQL migrations; `apps/web/test-pg/`: the real-Postgres cross-owner suite
-- `janua.client.yaml`: Janua registrations (names only)
+- `janua.client.yaml`: Janua registrations (names only: resource server `cv-api`, confidential client `cv-app`)
 - `apps/web/src/components/ui/`, `src/components/app/`, `src/lib/client/`, `src/lib/copy/`: UI primitives, the app frame, the typed data layer, per-surface copy
 - `apps/web/e2e/`: Playwright specs over the built server (two owners, local JWKS, throwaway Postgres)
 - `apps/web/src/server/read-limit.ts`: W6-A per-client token bucket on unauthenticated reads; `src/lib/copy/reader.ts` and `src/app/h/landing/[locale]/lector/`: the reader page
 - `apps/web/src/server/ingest/`, `src/components/jobs/intake/`: W5-J job intake (link, ATS public APIs, paste, PDF/DOCX/HTML files, browser capture) and its typed job fields (migration 0002)
-- `apps/web/src/server/hcm/`, `src/components/jobs/benchmark/`: W5-H, the job page's market income range from Symbiosis HCM (INEGI ENOE official statistics; only the job title and state leave cv; dormant until `HCM_*` is configured)
+- `apps/web/src/server/hcm/`, `src/components/jobs/benchmark/`: W5-H, the job page's market income range from Symbiosis HCM (INEGI ENOE official statistics; only the job title and state leave cv; live in production, dormant wherever `HCM_*` is missing)
 - `apps/web/src/server/ingest/closed.ts`, `src/components/profile/SectorGuide.tsx`, `e2e/luxury.spec.ts`: W7 (B3), the luxury-retail beta: luxury career sites read through their JSON-LD/microdata only when robots.txt allows (no undocumented APIs), closed postings refused honestly, the retail guide in the profile, es/en versions per job, the «Búsqueda confidencial» reminder before sharing
 - `apps/web/src/server/hcm/route.ts` `RETAIL_SALES_SINCO`, `src/components/jobs/benchmark/SegmentSection.tsx`: W7, the retail industry segment beside the general ENOE figure for store sales and store management jobs (HCM `segment=retail_apparel_personal`, labelled «no solo lujo»)
 
