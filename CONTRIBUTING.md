@@ -4,7 +4,7 @@
 > repo-boundary contract ([docs/REPO_BOUNDARY.md](docs/REPO_BOUNDARY.md)).
 
 1. **Read [AGENTS.md](./AGENTS.md)** for the doctrine, the layout and the CI lanes.
-2. **Run the checks** before you push: `pnpm install --frozen-lockfile`, `pnpm lint`, `pnpm typecheck`,
+2. **Run the checks** before you push: `pnpm install --frozen-lockfile --ignore-scripts`, `pnpm lint`, `pnpm typecheck`,
    `pnpm test`, `pnpm build`, `pnpm test:server`. Keep every source file under 600 lines.
 3. **Truth in copy.** No invented users, metrics, logos or testimonials; anything not built says
    "próximamente" / "coming soon".

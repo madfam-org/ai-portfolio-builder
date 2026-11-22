@@ -20,6 +20,7 @@ on:
       - pnpm-lock.yaml
       - pnpm-workspace.yaml
       - .npmrc
+      - .nvmrc
       - apps/**
       - .github/workflows/image.yml
   workflow_dispatch:
@@ -57,6 +58,14 @@ jobs:
           tags: cv:ci
           build-args: |
             CV_REVISION=${{ github.sha }}
+      - name: The image runs the Node CI runs (.nvmrc)
+        # A base-digest bump that moves Node fails here until .nvmrc names the same version (CI's setup-node reads it).
+        run: |
+          set -euo pipefail
+          image=$(docker run --rm --entrypoint node cv:ci --version)
+          want="v$(cat .nvmrc)"
+          if [ "$image" != "$want" ]; then echo "node-pin: image=$image .nvmrc=$want FAIL"; exit 1; fi
+          echo "node-pin: image=$image .nvmrc=$want OK"
       - name: Smoke (read-only root, uid 1001; probes on any Host, three hosts, unknown Host 404)
         env:
           WANT_REVISION: ${{ github.sha }}

@@ -133,10 +133,10 @@ Kubernetes Service publishes 80; every `enclii.yaml` domain pins `port: 80`. Fla
 
 ```bash
 corepack enable                 # pnpm at the version in package.json packageManager
-pnpm install --frozen-lockfile  # ONE root lockfile (pnpm workspace: apps/*)
+pnpm install --frozen-lockfile --ignore-scripts  # ONE root lockfile (pnpm workspace: apps/*); no package scripts, as CI and the image
 pnpm lint                       # eslint, zero warnings
 pnpm typecheck                  # next typegen + tsc --noEmit (strict)
-pnpm test                       # unit tests (node:test over TypeScript; Node >= 22.18)
+pnpm test                       # unit tests (node:test over TypeScript; Node >= 22.18, CI runs .nvmrc)
 pnpm test:pg                    # real-Postgres suite: CV_TEST_OWNER_URL + CV_TEST_APP_URL (db name *_test, role cv_app)
 pnpm db:generate                # SQL migrations from apps/web/src/server/db/schema.ts (commit them)
 pnpm db:migrate                 # apply them to DIRECT_DATABASE_URL ?? DATABASE_URL (the owner role)
@@ -154,12 +154,16 @@ then open `http://cv.localhost:3000/` (browsers resolve `*.localhost` to loopbac
 Public repository: every job runs on **GitHub-hosted** runners (R116). `ci.yml` runs on **every pull request,
 whatever its base** (a PR stacked on another PR's branch is checked too; since 2026-11-16) and on pushes to `main`. Top-level
 `permissions: contents: read`; every action pinned to a full commit SHA; no `secrets: inherit`; no
-`|| true` masks. `ci.yml`: `agent-docs` (required files and markers), `web` (frozen install, lint,
+`|| true` masks. **CI runs the image's Node and installs as the image does:** `.nvmrc` names the exact Node inside the
+Dockerfile's pinned `node:22-alpine` (every `actions/setup-node` reads it) and every `pnpm install` in
+`.github/workflows/` takes `--frozen-lockfile --ignore-scripts`, like the Dockerfile (the `guards` job checks both;
+`image.yml` fails when the built image's `node --version` differs from `.nvmrc`, so a base-digest bump that moves Node
+moves `.nvmrc` in the same PR). `ci.yml`: `agent-docs` (required files and markers), `web` (frozen install, lint,
 typecheck, unit tests ≥ 426 passing and none skipped, build, standalone smoke ≥ 13 passing; raise a floor when a PR adds tests), `pg` (the real-Postgres suite on a `postgres:16-alpine`
 service container, as the `cv_app` role; fails on fewer than 52 passing tests), `e2e` (Playwright on GitHub-hosted runners:
 `npx playwright install --with-deps chromium`, the built server, its own Postgres service; fails on fewer than 110
 passing specs or any failed, flaky or skipped; raise the floor when a PR adds specs; a failed run uploads the
-Playwright traces as `e2e-traces`, kept 7 days), `guards` (file size, forbidden-domain grep),
+Playwright traces as `e2e-traces`, kept 7 days), `guards` (file size, forbidden-domain grep, the Node pin and `--ignore-scripts`),
 `secrets` (gitleaks over every commit after the legacy base `7959f356`, plus the checked-out tree;
 the legacy history was scanned in full by the 2026-10-22 audit). `image.yml` builds the Dockerfile on
 pull requests that touch its inputs (no push) and smoke-tests it read-only as uid 1001 across all
