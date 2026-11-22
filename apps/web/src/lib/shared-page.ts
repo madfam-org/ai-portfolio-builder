@@ -12,6 +12,11 @@
  *   blocks; `intro` only on a portfolio, `greeting`/`closing` only on a cover letter, the summary only where it is
  *   printed; `showContact` and any other stored field are not carried (the contact itself is, when shown). Only the
  *   items the projected content references are carried.
+ * - Each carried item carries only the fields its drawing prints (`projectItem`): a cover letter's role or project its
+ *   title, organisation and dates (no summary, highlights or links); a skill, language or link in a compact list its
+ *   name and line (a link its label and address); a full entry also its summary, highlights and links, less any field a
+ *   per-job override replaces (the summary, the highlights, and the fields only the title reads). Nothing else stored
+ *   on an item travels (a language's ISO code neither: its name already arrives in the document's language).
  * - A document with its own summary prints that summary, so the profile's summary is not carried (an empty string);
  *   nor is it on a presentation (never printed) or a portfolio with an intro (the intro is printed instead).
  * - Text is already in the document's language: each field with a translation in that language carries the
@@ -22,10 +27,10 @@
  * The renderer draws the same markup from this as from the owner's full data (test/shared-page.test.ts compares both
  * over the render matrix and the render baseline). Pure: no server or React import here.
  */
-import { LETTER_ENTRIES, LETTER_KINDS, artifactKind, isItemKind, letterBody, readContent, str, type RenderData } from '../components/render/model.ts';
+import { COMPACT_KINDS, LETTER_ENTRIES, LETTER_KINDS, artifactKind, isItemKind, letterBody, readContent, str, type RenderData } from '../components/render/model.ts';
 import type { ArtifactContent } from '../server/api/validation.ts';
-import type { ItemKind } from './copy/app.ts';
-import { ITEM_TEXT_FIELDS, contentLocale, localizeHeader, localizeItem } from './profile-text.ts';
+import type { ArtifactKind, ItemKind } from './copy/app.ts';
+import { contentLocale, localizeHeader, localizeItem } from './profile-text.ts';
 
 /** The profile header a shared page carries: no primary language, no translations. */
 export interface SharedProfile {
@@ -128,6 +133,92 @@ export function projectContent(kindRaw: string, raw: unknown, itemKinds: Readonl
   }
 }
 
+/** How an item is drawn: a full entry, a line of a compact list, or one of a cover letter's short entries. */
+export type Drawn = 'entry' | 'compact' | 'letter';
+
+const SPAN = ['startDate', 'endDate', 'current'] as const;
+
+/**
+ * Per item kind, the content fields `buildEntry` (components/render/model.ts) reads for an entry's title, line and
+ * dates: all that a compact list or a cover letter prints of an item. A full entry also reads the summary, the
+ * highlights and the links (`ENTRY_TEXT`, `ENTRY_LINKS`), on every kind but a recommendation, whose entry is these
+ * fields alone (the recommender's words are its `text`).
+ */
+const HEAD_FIELDS: Record<ItemKind, readonly string[]> = {
+  experience: ['role', 'organization', 'employmentType', 'location', ...SPAN],
+  volunteering: ['role', 'organization', 'employmentType', 'location', ...SPAN],
+  education: ['degree', 'field', 'institution', ...SPAN],
+  project: ['name', 'role', ...SPAN],
+  skill: ['name', 'level', 'years'],
+  language: ['name', 'level'],
+  certification: ['name', 'issuer', 'date', 'expiresOn', 'credentialId'],
+  publication: ['title', 'publisher', 'date'],
+  achievement: ['title', 'issuer', 'date'],
+  award: ['title', 'issuer', 'date'],
+  link: ['label', 'url'],
+  recommendation: ['name', 'role', 'organization', 'relationship', 'date', 'text'],
+};
+const ENTRY_LINKS = ['url', 'links'] as const;
+
+/**
+ * The fields only an entry's title reads, which a per-job title replaces. An education's degree and field also decide
+ * whether its institution prints, and a link's label is its link's text: those stay.
+ */
+const TITLE_ONLY: Partial<Record<ItemKind, readonly string[]>> = {
+  experience: ['role'],
+  volunteering: ['role'],
+  project: ['name'],
+  skill: ['name'],
+  language: ['name'],
+  certification: ['name'],
+  publication: ['title'],
+  achievement: ['title'],
+  award: ['title'],
+};
+
+/** The content fields an item of `kind`, drawn as `drawn` with `override` applied, prints (components/render). */
+export function printedFields(kind: ItemKind, drawn: Drawn, override: Override | undefined): Set<string> {
+  const fields = new Set(HEAD_FIELDS[kind]);
+  if (drawn === 'entry' && kind !== 'recommendation') {
+    if (override?.summary === undefined) fields.add('summary');
+    if (override?.highlights === undefined) fields.add('highlights');
+    if (kind !== 'link') for (const f of ENTRY_LINKS) fields.add(f);
+  }
+  if (override?.title !== undefined) for (const f of TITLE_ONLY[kind] ?? []) fields.delete(f);
+  return fields;
+}
+
+/** An item's content reduced to the fields its drawing prints, in the stored order. */
+export function projectItem(kind: ItemKind, drawn: Drawn, override: Override | undefined, content: unknown): Record<string, unknown> {
+  const fields = printedFields(kind, drawn, override);
+  return Object.fromEntries(Object.entries(rec(content)).filter(([k]) => fields.has(k)));
+}
+
+/**
+ * How each item a projected content references is drawn (components/render/*View.tsx): every item of a cover letter is
+ * one of its short entries; elsewhere a skill, language or link is a line of a compact list, except on a presentation's
+ * own slide that also shows another kind, where every item is a full entry (as is every item of any other kind).
+ */
+function drawnAs(kind: ArtifactKind, content: Record<string, unknown>, kindOf: (id: string) => ItemKind | null): Map<string, Drawn> {
+  const drawn = new Map<string, Drawn>();
+  const mark = (id: string, how: Drawn) => {
+    if (drawn.get(id) !== 'entry') drawn.set(id, how);
+  };
+  const items = (content.items ?? []) as Ref[];
+  const slides = (content.slides ?? []) as { itemIds: string[] }[];
+  if (kind === 'cover_letter') {
+    for (const r of items) mark(r.itemId, 'letter');
+  } else if (kind === 'presentation' && slides.length > 0) {
+    for (const sl of slides) {
+      const compact = sl.itemIds.every((id) => COMPACT_KINDS.has(kindOf(id)!));
+      for (const id of sl.itemIds) mark(id, compact ? 'compact' : 'entry');
+    }
+  } else {
+    for (const r of items) mark(r.itemId, COMPACT_KINDS.has(kindOf(r.itemId)!) ? 'compact' : 'entry');
+  }
+  return drawn;
+}
+
 /** Every item id a projected content references (its items and its slides). */
 function referencedIds(content: Record<string, unknown>): Set<string> {
   const items = (content.items ?? []) as Ref[];
@@ -165,10 +256,18 @@ export function sharedRenderData(data: RenderData): SharedRenderData {
     ...(data.profile.contact === undefined ? {} : { contact: contact && location !== undefined ? { ...contact, location: header.location } : data.profile.contact }),
   };
 
-  const items = data.items.filter((item) => carried.has(item.id)).map((item) => {
-    const known = Object.hasOwn(ITEM_TEXT_FIELDS, item.kind);
-    const content = known ? localizeItem(item.kind as ItemKind, item.content, item.translations, primary, target).content : item.content;
-    return { id: item.id, kind: item.kind, content };
+  // Only items of a kind the renderers draw are referenced (projectContent), so every carried item has a known kind.
+  const itemKinds = new Map(data.items.map((i) => [i.id, i.kind]));
+  const kindOf = (id: string): ItemKind | null => {
+    const k = itemKinds.get(id);
+    return k !== undefined && isItemKind(k) ? k : null;
+  };
+  const drawn = drawnAs(artifactKind(data.artifact.kind), projected.content, kindOf);
+  const overrides = new Map(((projected.content.items ?? []) as Ref[]).map((r) => [r.itemId, r.override]));
+  const items = data.items.filter((item) => carried.has(item.id) && isItemKind(item.kind)).map((item) => {
+    const kind = item.kind as ItemKind;
+    const localized = localizeItem(kind, item.content, item.translations, primary, target).content;
+    return { id: item.id, kind: item.kind, content: projectItem(kind, drawn.get(item.id) ?? 'entry', overrides.get(item.id), localized) };
   });
 
   return {

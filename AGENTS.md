@@ -159,7 +159,7 @@ Dockerfile's pinned `node:22-alpine` (every `actions/setup-node` reads it) and e
 `.github/workflows/` takes `--frozen-lockfile --ignore-scripts`, like the Dockerfile (the `guards` job checks both;
 `image.yml` fails when the built image's `node --version` differs from `.nvmrc`, so a base-digest bump that moves Node
 moves `.nvmrc` in the same PR). `ci.yml`: `agent-docs` (required files and markers), `web` (frozen install, lint,
-typecheck, unit tests ≥ 436 passing and none skipped, build, standalone smoke ≥ 13 passing; raise a floor when a PR adds tests), `pg` (the real-Postgres suite on a `postgres:16-alpine`
+typecheck, unit tests ≥ 438 passing and none skipped, build, standalone smoke ≥ 13 passing; raise a floor when a PR adds tests), `pg` (the real-Postgres suite on a `postgres:16-alpine`
 service container, as the `cv_app` role; fails on fewer than 52 passing tests), `e2e` (Playwright on GitHub-hosted runners:
 `npx playwright install --with-deps chromium`, the built server, its own Postgres service; fails on fewer than 110
 passing specs or any failed, flaky or skipped; raise the floor when a PR adds specs; a failed run uploads the

@@ -1,4 +1,4 @@
-import type { DocModel } from './model.ts';
+import { COMPACT_KINDS, type DocModel } from './model.ts';
 import { CompactList, ContactLine, EntryView, Paragraphs } from './parts.tsx';
 import { SlideDeck } from './SlideDeck.tsx';
 import { RENDER_COPY, slidePosition } from '../../lib/copy/render.ts';
@@ -21,7 +21,7 @@ export function PresentationView({ model }: { model: DocModel }) {
       <section key={`s${i}`} className={s.slide} data-part="slide" aria-label={slide.title ?? slidePosition(model.locale, i + 2, model.slides.length + 1)}>
         {slide.title ? <h2 className={s.slideTitle}>{slide.title}</h2> : null}
         <Paragraphs text={slide.body} />
-        {slide.entries.length && slide.entries.every((e) => e.kind === 'skill' || e.kind === 'language' || e.kind === 'link') ? (
+        {slide.entries.length && slide.entries.every((e) => COMPACT_KINDS.has(e.kind)) ? (
           <CompactList entries={slide.entries} />
         ) : (
           slide.entries.map((e) => <EntryView key={e.id} entry={e} />)
