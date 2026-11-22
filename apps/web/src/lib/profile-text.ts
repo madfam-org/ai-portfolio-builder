@@ -205,16 +205,3 @@ export function localizeHeader(
 export function untranslatedFields(kind: ItemKind, content: unknown, translations: unknown, primary: ContentLocale, target: ContentLocale): string[] {
   return localizeItem(kind, content, translations, primary, target).missing;
 }
-
-/**
- * What a reader of ONE document needs: the `target` locale's texts of `fields`, or undefined when the document is in the
- * primary language or there is nothing (the public projection never carries the other languages, nor hidden fields).
- */
-export function projectTranslations(raw: unknown, primary: ContentLocale, target: ContentLocale, fields: readonly string[]): Translations | undefined {
-  if (target === primary) return undefined;
-  const texts = readTranslations(raw)[target];
-  if (!texts) return undefined;
-  const kept: FieldTexts = {};
-  for (const f of fields) if (texts[f] !== undefined) kept[f] = texts[f];
-  return Object.keys(kept).length ? { [target]: kept } : undefined;
-}

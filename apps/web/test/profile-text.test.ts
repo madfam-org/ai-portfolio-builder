@@ -14,7 +14,6 @@ import {
   localizeHeader,
   localizeItem,
   otherLocale,
-  projectTranslations,
   readTranslations,
   untranslatedFields,
 } from '../src/lib/profile-text.ts';
@@ -134,10 +133,3 @@ test('localizeHeader: translated header fields, the fallback report, a document 
   assert.equal(otherLocale('en'), 'es-MX');
 });
 
-test('projectTranslations: only the target language, only the allowed fields, nothing for the primary language', () => {
-  const t = { en: { headline: 'H', summary: 'S', location: 'L' }, 'es-MX': { headline: 'x' } };
-  assert.deepEqual(projectTranslations(t, 'es-MX', 'en', ['headline', 'summary']), { en: { headline: 'H', summary: 'S' } });
-  assert.equal(projectTranslations(t, 'es-MX', 'es-MX', ['headline']), undefined);
-  assert.equal(projectTranslations(null, 'es-MX', 'en', ['headline']), undefined);
-  assert.equal(projectTranslations({ en: { location: 'L' } }, 'es-MX', 'en', ['headline']), undefined);
-});

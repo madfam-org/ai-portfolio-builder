@@ -158,7 +158,7 @@ whatever its base** (a PR stacked on another PR's branch is checked too; since 2
 `permissions: contents: read`; every action pinned to a full commit SHA; no `secrets: inherit`; no
 `|| true` masks. `ci.yml`: `agent-docs` (required files and markers), `web` (frozen install, lint,
 typecheck, unit tests, build, standalone smoke), `pg` (the real-Postgres suite on a `postgres:16-alpine`
-service container, as the `cv_app` role; fails on fewer than 39 passing tests), `e2e` (Playwright on GitHub-hosted runners:
+service container, as the `cv_app` role; fails on fewer than 40 passing tests), `e2e` (Playwright on GitHub-hosted runners:
 `npx playwright install --with-deps chromium`, the built server, its own Postgres service; fails on fewer than 105
 passing specs or any failed, flaky or skipped; raise the floor when a PR adds specs; a failed run uploads the
 Playwright traces as `e2e-traces`, kept 7 days), `guards` (file size, forbidden-domain grep),
@@ -295,7 +295,8 @@ default) holds the main text where it always lived; the other language is option
 Rules: a document in the primary language reads the stored text only (byte-for-byte proof against main's golden
 print text and render hashes); proper names, dates, URLs, levels and codes stay single; no machine or AI translation
 (the Selva seam stays off until its restricted tier is live); per-job overrides belong to the language of the
-documents they are typed for; the public projection carries only the document's own language. CI minimums after this
+documents they are typed for; the public projection carries only the document's own language (since 2026-11-21 the
+text arrives already in it: `lib/shared-page.ts`). CI minimums after this
 PR: `pg` ≥ 39 passing, `e2e` ≥ 89 passing after the rebase onto #26 (were 34 and 85).
 
 ## B1: beta access (invite-only) and the first-run guide
@@ -362,6 +363,9 @@ journey, add it to the walk.
 - **A document's title is private.** `DocModel.heading` (the person's name, or the kind of document) is what every
   renderer prints; `model.title` is never rendered, and `pageTitle` (pages host) reads «name · kind». Do not print an
   artifact's title on any shared surface: it usually names the employer applied to (`test/render-html.test.ts` pins it).
+  The public API follows the same rule (2026-11-21): cv-api's two public reads and the pages host get
+  `lib/shared-page.ts sharedRenderData`, only what the page prints (no title, no publication time, no profile summary
+  under the document's own, no other language), and `test/shared-page.test.ts` proves it renders the same markup.
   A change to renderer markup moves `test/fixtures/bilingual/render-baseline.json`: regenerate it with
   `CV_WRITE_RENDER_BASELINE=1` and check that only the intended cases changed.
 - **The match shows words, not tokens.** `matchedTerms` / `missingTerms` carry the posting's own spelling

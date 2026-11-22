@@ -17,7 +17,7 @@ export const ITEMS = [
 
 export function data(kind: string, content: Record<string, unknown>, opts: { contact?: unknown; locale?: string; template?: string } = {}): RenderData {
   return {
-    artifact: { kind, title: `Documento ${kind}`, locale: opts.locale ?? 'es-MX', template: opts.template ?? 'base', content },
+    artifact: { kind, locale: opts.locale ?? 'es-MX', template: opts.template ?? 'base', content },
     profile: { displayName: 'Ana Prueba', headline: 'Ingeniera de datos', summary: 'Resumen del perfil', ...(opts.contact === undefined ? {} : { contact: opts.contact }) },
     items: ITEMS.map((i) => ({ ...i, content: { ...i.content } })),
   };
