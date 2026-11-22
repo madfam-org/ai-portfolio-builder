@@ -50,14 +50,22 @@ function parseAttrs(src: string): Record<string, string> {
   return attrs;
 }
 
+/**
+ * Elements nested deeper than this are kept as children of the deepest open element instead of opening a new level:
+ * a page of unclosed tags then costs constant work per closing tag, and the recursive readers below (`walk`, `textOf`,
+ * `rawText`) never run out of stack. Real job pages nest a few dozen levels.
+ */
+export const MAX_DEPTH = 256;
+
 /** Parses HTML into a root element. Comments, doctypes and processing instructions are dropped. */
 export function parseHtml(html: string): El {
   const root: El = { tag: '#root', attrs: {}, children: [] };
   const stack: El[] = [root];
   const top = () => stack[stack.length - 1]!;
-  // Linear by construction (no nested quantifiers): a start tag's attribute text is at most 4 000 characters and may not
-  // contain `<` or `>` (an attribute value holding `>` degrades to less structure). Pages are hostile input.
-  const TAG = /<!--[\s\S]*?(?:--!?>|$)|<![^<>]*>|<\?[^<>]*>|<\/([a-zA-Z][\w:-]*)\s*>|<([a-zA-Z][\w:-]*)([^<>]{0,4000})>/g;
+  // Linear in the page size. A tag name may not give characters back to what follows it (`(?![\w:-])`), so a long name
+  // with no closing `>` is tried once, not once per split; a start tag's attribute text is at most 4 000 characters
+  // and may not contain `<` or `>` (an attribute value holding `>` degrades to less structure). Pages are hostile input.
+  const TAG = /<!--[\s\S]*?(?:--!?>|$)|<![^<>]*>|<\?[^<>]*>|<\/([a-zA-Z][\w:-]*)(?![\w:-])\s*>|<([a-zA-Z][\w:-]*)(?![\w:-])([^<>]{0,4000})>/g;
   let last = 0;
   let m: RegExpExecArray | null;
   while ((m = TAG.exec(html))) {
@@ -67,8 +75,11 @@ export function parseHtml(html: string): El {
     const selfClose = /\/\s*$/.test(attrSrc);
     if (closing) {
       const name = closing.toLowerCase();
-      const at = stack.map((e) => e.tag).lastIndexOf(name);
-      if (at > 0) stack.length = at;
+      for (let at = stack.length - 1; at > 0; at -= 1) {
+        if (stack[at]!.tag !== name) continue;
+        stack.length = at;
+        break;
+      }
       continue;
     }
     if (!opening) continue;
@@ -89,17 +100,29 @@ export function parseHtml(html: string): El {
       TAG.lastIndex = last;
       continue;
     }
-    if (!VOID.has(name) && !selfClose) stack.push(el);
+    if (!VOID.has(name) && !selfClose && stack.length <= MAX_DEPTH) stack.push(el);
   }
   if (last < html.length) top().children.push(decodeEntities(html.slice(last)));
   return root;
 }
 
+/**
+ * Every element under `el`, depth first in document order. Iterative on purpose: a recursive `yield*` passes each
+ * element up through one generator per level, which on a deep, wide malformed page costs depth × elements.
+ */
 export function* walk(el: El): Generator<El> {
-  for (const c of el.children) {
-    if (typeof c === 'string') continue;
-    yield c;
-    yield* walk(c);
+  const stack: { el: El; next: number }[] = [{ el, next: 0 }];
+  while (stack.length > 0) {
+    const frame = stack[stack.length - 1]!;
+    if (frame.next >= frame.el.children.length) {
+      stack.pop();
+      continue;
+    }
+    const child = frame.el.children[frame.next]!;
+    frame.next += 1;
+    if (typeof child === 'string') continue;
+    yield child;
+    stack.push({ el: child, next: 0 });
   }
 }
 

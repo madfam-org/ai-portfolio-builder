@@ -60,7 +60,8 @@ export interface ResolvedAddress {
   address: string;
   family: 4 | 6;
 }
-export type Resolver = (hostname: string) => Promise<ResolvedAddress[]>;
+/** `signal` aborts at the request deadline; a resolver may use it to stop waiting. */
+export type Resolver = (hostname: string, signal?: AbortSignal) => Promise<ResolvedAddress[]>;
 
 export interface TransportRequest {
   hostname: string;
@@ -96,10 +97,69 @@ export interface FetchOptions {
   transport?: Transport;
 }
 
-const systemResolver: Resolver = async (hostname) => {
-  const found = await dnsLookup(hostname, { all: true, verbatim: true });
+/**
+ * At most this many system lookups at once. `dns.lookup` runs on libuv's thread pool (4 threads by default), which the
+ * file system, zlib and crypto share, and a lookup cannot be cancelled: a slot is freed only when the lookup itself
+ * returns, so slow name servers can hold two threads, never the whole pool. A request waiting for a slot gives up at
+ * its deadline.
+ */
+export const MAX_CONCURRENT_LOOKUPS = 2;
+let lookupsInFlight = 0;
+const lookupQueue: (() => void)[] = [];
+
+function lookupSlot(signal: AbortSignal | undefined): Promise<void> {
+  if (lookupsInFlight < MAX_CONCURRENT_LOOKUPS) {
+    lookupsInFlight += 1;
+    return Promise.resolve();
+  }
+  return new Promise((resolve, reject) => {
+    const take = () => {
+      signal?.removeEventListener('abort', onAbort);
+      lookupsInFlight += 1;
+      resolve();
+    };
+    const onAbort = () => {
+      const i = lookupQueue.indexOf(take);
+      if (i !== -1) lookupQueue.splice(i, 1);
+      reject(new Error('deadline'));
+    };
+    lookupQueue.push(take);
+    signal?.addEventListener('abort', onAbort, { once: true });
+  });
+}
+
+function releaseLookupSlot(): void {
+  lookupsInFlight -= 1;
+  lookupQueue.shift()?.();
+}
+
+const systemResolver: Resolver = async (hostname, signal) => {
+  await lookupSlot(signal);
+  const lookup = dnsLookup(hostname, { all: true, verbatim: true });
+  void lookup.then(releaseLookupSlot, releaseLookupSlot);
+  const found = await lookup;
   return found.map((a) => ({ address: a.address, family: a.family === 6 ? 6 : 4 }));
 };
+
+/** Settles with the resolver, or rejects as soon as `signal` aborts (the lookup itself may still be running). */
+function beforeDeadline<T>(work: Promise<T>, signal: AbortSignal | undefined): Promise<T> {
+  if (!signal) return work;
+  if (signal.aborted) return Promise.reject(new Error('deadline'));
+  return new Promise<T>((resolve, reject) => {
+    const onAbort = () => reject(new Error('deadline'));
+    signal.addEventListener('abort', onAbort, { once: true });
+    work.then(
+      (v) => {
+        signal.removeEventListener('abort', onAbort);
+        resolve(v);
+      },
+      (e: unknown) => {
+        signal.removeEventListener('abort', onAbort);
+        reject(e);
+      },
+    );
+  });
+}
 
 /** node:https with the socket pinned to the vetted address; no agent (no pooled socket reuse), no proxy env. */
 const httpsTransport: Transport = (req) =>
@@ -148,14 +208,14 @@ export function checkUrl(raw: string | URL): URL {
 }
 
 /** Resolves and vets: EVERY address must be public (a name with one private answer is refused outright). */
-export async function vetAddresses(hostname: string, resolver: Resolver): Promise<ResolvedAddress> {
+export async function vetAddresses(hostname: string, resolver: Resolver, signal?: AbortSignal): Promise<ResolvedAddress> {
   const bare = hostname.replace(/^\[|\]$/g, '');
   if (isPublicAddress(bare)) return { address: bare, family: bare.includes(':') ? 6 : 4 };
   let found: ResolvedAddress[];
   try {
-    found = await resolver(hostname);
+    found = await beforeDeadline(resolver(hostname, signal), signal);
   } catch {
-    throw new FetchError('dns_failed', hostname);
+    throw new FetchError(signal?.aborted ? 'timeout' : 'dns_failed', hostname);
   }
   if (found.length === 0) throw new FetchError('dns_failed', hostname);
   if (found.some((a) => !isPublicAddress(a.address))) throw new FetchError('private_address', hostname);
@@ -208,7 +268,8 @@ export async function safeFetch(rawUrl: string | URL, opts: FetchOptions): Promi
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), remaining);
     try {
-      const address = await vetAddresses(url.hostname, resolver);
+      // DNS is inside the deadline too: a slow name server ends the request as a timeout, on time.
+      const address = await vetAddresses(url.hostname, resolver, controller.signal);
       let res: TransportResponse;
       try {
         res = await transport({
