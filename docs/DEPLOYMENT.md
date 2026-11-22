@@ -22,7 +22,7 @@ Two replicas, surge rollout (`maxUnavailable: 0`), a PodDisruptionBudget
 | Probe | Path | Answers |
 |---|---|---|
 | liveness | `/health` | 200 `{"status":"ok","service":"cv","revision":<sha or null>}` on any Host; no dependency checks |
-| readiness | `/ready` | on any Host: 503 on an invalid configuration; 503 when a database IS configured (`APP_DATABASE_URL`) and `select 1` fails within 2 s (the body says `"database":"unavailable"`; the driver's reason goes to the log only); otherwise 200. Unconfigured dependencies are reported (`checks.signIn`, `checks.database`) and never block. Janua is not pinged (its outage must not take the landing down; the API answers 503 per request instead) |
+| readiness | `/ready` | on any Host: 503 on an invalid configuration; 503 when a database IS configured (`APP_DATABASE_URL`) and `select 1` fails within 2 s (the body says `"database":"unavailable"`; the driver's reason goes to the log only); otherwise 200. One ping serves every `/ready` answer for 2 s, concurrent callers included (`server/db/ping-cache.ts`), so public `/ready` traffic never queues on the pool the probe needs. Unconfigured dependencies are reported (`checks.signIn`, `checks.database`) and never block. Janua is not pinged (its outage must not take the landing down; the API answers 503 per request instead) |
 
 ## Hosts (one Service, routed by Host)
 
@@ -217,7 +217,7 @@ One process, two listeners: the app on 3000 (every public host, through Service 
 | `cv_http_requests_total` | `host_role` (landing, app, api, pages, none), `route`, `method`, `status` | every response the server wrote |
 | `cv_http_request_duration_seconds` | `host_role`, `route`, `method` | histogram, 5 ms to 10 s |
 | `cv_ready` | none | 1 when this pod's last `/ready` answered 200 (0 until the first probe) |
-| `cv_db_readiness_checks_total` | `outcome` (ok, error, not_configured) | the readiness `select 1` |
+| `cv_db_readiness_checks_total` | `outcome` (ok, error, not_configured) | `/ready` answers by database outcome (one `select 1` serves the answers of a 2 s window) |
 | `cv_metrics_dropped_samples_total` | `family` | samples refused at the 2000-series cap; non-zero means a label escaped its template |
 | `process_*`, `nodejs_*` | — | CPU, memory, file descriptors, heap, event-loop delay |
 

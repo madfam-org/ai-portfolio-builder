@@ -47,7 +47,9 @@ export function isSameOriginRequest(request: Request, env: Env): boolean {
   if (!origin) return request.headers.get('sec-fetch-site') === 'same-origin';
   if (origin === 'null') return false;
   try {
-    return new URL(origin).host.toLowerCase() === resolved.host;
+    // Scheme and host both: an `http://` Origin for an https-only host is not this origin.
+    const sent = new URL(origin);
+    return sent.protocol === new URL(resolved.origin).protocol && sent.host.toLowerCase() === resolved.host;
   } catch {
     return false;
   }
