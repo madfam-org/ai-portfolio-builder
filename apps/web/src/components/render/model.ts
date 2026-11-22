@@ -85,7 +85,8 @@ export interface DocModel {
 
 const ITEM_KINDS: readonly ItemKind[] = ['experience', 'education', 'skill', 'project', 'certification', 'achievement', 'language', 'publication', 'volunteering', 'award', 'link', 'recommendation'];
 const ARTIFACT_KINDS: readonly ArtifactKind[] = ['cv', 'portfolio', 'presentation', 'cover_letter'];
-const COMPACT: ReadonlySet<ItemKind> = new Set(['skill', 'language', 'link']);
+/** Skills, languages and links read best as one compact list (title and line only; lib/shared-page.ts reads it too). */
+export const COMPACT_KINDS: ReadonlySet<ItemKind> = new Set(['skill', 'language', 'link']);
 
 /** A profile item kind the renderers draw (an item of any other kind is skipped). */
 export function isItemKind(kind: string): kind is ItemKind {
@@ -327,7 +328,7 @@ export function buildDocModel(raw: RenderData): DocModel {
     if (!entry) continue;
     let section = sections.find((s) => s.kind === entry.kind);
     if (!section) {
-      section = { kind: entry.kind, heading: kindLabels[entry.kind], compact: COMPACT.has(entry.kind), entries: [] };
+      section = { kind: entry.kind, heading: kindLabels[entry.kind], compact: COMPACT_KINDS.has(entry.kind), entries: [] };
       sections.push(section);
     }
     section.entries.push(entry);

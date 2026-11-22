@@ -10,8 +10,9 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { register } from 'node:module';
 import { test } from 'node:test';
-import type { RenderData } from '../src/components/render/model.ts';
-import { sharedRenderData } from '../src/lib/shared-page.ts';
+import { COMPACT_KINDS, LETTER_KINDS, buildEntry, type Entry, type RenderData } from '../src/components/render/model.ts';
+import type { ItemKind } from '../src/lib/copy/app.ts';
+import { printedFields, projectItem, sharedRenderData, type Drawn } from '../src/lib/shared-page.ts';
 import { localizeRenderData } from '../src/components/render/localize.ts';
 import { CONTACT, data } from './render-fixtures.ts';
 import { MATRIX_SELECTION, renderMatrix } from './render-matrix.ts';
@@ -96,6 +97,26 @@ function withOwnSlides(d: RenderData): RenderData {
   return { ...extras, artifact: { ...extras.artifact, content: { ...(extras.artifact.content as object), slides } } };
 }
 
+/**
+ * Item fields the page does not print where the item is drawn: a field no renderer reads (on every item), the summary,
+ * highlights and links of a role the cover letter lists (e2), the summary and highlights of a skill in a compact list
+ * (s1), and a language's ISO code (l1: its name already arrives in the document's language).
+ */
+function withItemExtras(d: RenderData): RenderData {
+  const extra: Record<string, Record<string, unknown>> = {
+    e2: { summary: 'Resumen de Beta', highlights: ['Logro de Beta'], links: [{ label: 'Portafolio Beta', url: 'https://beta.example.test/ana' }] },
+    s1: { summary: 'Resumen de una habilidad', highlights: ['Viñeta de una habilidad'] },
+    l1: { code: 'en' },
+  };
+  return { ...d, items: d.items.map((i) => ({ ...i, content: { ...(i.content as object), notaPrivada: 'Nota privada del elemento', ...extra[i.id] } })) };
+}
+
+/** Slides of its own where a skill shares a slide with a role (a full entry there) and another of only compact kinds. */
+function withMixedSlides(d: RenderData): RenderData {
+  const slides = [{ title: 'Todo junto', itemIds: ['e1', 's1', 'x1'] }, { title: 'Habilidades', itemIds: ['s1', 's2', 'l1'] }];
+  return { ...d, artifact: { ...d.artifact, content: { ...(d.artifact.content as object), slides } } };
+}
+
 test('every kind × template × locale renders the same markup from the shared data as from the owner data (read-proof)', () => {
   const variants: [string, (d: RenderData) => RenderData][] = [
     ['plain', (d) => d],
@@ -107,6 +128,8 @@ test('every kind × template × locale renders the same markup from the shared d
     ['stored extras, translated, no own summary', (d) => translated(withStoredExtras(withoutOwnSummary(d)))],
     ['recommendation override, repeated reference', withRecommendation],
     ['slides of its own', withOwnSlides],
+    ['item extras', withItemExtras],
+    ['item extras, mixed slides, translated', (d) => translated(withMixedSlides(withItemExtras(d)))],
   ];
   let compared = 0;
   for (const [name, variant] of variants) {
@@ -118,7 +141,7 @@ test('every kind × template × locale renders the same markup from the shared d
       compared += 1;
     }
   }
-  assert.ok(compared >= 9 * 32, `cases compared: ${compared}`);
+  assert.ok(compared >= 11 * 32, `cases compared: ${compared}`);
 });
 
 test('without translations the shared data renders the committed render baseline', () => {
@@ -160,6 +183,71 @@ test('the content carries only what the renderer of its kind reads; only the ite
   assert.deepEqual(deck.items.map((i) => i.id), ['e1', 'p1']);
   const rec = sharedRenderData(withRecommendation(data('cv', { items: [] })));
   assert.deepEqual(rec.artifact.content, { items: [{ itemId: 'r1' }, { itemId: 'e2' }], blocks: [] }, 'a recommendation is never overridden');
+});
+
+test('each carried item carries only the fields its drawing prints', () => {
+  const shared = (kind: string, more: (d: RenderData) => RenderData = (d) => d) => sharedRenderData(more(withItemExtras(data(kind, { ...MATRIX_SELECTION }, { contact: CONTACT }))));
+  const fields = (d: ReturnType<typeof sharedRenderData>, id: string) => Object.keys((d.items.find((i) => i.id === id)?.content ?? {}) as object);
+  for (const kind of ['cv', 'portfolio', 'presentation', 'cover_letter']) {
+    const d = shared(kind);
+    for (const item of d.items) assert.equal('notaPrivada' in (item.content as object), false, `${kind}/${item.id}: a field no renderer reads`);
+    assert.equal(JSON.stringify(d).includes('Nota privada del elemento'), false, kind);
+    assert.deepEqual(fields(d, 'l1'), kind === 'cover_letter' ? [] : ['name', 'level'], `${kind}: a language carries its name, not its code`);
+  }
+  // The letter lists e1, e2 and p1 by title, organisation and dates: no summary, highlights or links; e1's title is its
+  // per-job title, so its stored role is not carried either.
+  const letter = shared('cover_letter');
+  assert.deepEqual(fields(letter, 'e1'), ['organization', 'employmentType', 'location', 'startDate', 'current']);
+  assert.deepEqual(fields(letter, 'e2'), ['role', 'organization', 'startDate', 'endDate']);
+  assert.deepEqual(fields(letter, 'p1'), ['name']);
+  for (const text of ['Resumen de Beta', 'Logro de Beta', 'beta.example.test', 'Original summary', 'Original highlight', 'example.test/code']) assert.equal(JSON.stringify(letter).includes(text), false, `letter: ${text}`);
+  // A CV prints e2 in full; e1's highlights are replaced by its per-job highlights; skills are a compact list.
+  const cv = shared('cv');
+  assert.deepEqual(fields(cv, 'e1'), ['organization', 'employmentType', 'location', 'startDate', 'current', 'summary']);
+  assert.deepEqual(fields(cv, 'e2'), ['role', 'organization', 'startDate', 'endDate', 'summary', 'highlights', 'links']);
+  assert.deepEqual(fields(cv, 's1'), ['name', 'level', 'years']);
+  assert.deepEqual(fields(cv, 'p1'), ['name', 'url', 'links'], 'links are carried as stored; the renderer drops what is not http(s)');
+  assert.deepEqual(fields(cv, 'x1'), ['label', 'url']);
+  // On a slide shared with a role a skill is a full entry, so its summary and highlights are printed and carried.
+  assert.deepEqual(fields(shared('presentation', withMixedSlides), 's1'), ['name', 'level', 'years', 'summary', 'highlights']);
+  assert.deepEqual(fields(shared('presentation'), 's1'), ['name', 'level', 'years'], 'without slides of its own, skills are a compact slide');
+});
+
+test('every item kind builds the same entry from its printed fields as from everything stored, however it is drawn', () => {
+  const KINDS: ItemKind[] = ['experience', 'education', 'skill', 'project', 'certification', 'achievement', 'language', 'publication', 'volunteering', 'award', 'link', 'recommendation'];
+  const sink = (current: boolean) => ({
+    role: 'Rol', organization: 'Org', employmentType: 'contract', location: 'Lugar', startDate: '2020-01', endDate: '2021-02', current,
+    degree: 'Grado', field: 'Campo', institution: 'Escuela', name: 'Nombre', level: 'advanced', years: 3, issuer: 'Emisor', date: '2022-03-04',
+    expiresOn: '2025', credentialId: 'ID-1', title: 'Título', publisher: 'Editorial', label: 'Etiqueta', url: 'https://example.test/u',
+    links: [{ label: 'Enlace', url: 'https://example.test/l' }], summary: 'Resumen', highlights: ['Viñeta'], text: 'Palabras', relationship: 'Colega',
+    otroCampo: 'no se imprime',
+  });
+  const OVERRIDES = [undefined, { title: 'Otro título' }, { summary: 'Otro resumen' }, { highlights: [] }, { title: 'T', summary: 'S', highlights: ['H'] }];
+  // What each drawing prints of an entry (components/render/parts.tsx EntryView, CompactList; CoverLetterView).
+  const shown = (e: Entry, drawn: Drawn) =>
+    drawn === 'entry' ? e : drawn === 'compact' ? { title: e.title, meta: e.meta, links: e.kind === 'link' ? e.links : [] } : { title: e.title, subtitle: e.subtitle, meta: e.meta, dates: e.dates };
+  let checked = 0;
+  for (const kind of KINDS) {
+    const drawings: Drawn[] = ['entry', ...(COMPACT_KINDS.has(kind) ? (['compact'] as const) : []), ...(LETTER_KINDS.has(kind) ? (['letter'] as const) : [])];
+    for (const drawn of drawings) {
+      // A recommendation is never overridden; a cover letter's override carries its title only (projectContent).
+      const overrides = kind === 'recommendation' ? [undefined] : drawn === 'letter' ? [undefined, { title: 'Otro título' }] : OVERRIDES;
+      for (const override of overrides) {
+        for (const current of [true, false]) {
+          for (const locale of ['es', 'en'] as const) {
+            const content = sink(current);
+            const projected = projectItem(kind, drawn, override, content);
+            assert.equal('otroCampo' in projected, false);
+            assert.deepEqual(Object.keys(projected).sort(), [...printedFields(kind, drawn, override)].filter((f) => f in content).sort());
+            const label = `${kind}/${drawn}/${JSON.stringify(override)}/${current}/${locale}`;
+            assert.deepEqual(shown(buildEntry('i', kind, projected, override, locale), drawn), shown(buildEntry('i', kind, content, override, locale), drawn), label);
+            checked += 1;
+          }
+        }
+      }
+    }
+  }
+  assert.ok(checked >= 200, `combinations checked: ${checked}`);
 });
 
 test('the title is never carried, even when the input has one', () => {

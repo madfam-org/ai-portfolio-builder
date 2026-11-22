@@ -79,7 +79,7 @@ jobs:
           pass=$(grep -E ' pass [0-9]+$' "$out" | awk '{print $NF}' | tail -1)
           fail=$(grep -E ' fail [0-9]+$' "$out" | awk '{print $NF}' | tail -1)
           skipped=$(grep -E ' skipped [0-9]+$' "$out" | awk '{print $NF}' | tail -1)
-          if [ -z "$pass" ] || [ "$pass" -lt 436 ] || [ "$fail" != 0 ] || [ "${skipped:-0}" != 0 ]; then echo "unit: tests pass=${pass:-none} fail=${fail:-none} skipped=${skipped:-none} FAIL (expected >= 436 passing, none failed or skipped)"; exit 1; fi
+          if [ -z "$pass" ] || [ "$pass" -lt 438 ] || [ "$fail" != 0 ] || [ "${skipped:-0}" != 0 ]; then echo "unit: tests pass=${pass:-none} fail=${fail:-none} skipped=${skipped:-none} FAIL (expected >= 438 passing, none failed or skipped)"; exit 1; fi
           echo "unit: tests pass=$pass fail=$fail OK"
       - name: Next.js production build (standalone output)
         run: pnpm build
