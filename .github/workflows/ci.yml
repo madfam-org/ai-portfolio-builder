@@ -184,7 +184,7 @@ jobs:
           cat "$out"
           if [ "$status" != 0 ]; then echo "e2e: FAIL exit=$status"; exit "$status"; fi
           passed=$(grep -Eo '^ *[0-9]+ passed' "$out" | grep -Eo '[0-9]+' | tail -1)
-          if grep -Eq '^ *[0-9]+ (failed|flaky|skipped)' "$out" || [ -z "$passed" ] || [ "$passed" -lt 104 ]; then echo "e2e: passed=${passed:-none} FAIL (expected >= 104 passing, none failed, flaky or skipped)"; exit 1; fi
+          if grep -Eq '^ *[0-9]+ (failed|flaky|skipped)' "$out" || [ -z "$passed" ] || [ "$passed" -lt 105 ]; then echo "e2e: passed=${passed:-none} FAIL (expected >= 105 passing, none failed, flaky or skipped)"; exit 1; fi
           echo "e2e: passed=$passed OK"
       # A failed run keeps its evidence: Playwright retains a trace per failed test (playwright.config.ts). Synthetic
       # personas and data only; seven days.

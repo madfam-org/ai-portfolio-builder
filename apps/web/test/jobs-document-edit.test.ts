@@ -1,10 +1,11 @@
 /**
  * Editing a document in place (components/jobs/document-edit.ts): stored content ⇄ draft, every result valid for
- * W2's own zod per kind, the parts the editor does not show kept as they were, a letter's defaults, and the limits.
+ * W2's own zod per kind, the parts the editor does not show kept as they were, a letter's defaults, the limits, and
+ * entries whose profile item was deleted (dropped from the draft and from what is saved, and counted as a change).
  */
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { contentFromDraft, draftChanged, draftFromContent } from '../src/components/jobs/document-edit.ts';
+import { contentFromDraft, draftChanged, draftFromContent, missingItemIds } from '../src/components/jobs/document-edit.ts';
 import { LIMITS } from '../src/components/jobs/tailoring.ts';
 import { ARTIFACT_CONTENT } from '../src/server/api/validation.ts';
 
@@ -88,4 +89,41 @@ test('limits: the tailoring ones, reported per field and per item; nothing is bu
   );
   const atLimit = contentFromDraft('cover_letter', stored, { selection: [], summary: long(LIMITS.summary), greeting: long(LIMITS.greeting), closing: long(LIMITS.closing) }, LETTER);
   assert.ok(atLimit.ok && ARTIFACT_CONTENT.cover_letter.safeParse(atLimit.content).success);
+});
+
+test('an entry whose profile item was deleted: left out of the draft, counted as a change, and not saved (nor its slide reference)', () => {
+  const GONE = '44444444-4444-4444-8444-444444444444';
+  const known = new Set([I1, I2]);
+  const stored = {
+    summary: 'Resumen',
+    items: [{ itemId: I1 }, { itemId: GONE, override: { title: 'Ya no existe' } }, { itemId: I2 }],
+    blocks: [],
+    showContact: false,
+    slides: [{ title: 'Por qué yo', itemIds: [GONE, I2] }, { title: 'Solo texto', body: 'Hola', itemIds: [] }],
+  };
+  assert.deepEqual(missingItemIds(stored, known), [GONE], 'named once, from the entries and the slides');
+  const draft = draftFromContent(stored, known);
+  assert.deepEqual(draft.selection.map((e) => e.itemId), [I1, I2]);
+  assert.equal(draftChanged(stored, draft, known), true, 'the pending removal enables saving');
+  assert.equal(draftChanged(stored, draftFromContent(stored)), false, 'without the profile known, nothing is dropped');
+
+  // The person edits only the summary, then saves.
+  draft.summary = 'Nuevo resumen';
+  const out = contentFromDraft('presentation', stored, draft, LETTER, known);
+  assert.ok(out.ok);
+  const parsed = ARTIFACT_CONTENT.presentation.parse(out.content) as Record<string, unknown>;
+  assert.deepEqual(parsed.items, [{ itemId: I1 }, { itemId: I2 }]);
+  assert.deepEqual(parsed.slides, [{ title: 'Por qué yo', itemIds: [I2] }, { title: 'Solo texto', body: 'Hola', itemIds: [] }], 'the slides stay, without the reference');
+  assert.equal(parsed.summary, 'Nuevo resumen');
+  assert.deepEqual(missingItemIds(out.content, known), [], 'the saved content names only existing items');
+  assert.equal(draftChanged(out.content, draftFromContent(out.content, known), known), false, 'after saving, nothing is pending');
+
+  // A draft still holding the entry (built before the profile loaded) is cleaned on the way out too.
+  const early = contentFromDraft('cv', stored, draftFromContent(stored), LETTER, known);
+  assert.ok(early.ok);
+  assert.deepEqual((early.content.items as { itemId: string }[]).map((i) => i.itemId), [I1, I2]);
+
+  // Only slide references missing: still a change to save.
+  const slidesOnly = { items: [{ itemId: I1 }], blocks: [], showContact: false, slides: [{ title: 'S', itemIds: [GONE] }] };
+  assert.equal(draftChanged(slidesOnly, draftFromContent(slidesOnly, known), known), true);
 });

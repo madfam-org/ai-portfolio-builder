@@ -1,6 +1,6 @@
 # ai-portfolio-builder (MADFAM CV) — agent operating guide
 
-> Last Updated: 2026-11-16
+> Last Updated: 2026-11-21
 
 <!-- MADFAM-AGENTS-CANONICAL v1 -->
 
@@ -159,7 +159,7 @@ whatever its base** (a PR stacked on another PR's branch is checked too; since 2
 `|| true` masks. `ci.yml`: `agent-docs` (required files and markers), `web` (frozen install, lint,
 typecheck, unit tests, build, standalone smoke), `pg` (the real-Postgres suite on a `postgres:16-alpine`
 service container, as the `cv_app` role; fails on fewer than 39 passing tests), `e2e` (Playwright on GitHub-hosted runners:
-`npx playwright install --with-deps chromium`, the built server, its own Postgres service; fails on fewer than 104
+`npx playwright install --with-deps chromium`, the built server, its own Postgres service; fails on fewer than 105
 passing specs or any failed, flaky or skipped; raise the floor when a PR adds specs; a failed run uploads the
 Playwright traces as `e2e-traces`, kept 7 days), `guards` (file size, forbidden-domain grep),
 `secrets` (gitleaks over every commit after the legacy base `7959f356`, plus the checked-out tree;
@@ -385,6 +385,9 @@ posting. Rules that now hold ([`docs/PRODUCT.md`](docs/PRODUCT.md) has the produ
   when left empty, are the texts shown as the fields' placeholders (`letterDefaults`): nothing is added unseen.
 - **Documents are editable in place**; an edit replaces only what the editor shows (blocks, a presentation's own
   slides, `showContact` and a portfolio's `intro` are kept). Editing a published document changes its page at once.
+  An entry or slide reference whose profile item was deleted is announced in the editor and removed on the next save
+  (it counts as an unsaved change); the server stays strict (`assertOwnItems`, 422 `unknown_item_ids`, whose toast
+  asks to reload). `test/jobs-document-edit.test.ts`, `e2e/documents.spec.ts`.
 - **The print estimate must equal the PDF**: `e2e/templates.spec.ts` compares «Aprox. N páginas» with Chromium's PDF on
   Carta and A4 for every CV template; a renderer or print-CSS change that breaks it is a regression.
 - **Render baseline**: markup changes rewrite `test/fixtures/bilingual/render-baseline.json` with
