@@ -1,6 +1,6 @@
 /**
  * Editing a document in place (`/documentos/:id`, critique #7): its selection of profile items (which, in which order,
- * with which per-document text), its summary and, for a cover letter, its greeting and closing — the same choices
+ * with which per-document text), its summary and, for a cover letter, its greeting, its own body and its closing — the same choices
  * «Adaptar al empleo» makes when the document is created, now changeable afterwards without creating it again.
  *
  * Rules:
@@ -9,7 +9,8 @@
  * - The checks and limits are the tailoring ones (`tailoring.ts` LIMITS, `cleanOverride`), which mirror W2's zod; the
  *   unit test validates the result against `ARTIFACT_CONTENT` of each kind.
  * - A cover letter's empty greeting or closing gets the text shown as the field's placeholder (`letterDefaults`), the
- *   same rule as when it was created.
+ *   same rule as when it was created. Its body is stored only when written: an empty body is removed, and the letter
+ *   then opens with the summary, as letters did before they had a body (nothing is filled in for the person).
  * - Nothing here writes a profile item: per-document text lives only in the document.
  * - An entry (or a slide's item reference) whose profile item no longer exists cannot be shown, so it cannot be kept:
  *   given the ids of the person's current items (`known`), the draft leaves it out, the editor says so before saving
@@ -19,19 +20,21 @@
  */
 import type { ArtifactKind } from '../../lib/copy/app.ts';
 import type { ContentLocale } from '../../lib/client/types.ts';
-import { LIMITS, cleanOverride, letterDefaults, type OverrideDraft, type SelectionEntry } from './tailoring.ts';
+import { LIMITS, cleanOverride, letterBodyText, letterDefaults, type OverrideDraft, type SelectionEntry } from './tailoring.ts';
 
-/** What the editor holds: the selection with drafts of its per-document text, the summary, the letter's lines. */
+/** What the editor holds: the selection with drafts of its per-document text, the summary, the letter's texts. */
 export interface DocumentDraft {
   selection: SelectionEntry[];
   summary: string;
   greeting: string;
+  /** A cover letter's own body ('' for other kinds, and for a letter without one). */
+  body: string;
   closing: string;
 }
 
 export type DocumentEditProblem =
   | { scope: 'item'; itemId: string; field: keyof OverrideDraft; code: 'tooLong' | 'tooMany' }
-  | { scope: 'form'; field: 'items' | 'summary' | 'greeting' | 'closing'; code: 'tooLong' | 'tooMany' };
+  | { scope: 'form'; field: 'items' | 'summary' | 'greeting' | 'body' | 'closing'; code: 'tooLong' | 'tooMany' };
 
 const rec = (v: unknown): Record<string, unknown> => (v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : {});
 const str = (v: unknown): string => (typeof v === 'string' ? v : '');
@@ -64,7 +67,7 @@ export function draftFromContent(raw: unknown, known?: KnownItems): DocumentDraf
       const highlights = Array.isArray(o.highlights) ? o.highlights.filter((h): h is string => typeof h === 'string') : [];
       return { itemId: i.itemId as string, override: { title: str(o.title), summary: str(o.summary), highlights: highlights.join('\n') } };
     });
-  return { selection, summary: str(c.summary), greeting: str(c.greeting), closing: str(c.closing) };
+  return { selection, summary: str(c.summary), greeting: str(c.greeting), body: str(c.body), closing: str(c.closing) };
 }
 
 /**
@@ -93,6 +96,7 @@ export function contentFromDraft(
   if (draft.summary.trim().length > LIMITS.summary) problems.push({ scope: 'form', field: 'summary', code: 'tooLong' });
   if (kind === 'cover_letter') {
     if (draft.greeting.trim().length > LIMITS.greeting) problems.push({ scope: 'form', field: 'greeting', code: 'tooLong' });
+    if (letterBodyText(draft.body).length > LIMITS.body) problems.push({ scope: 'form', field: 'body', code: 'tooLong' });
     if (draft.closing.trim().length > LIMITS.closing) problems.push({ scope: 'form', field: 'closing', code: 'tooLong' });
   }
   for (const e of draft.selection) {
@@ -105,7 +109,7 @@ export function contentFromDraft(
   }
   if (problems.length > 0) return { ok: false, problems };
 
-  const { summary: _summary, greeting: _greeting, closing: _closing, items: _items, ...kept } = rec(raw);
+  const { summary: _summary, greeting: _greeting, body: _body, closing: _closing, items: _items, ...kept } = rec(raw);
   const items = draft.selection.map((e) => {
     const override = cleanOverride(e.override);
     return override ? { itemId: e.itemId, override } : { itemId: e.itemId };
@@ -128,6 +132,8 @@ export function contentFromDraft(
   if (kind === 'cover_letter') {
     const fallback = letterDefaults(letter.company, letter.locale);
     content.greeting = draft.greeting.trim() || fallback.greeting;
+    const body = letterBodyText(draft.body);
+    if (body) content.body = body;
     content.closing = draft.closing.trim() || fallback.closing;
   }
   return { ok: true, content };

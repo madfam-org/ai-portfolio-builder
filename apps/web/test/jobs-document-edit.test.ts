@@ -45,7 +45,7 @@ test('edits replace the selection, its text and the summary; blocks, slides, int
   assert.deepEqual(parsed.blocks, [{ body: 'B' }]);
   assert.deepEqual(parsed.slides, [{ title: 'Mía', itemIds: [I1] }], 'hand-made slides untouched');
   assert.equal(parsed.showContact, true);
-  const portfolio = contentFromDraft('portfolio', { items: [], blocks: [], showContact: false, intro: 'Hola' }, { selection: [], summary: '', greeting: '', closing: '' }, LETTER);
+  const portfolio = contentFromDraft('portfolio', { items: [], blocks: [], showContact: false, intro: 'Hola' }, { selection: [], summary: '', greeting: '', body: '', closing: '' }, LETTER);
   assert.ok(portfolio.ok);
   assert.equal(ARTIFACT_CONTENT.portfolio.parse(portfolio.content).intro, 'Hola');
   assert.equal('summary' in portfolio.content, false, 'an emptied summary is removed (the profile summary applies)');
@@ -64,6 +64,32 @@ test('a cover letter keeps its lines, and an emptied greeting or closing gets th
   assert.ok(cv.ok && !('greeting' in cv.content) && !('closing' in cv.content), 'only a letter carries them');
 });
 
+test('a cover letter body: read into the draft, edited, kept when untouched, removed when emptied; only a letter carries it', () => {
+  const stored = { items: [{ itemId: I1 }], blocks: [], showContact: false, greeting: 'Hola equipo:', body: 'Primer párrafo.\n\nSegundo párrafo.', closing: 'Saludos,' };
+  const draft = draftFromContent(stored);
+  assert.equal(draft.body, 'Primer párrafo.\n\nSegundo párrafo.');
+  assert.equal(draftChanged(stored, draft), false);
+  const same = contentFromDraft('cover_letter', stored, draft, LETTER);
+  assert.ok(same.ok);
+  assert.deepEqual(ARTIFACT_CONTENT.cover_letter.parse(same.content), stored, 'an untouched body round-trips');
+
+  draft.body = '  Otro texto.\r\n\r\nCon dos párrafos.  ';
+  assert.equal(draftChanged(stored, draft), true, 'the unsaved-changes guard sees a body edit');
+  const edited = contentFromDraft('cover_letter', stored, draft, LETTER);
+  assert.ok(edited.ok);
+  assert.equal((ARTIFACT_CONTENT.cover_letter.parse(edited.content) as Record<string, unknown>).body, 'Otro texto.\n\nCon dos párrafos.', 'trimmed, line endings as \\n');
+
+  draft.body = '   ';
+  const emptied = contentFromDraft('cover_letter', stored, draft, LETTER);
+  assert.ok(emptied.ok);
+  assert.equal('body' in emptied.content, false, 'an emptied body is removed: the letter opens with the summary again');
+  assert.ok(ARTIFACT_CONTENT.cover_letter.safeParse(emptied.content).success);
+
+  const cv = contentFromDraft('cv', { items: [], blocks: [], showContact: false }, { ...draftFromContent(stored), body: 'Texto' }, LETTER);
+  assert.ok(cv.ok && !('body' in cv.content), 'only a letter carries a body');
+  assert.equal(draftFromContent({ items: [] }).body, '', 'a letter without a body: an empty field');
+});
+
 test('limits: the tailoring ones, reported per field and per item; nothing is built when any is broken', () => {
   const stored = { items: [], blocks: [], showContact: false };
   const long = (n: number) => 'x'.repeat(n);
@@ -78,6 +104,7 @@ test('limits: the tailoring ones, reported per field and per item; nothing is bu
       ],
       summary: long(LIMITS.summary + 1),
       greeting: long(LIMITS.greeting + 1),
+      body: long(LIMITS.body + 1),
       closing: long(LIMITS.closing + 1),
     },
     LETTER,
@@ -85,9 +112,9 @@ test('limits: the tailoring ones, reported per field and per item; nothing is bu
   assert.ok(!bad.ok);
   assert.deepEqual(
     bad.problems.map((p) => (p.scope === 'form' ? `form:${p.field}:${p.code}` : `${p.itemId.slice(0, 1)}:${p.field}:${p.code}`)),
-    ['form:summary:tooLong', 'form:greeting:tooLong', 'form:closing:tooLong', '1:title:tooLong', '2:summary:tooLong', '2:highlights:tooMany', '3:highlights:tooLong'],
+    ['form:summary:tooLong', 'form:greeting:tooLong', 'form:body:tooLong', 'form:closing:tooLong', '1:title:tooLong', '2:summary:tooLong', '2:highlights:tooMany', '3:highlights:tooLong'],
   );
-  const atLimit = contentFromDraft('cover_letter', stored, { selection: [], summary: long(LIMITS.summary), greeting: long(LIMITS.greeting), closing: long(LIMITS.closing) }, LETTER);
+  const atLimit = contentFromDraft('cover_letter', stored, { selection: [], summary: long(LIMITS.summary), greeting: long(LIMITS.greeting), body: long(LIMITS.body), closing: long(LIMITS.closing) }, LETTER);
   assert.ok(atLimit.ok && ARTIFACT_CONTENT.cover_letter.safeParse(atLimit.content).success);
 });
 

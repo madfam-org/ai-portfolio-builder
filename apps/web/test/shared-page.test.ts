@@ -11,6 +11,7 @@ import { register } from 'node:module';
 import { test } from 'node:test';
 import type { RenderData } from '../src/components/render/model.ts';
 import { sharedRenderData } from '../src/lib/shared-page.ts';
+import { localizeRenderData } from '../src/components/render/localize.ts';
 import { CONTACT, data } from './render-fixtures.ts';
 import { renderMatrix } from './render-matrix.ts';
 
@@ -93,6 +94,33 @@ test('a document with its own summary does not carry the profile summary, nor it
   const blank = sharedRenderData(data('cv', { summary: '   ', items: [] }));
   assert.equal(blank.profile.summary, 'Resumen del perfil', 'a blank summary of its own prints the profile summary');
   assert.equal(sharedRenderData(data('cv', { items: [] })).profile.summary, 'Resumen del perfil');
+});
+
+test('a cover letter with a body of its own carries the body, but neither summary; a body reaches a shared page only in a letter', () => {
+  const letter = sharedRenderData(translated(data('cover_letter', { summary: 'Resumen propio', body: 'Cuerpo propio de la carta.', items: [] }, { locale: 'en' })));
+  assert.equal((letter.artifact.content as Record<string, unknown>).body, 'Cuerpo propio de la carta.');
+  assert.equal('summary' in (letter.artifact.content as object), false, 'the document summary is not printed under a body, so it is not carried');
+  assert.equal(letter.profile.summary, '');
+  for (const notPrinted of ['Resumen propio', 'Resumen del perfil', 'Profile summary (en)']) assert.equal(JSON.stringify(letter).includes(notPrinted), false, `not carried: ${notPrinted}`);
+  // Nor is the profile summary's missing English counted in «Faltan N textos en inglés»: the letter does not print it.
+  const untranslated = (d: RenderData): RenderData => ({ ...d, profile: { ...d.profile, locale: 'es-MX', translations: { en: { headline: 'Advisor' } } } });
+  const headerMissing = (content: Record<string, unknown>) => localizeRenderData(untranslated(data('cover_letter', content, { locale: 'en' }))).missing.find((m) => m.itemId === null)?.fields ?? [];
+  assert.deepEqual(headerMissing({ body: 'Cuerpo propio.', items: [] }), []);
+  assert.deepEqual(headerMissing({ items: [] }), ['summary'], 'without a body the letter prints the profile summary, so its English is missing');
+
+  const noBody = sharedRenderData(data('cover_letter', { summary: 'Resumen propio', body: '  ', items: [] }));
+  assert.equal((noBody.artifact.content as Record<string, unknown>).summary, 'Resumen propio', 'a blank body: the letter prints its summary, as before');
+  assert.equal('body' in (noBody.artifact.content as object), false, 'and a blank body is not carried');
+
+  // Content the API would refuse (a body outside a letter) still never reaches a shared page.
+  for (const kind of ['cv', 'portfolio', 'presentation']) {
+    const shared = sharedRenderData(data(kind, { summary: 'Resumen propio', body: 'Cuerpo que no se imprime', items: [] }));
+    assert.equal(JSON.stringify(shared).includes('Cuerpo que no se imprime'), false, kind);
+    assert.equal((shared.artifact.content as Record<string, unknown>).summary, 'Resumen propio', `${kind}: its summary stays`);
+  }
+  // Nothing to drop: the content is passed on as it is.
+  const plain = data('cover_letter', { summary: 'Resumen propio', items: [] });
+  assert.equal(sharedRenderData(plain).artifact.content, plain.artifact.content);
 });
 
 test('text arrives in the document language: translations replace the primary text, untranslated fields keep it, nothing else is carried', () => {

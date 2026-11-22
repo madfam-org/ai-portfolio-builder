@@ -5,7 +5,8 @@ import s from './render.module.css';
 
 /**
  * `cover_letter/base`: a letter. The sender (name, headline, the contact line only when shown), the greeting, the
- * opening (the artifact's summary), the text blocks, a SHORT «relevant experience» list (the first roles or projects
+ * letter's own body when it has one (`content.body`; otherwise the opening is the artifact's summary, as before the
+ * body existed, so a letter without one renders the same markup), the text blocks, a SHORT «relevant experience» list (the first roles or projects
  * of the selection, at most `LETTER_ENTRIES`, each as role, organisation and dates: the CV carries the details;
  * skills, languages and recommendations stay in the CV), the closing and the name as the signature. Nothing is added
  * unseen: no date, no recipient; the greeting and closing the person left empty were shown as the fields'
@@ -30,7 +31,13 @@ export function CoverLetterView({ model }: { model: DocModel }) {
       </header>
       <div className={s.letterBody} data-part="letter-body">
         {model.greeting ? <p className={s.greeting}>{model.greeting}</p> : null}
-        <Paragraphs text={model.summary} />
+        {model.body ? (
+          <div data-part="letter-text">
+            <Paragraphs text={model.body} />
+          </div>
+        ) : (
+          <Paragraphs text={model.summary} />
+        )}
         {model.blocks.map((b, i) => (
           <section key={`b${i}`} className={s.letterBlock} data-block={i}>
             {b.heading ? <h2 className={s.sectionTitle}>{b.heading}</h2> : null}

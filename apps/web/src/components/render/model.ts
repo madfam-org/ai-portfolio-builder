@@ -78,6 +78,8 @@ export interface DocModel {
   blocks: { heading: string | null; body: string }[];
   slides: Slide[];
   greeting: string | null;
+  /** A cover letter's own body (`content.body`), or null: then the letter prints `summary`, as it always did. */
+  body: string | null;
   closing: string | null;
 }
 
@@ -118,6 +120,22 @@ export function readContent(raw: unknown): ArtifactContent {
   const blocks = (Array.isArray(c.blocks) ? c.blocks : []).map(rec).filter((b) => str(b.body) || str(b.heading)).map((b) => ({ heading: str(b.heading) ?? undefined, body: str(b.body) ?? '' }));
   const slides = (Array.isArray(c.slides) ? c.slides : []).map(rec).map((s) => ({ title: str(s.title) ?? '', body: str(s.body) ?? undefined, itemIds: strings(s.itemIds) }));
   return { ...c, summary: str(c.summary) ?? undefined, items, blocks, showContact: c.showContact === true, slides };
+}
+
+/**
+ * A cover letter's own body as stored, or null when absent or blank. Paragraphs are separated by a blank line: line
+ * endings become `\n`, a line of spaces counts as blank, runs of blank lines become one, each line loses its trailing
+ * spaces (what the person typed is otherwise kept as written).
+ */
+export function letterBody(raw: unknown): string | null {
+  const text = str(raw);
+  if (!text) return null;
+  return text
+    .replace(/\r\n?/g, '\n')
+    .split('\n')
+    .map((line) => line.trimEnd())
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n');
 }
 
 /** An http(s) link, or null for anything else (javascript:, data:, mailto:, malformed). */
@@ -343,6 +361,7 @@ export function buildDocModel(raw: RenderData): DocModel {
     blocks,
     slides,
     greeting: str(c.greeting),
+    body: artifactKind(data.artifact.kind) === 'cover_letter' ? letterBody(c.body) : null,
     closing: str(c.closing),
   };
 }

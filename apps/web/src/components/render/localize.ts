@@ -5,7 +5,8 @@
  * - a document in the profile's primary language reads the stored text as it is (no translation is looked at);
  * - a document in the other language reads each translated field, and falls back to the primary text where there is
  *   none: that field is returned in `missing` (the preview and the tailoring workspace flag it; nothing is printed);
- * - per-job overrides win over both, and a field an override replaces is never reported missing;
+ * - per-job overrides win over both, and a field an override replaces is never reported missing (nor the profile
+ *   summary of a cover letter with a body of its own, which does not print it);
  * - a language item with an ISO 639 code prints the code's name in the document's language.
  *
  * Without translations and codes the returned data is the input itself (same objects), so the markup is unchanged.
@@ -58,7 +59,8 @@ export function localizeRenderData(data: RenderData): Localized {
     data.profile.translations,
     primary,
     target,
-    nonBlank(content.summary),
+    // The summary is not printed when the document has its own, nor in a cover letter with a body of its own.
+    nonBlank(content.summary) || (data.artifact.kind === 'cover_letter' && nonBlank(content.body)),
   );
   if (head.missing.length) missing.push({ itemId: null, kind: 'header', title: '', fields: head.missing });
   let profile = data.profile;

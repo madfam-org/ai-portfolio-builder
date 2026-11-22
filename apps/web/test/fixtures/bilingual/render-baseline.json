@@ -1,5 +1,5 @@
 {
-  "source": "main@f1ca3530 (before W7-B4); presentation title slide re-baselined 2026-11-15 (it heads with the person, never the private title); contact links show a short path and the cover letter lists roles only, re-baselined 2026-11-16",
+  "source": "main@f1ca3530 (before W7-B4); presentation title slide re-baselined 2026-11-15 (it heads with the person, never the private title); contact links show a short path and the cover letter lists roles only, re-baselined 2026-11-16; cover letters with a body of their own (…/body) added 2026-11-21, every earlier case unchanged",
   "hashes": {
     "cv/base/es-MX/contact": "a35cb059bf23b82a3786e2cb0bad4d08a7558f6e68700f72542c9109f30e601b",
     "cv/base/es-MX/nocontact": "08864f68f62cd12fdc3736a28a0b82d69ad89f1a17b191b00cce1cbcca4e3e72",
@@ -30,12 +30,20 @@
     "presentation/contraste/en/contact": "2da296f8b467f06ea7a163e8826384dfad47782f3177a51c8f00eb52aa61b027",
     "presentation/contraste/en/nocontact": "e72288f8c3b11420af7349157b3a8e7154a8b21ba32e79f69375570115dbd39b",
     "cover_letter/base/es-MX/contact": "a2e057a46c7cced2a428f034b24b3d23b21d2c2cb4915b50ec552d9f84d85de3",
+    "cover_letter/base/es-MX/contact/body": "2413f3c7690ed1fa1ef84eb568b90dbcc0e7d76706c13bbb2d9aa4b9a6bb8a52",
     "cover_letter/base/es-MX/nocontact": "6c372309d3ab1e2450b58a087fa695b360abbd898b16756c54f127bcccd60561",
+    "cover_letter/base/es-MX/nocontact/body": "45ec5844ec0c5c8b3d47699bafe9f318c624c3ec8f324c9976d5fd0b999bb2a8",
     "cover_letter/base/en/contact": "c751f868dbe4f6e208b02eae9f7510146fd5ba9fff0bcfd5d03698fa3d2a510a",
+    "cover_letter/base/en/contact/body": "e42052cf1bf4bff82533a3e816137833285d8b11dad0e97f981735aa47b44bb5",
     "cover_letter/base/en/nocontact": "4901ba50f6b97d0481c2719ac64577457fe579e3cfc07bf0ba26157124054ad9",
+    "cover_letter/base/en/nocontact/body": "a44489f0ee74cd078db798e94d34770be6d86f5f1539c01daaea00ce5be15006",
     "cover_letter/formal/es-MX/contact": "0b55c5396240aa9ebf5be91b5aa6bd909850ef26050d2540b831c6db501ef824",
+    "cover_letter/formal/es-MX/contact/body": "5eb4fdbecde9320c23c89d07468c2a3e58c43d61ad1f112f96a3b4bb2e0685c0",
     "cover_letter/formal/es-MX/nocontact": "5549f3fd51fbf2b0ffab2bdcabfa512a1073c9412100d1a53aef878d1edc6c0d",
+    "cover_letter/formal/es-MX/nocontact/body": "6fbeaf31166670561e37357e91bfcd1cdc681496b3d901e27096d854a151d010",
     "cover_letter/formal/en/contact": "c8b5ff79178297cac6486d8a1880172043a40fe67a5094f54160b68fef87fb64",
-    "cover_letter/formal/en/nocontact": "61a239b0f7b5a8a1df97770dc183ba2454df50b14862db6422d4a83a82ccb4f8"
+    "cover_letter/formal/en/contact/body": "e53b45060f9b86ded84fb9338f817551920ca0974db58162b90cf2151a670f8f",
+    "cover_letter/formal/en/nocontact": "61a239b0f7b5a8a1df97770dc183ba2454df50b14862db6422d4a83a82ccb4f8",
+    "cover_letter/formal/en/nocontact/body": "8f959c161fe7266c8f26e30cd35aaa88b83ec713b9b2699bf113824e12636d65"
   }
 }

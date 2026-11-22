@@ -25,7 +25,7 @@ import {
   type SelectionEntry,
   type TailorInput,
 } from '../src/components/jobs/tailoring.ts';
-import { ARTIFACT_CONTENT, artifactSetBody } from '../src/server/api/validation.ts';
+import { ARTIFACT_CONTENT, LETTER_BODY_MAX, artifactSetBody } from '../src/server/api/validation.ts';
 import { ARTIFACT_KINDS } from '../src/server/db/schema.ts';
 import { ARTIFACT_SET_MAX } from '../src/server/db/repository.ts';
 import { APP_COPY } from '../src/lib/copy/app.ts';
@@ -121,6 +121,26 @@ test('the cover letter is opt-in and carries its greeting and closing; an empty 
   assert.ok(noSummary.ok && !('summary' in (noSummary.body.artifacts[0]!.content as object)));
 });
 
+test('a cover letter body: carried by the letter only, as typed (trimmed, \\n line endings); empty sends none', () => {
+  const built = buildArtifactSet(input({ kinds: ['cv', 'portfolio', 'presentation', 'cover_letter'], body: '  Me interesa el puesto.\r\n\r\nTengo cinco años en pagos.  ' }));
+  assert.ok(built.ok);
+  const body = artifactSetBody.parse(built.body);
+  for (const a of body.artifacts) {
+    const content = ARTIFACT_CONTENT[a.kind].parse(a.content) as Record<string, unknown>;
+    if (a.kind === 'cover_letter') assert.equal(content.body, 'Me interesa el puesto.\n\nTengo cinco años en pagos.');
+    else assert.equal('body' in content, false, `${a.kind}: no body`);
+  }
+  const letter = body.artifacts.find((a) => a.kind === 'cover_letter')!.content as Record<string, unknown>;
+  assert.equal(letter.summary, 'Backend con foco en datos.', 'the summary is still stored (the other documents and an emptied body use it)');
+  for (const blankBody of [undefined, '', ' \n\n ']) {
+    const none = buildArtifactSet(input({ kinds: ['cover_letter'], ...(blankBody === undefined ? {} : { body: blankBody }) }));
+    assert.ok(none.ok && !('body' in (none.body.artifacts[0]!.content as object)), `no body for ${JSON.stringify(blankBody)}`);
+  }
+  // Other kinds refuse a body outright (strict content): it can only ever be a letter's.
+  for (const kind of ['cv', 'portfolio', 'presentation'] as const) assert.equal(ARTIFACT_CONTENT[kind].safeParse({ body: 'x' }).success, false, kind);
+  assert.equal(ARTIFACT_CONTENT.cover_letter.safeParse({ body: 42 }).success, false, 'plain text only');
+});
+
 test('nothing is sent without a kind or an item; every broken limit is reported, never trimmed silently', () => {
   const none = buildArtifactSet(input({ kinds: [], selection: [] }));
   assert.equal(none.ok, false);
@@ -135,11 +155,11 @@ test('nothing is sent without a kind or an item; every broken limit is reported,
     { itemId: I2, override: { ...blank, highlights: Array.from({ length: LIMITS.highlightCount + 1 }, (_, i) => `punto ${i}`).join('\n') } },
     { itemId: I3, override: { ...blank, highlights: 'z'.repeat(LIMITS.highlightLength + 1) } },
   ];
-  const r = buildArtifactSet(input({ selection: long, summary: 's'.repeat(LIMITS.summary + 1), kinds: ['cover_letter'], greeting: 'g'.repeat(LIMITS.greeting + 1), closing: 'c'.repeat(LIMITS.closing + 1) }));
+  const r = buildArtifactSet(input({ selection: long, summary: 's'.repeat(LIMITS.summary + 1), kinds: ['cover_letter'], greeting: 'g'.repeat(LIMITS.greeting + 1), body: 'b'.repeat(LIMITS.body + 1), closing: 'c'.repeat(LIMITS.closing + 1) }));
   assert.ok(!r.ok);
   assert.deepEqual(
     r.problems.map((p) => (p.scope === 'form' ? `form:${p.field}:${p.code}` : `${p.itemId.slice(0, 1)}:${p.field}:${p.code}`)),
-    ['form:summary:tooLong', 'form:greeting:tooLong', 'form:closing:tooLong', '1:title:tooLong', '1:summary:tooLong', '2:highlights:tooMany', '3:highlights:tooLong'],
+    ['form:summary:tooLong', 'form:greeting:tooLong', 'form:body:tooLong', 'form:closing:tooLong', '1:title:tooLong', '1:summary:tooLong', '2:highlights:tooMany', '3:highlights:tooLong'],
   );
 });
 
@@ -154,7 +174,7 @@ test('the limits ARE the zod limits: at the limit both accept, one past it zod r
       },
     },
   ];
-  const ok = buildArtifactSet(input({ selection: at, summary: 's'.repeat(LIMITS.summary), kinds: TAILOR_KINDS, greeting: 'g'.repeat(LIMITS.greeting), closing: 'c'.repeat(LIMITS.closing) }));
+  const ok = buildArtifactSet(input({ selection: at, summary: 's'.repeat(LIMITS.summary), kinds: TAILOR_KINDS, greeting: 'g'.repeat(LIMITS.greeting), body: 'b'.repeat(LIMITS.body), closing: 'c'.repeat(LIMITS.closing) }));
   assert.ok(ok.ok);
   const body = artifactSetBody.parse(ok.body);
   for (const a of body.artifacts) assert.equal(ARTIFACT_CONTENT[a.kind].safeParse(a.content).success, true, a.kind);
@@ -167,6 +187,9 @@ test('the limits ARE the zod limits: at the limit both accept, one past it zod r
   assert.equal(ARTIFACT_CONTENT.cv.safeParse({ summary: 's'.repeat(LIMITS.summary + 1) }).success, false);
   assert.equal(ARTIFACT_CONTENT.cover_letter.safeParse({ greeting: 'g'.repeat(LIMITS.greeting + 1) }).success, false);
   assert.equal(ARTIFACT_CONTENT.cover_letter.safeParse({ closing: 'c'.repeat(LIMITS.closing + 1) }).success, false);
+  assert.equal(LIMITS.body, LETTER_BODY_MAX);
+  assert.equal(ARTIFACT_CONTENT.cover_letter.safeParse({ body: 'b'.repeat(LIMITS.body + 1) }).success, false);
+  assert.equal(ARTIFACT_CONTENT.cover_letter.safeParse({ body: 'b'.repeat(LIMITS.body) }).success, true);
   assert.equal(artifactSetBody.safeParse({ artifacts: [{ kind: 'cv', title: 't'.repeat(LIMITS.artifactTitle + 1) }] }).success, false);
   assert.equal(artifactTitle('Carta de presentación', 'p'.repeat(400), 'Empresa').length, LIMITS.artifactTitle);
 });

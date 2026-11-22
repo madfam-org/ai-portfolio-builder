@@ -155,9 +155,9 @@ Public repository: every job runs on **GitHub-hosted** runners (R116). `ci.yml` 
 whatever its base** (a PR stacked on another PR's branch is checked too; since 2026-11-16) and on pushes to `main`. Top-level
 `permissions: contents: read`; every action pinned to a full commit SHA; no `secrets: inherit`; no
 `|| true` masks. `ci.yml`: `agent-docs` (required files and markers), `web` (frozen install, lint,
-typecheck, unit tests ≥ 408 passing and none skipped, build, standalone smoke ≥ 13 passing; raise a floor when a PR adds tests), `pg` (the real-Postgres suite on a `postgres:16-alpine`
-service container, as the `cv_app` role; fails on fewer than 49 passing tests), `e2e` (Playwright on GitHub-hosted runners:
-`npx playwright install --with-deps chromium`, the built server, its own Postgres service; fails on fewer than 106
+typecheck, unit tests ≥ 426 passing and none skipped, build, standalone smoke ≥ 13 passing; raise a floor when a PR adds tests), `pg` (the real-Postgres suite on a `postgres:16-alpine`
+service container, as the `cv_app` role; fails on fewer than 52 passing tests), `e2e` (Playwright on GitHub-hosted runners:
+`npx playwright install --with-deps chromium`, the built server, its own Postgres service; fails on fewer than 110
 passing specs or any failed, flaky or skipped; raise the floor when a PR adds specs; a failed run uploads the
 Playwright traces as `e2e-traces`, kept 7 days), `guards` (file size, forbidden-domain grep),
 `secrets` (gitleaks over every commit after the legacy base `7959f356`, plus the checked-out tree;
@@ -214,7 +214,7 @@ directory. The API the three need already exists: profile and items (plus `POST 
 ## What comes next
 
 W2–W7 are live behind the beta invite gate (history in the sections below). Next, in order: a first-run checklist on
-«Inicio», a cover-letter body of its own, the remaining design critique (public pages typography, landing voice, the
+«Inicio», ~~a cover-letter body of its own~~ (done 2026-11-21: «A cover letter» below), the remaining design critique (public pages typography, landing voice, the
 long profile on phones), the feedback channel once ruled, the first invitations; then Selva (AI), Dhanam (plans) and
 tlacuilo's activation. Symbiosis HCM classifies English job titles poorly («Engineering Director» → no occupation):
 the fix belongs in that repository, not here.
@@ -396,6 +396,15 @@ posting. Rules that now hold ([`docs/PRODUCT.md`](docs/PRODUCT.md) has the produ
   score; the current job is always in. An added item lands in its CV place.
 - **A cover letter** prints at most three roles or projects (title, organisation, dates); its greeting and closing,
   when left empty, are the texts shown as the fields' placeholders (`letterDefaults`): nothing is added unseen.
+  **Its own body** (2026-11-21): `content.body` (plain text, paragraphs split by a blank line, at most
+  `LETTER_BODY_MAX` = 5,000 characters, cover letters only: other kinds refuse it, no migration since `content` is
+  jsonb) prints between the greeting and the closing in place of the summary. Absent or blank, the letter renders
+  exactly as before (the summary, else the profile summary; the render baseline's earlier cases are unchanged, the
+  `…/body` cases are new). Written in «Cuerpo de la carta» in the tailoring workspace and the document editor (its
+  placeholder is the summary it would otherwise print), per document language, never filled in for the person; the
+  public projection carries it only for a cover letter, without the summaries it replaces (`lib/shared-page.ts`).
+  `test/{render-html,shared-page,jobs-tailoring,jobs-document-edit}.test.ts`, `test-pg/letter-body.pg.test.ts`,
+  `e2e/documents-letter-body.spec.ts`.
 - **Documents are editable in place**; an edit replaces only what the editor shows (blocks, a presentation's own
   slides, `showContact` and a portfolio's `intro` are kept). Editing a published document changes its page at once.
   An entry or slide reference whose profile item was deleted is announced in the editor and removed on the next save

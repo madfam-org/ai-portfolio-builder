@@ -228,6 +228,12 @@ export const jobPatchBody = z
 const itemRef = z
   .object({ itemId: z.uuid(), override: z.object({ title: text(300).optional(), summary: text(3000).optional(), highlights: bullets.optional() }).strict().optional() })
   .strict();
+/**
+ * A cover letter's own body (plain text, paragraphs separated by a blank line), printed between the greeting and the
+ * closing in place of the summary; absent or blank, the letter prints the summary as before (components/render/
+ * CoverLetterView.tsx). The cap matches the summary's: a one-page letter is well under it.
+ */
+export const LETTER_BODY_MAX = 5_000;
 const block = z.object({ heading: text(200).optional(), body: text(10_000) }).strict();
 const baseContent = { summary: text(5000).optional(), items: z.array(itemRef).max(200).default([]), blocks: z.array(block).max(50).default([]), showContact: z.boolean().default(false) };
 
@@ -236,7 +242,7 @@ export const ARTIFACT_CONTENT: Record<(typeof ARTIFACT_KINDS)[number], z.ZodType
   cv: z.object(baseContent).strict(),
   portfolio: z.object({ ...baseContent, intro: text(3000).optional() }).strict(),
   presentation: z.object({ ...baseContent, slides: z.array(z.object({ title: text(200), body: text(3000).optional(), itemIds: z.array(z.uuid()).max(20).default([]) }).strict()).max(60).default([]) }).strict(),
-  cover_letter: z.object({ ...baseContent, greeting: text(200).optional(), closing: text(500).optional() }).strict(),
+  cover_letter: z.object({ ...baseContent, greeting: text(200).optional(), body: text(LETTER_BODY_MAX).optional(), closing: text(500).optional() }).strict(),
 };
 
 export interface ArtifactContent {

@@ -29,7 +29,7 @@ interface Loaded {
 
 /**
  * «Contenido» of one document, editable in place (critique #7): which profile items, in which order, with which text
- * for this document only; its summary; a cover letter's greeting and closing. The same editor as «Adaptar al empleo»
+ * for this document only; its summary; a cover letter's greeting, its own body and its closing. The same editor as «Adaptar al empleo»
  * (SelectionEditor), with the job's keyword match when the document belongs to a job. Saves ONE `PATCH` of the content
  * (components/jobs/document-edit.ts keeps every part it does not show); the profile is never written. Entries whose
  * profile item was deleted since are announced and removed on that save, so the document stays editable.
@@ -80,7 +80,7 @@ export function DocumentContentEditor({ locale, artifact, job }: { locale: Local
   const letter = artifact.kind === 'cover_letter';
   const defaults = letterDefaults(job?.company ?? '', artifact.locale);
 
-  const formProblem = (field: 'items' | 'summary' | 'greeting' | 'closing'): string | null => {
+  const formProblem = (field: 'items' | 'summary' | 'greeting' | 'body' | 'closing'): string | null => {
     const p = problems.find((x) => x.scope === 'form' && x.field === field);
     if (!p) return null;
     if (field === 'items') return fmt(t.tailor.problems.itemsTooMany, { max: LIMITS.items });
@@ -159,7 +159,7 @@ export function DocumentContentEditor({ locale, artifact, job }: { locale: Local
           <TextAreaField
             id="doc-summary"
             label={d.contentSummaryLabel}
-            hint={d.contentSummaryHint}
+            hint={!letter ? d.contentSummaryHint : draft.body.trim() ? d.contentSummaryHintLetterBody : d.contentSummaryHintLetter}
             rows={4}
             value={draft.summary}
             placeholder={loaded.profileSummary}
@@ -177,6 +177,16 @@ export function DocumentContentEditor({ locale, artifact, job }: { locale: Local
                 placeholder={defaults.greeting}
                 onChange={(e) => setDraft((x) => ({ ...x, greeting: e.target.value }))}
                 error={formProblem('greeting')}
+              />
+              <TextAreaField
+                id="doc-body"
+                label={t.tailor.letterBody}
+                hint={fmt(d.contentLetterBodyHint, { max: LIMITS.body })}
+                rows={12}
+                value={draft.body}
+                placeholder={draft.summary.trim() || loaded.profileSummary}
+                onChange={(e) => setDraft((x) => ({ ...x, body: e.target.value }))}
+                error={formProblem('body')}
               />
               <TextAreaField
                 id="doc-closing"

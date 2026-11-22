@@ -39,7 +39,7 @@ import {
 import { useJobBundle } from './useJobBundle';
 import s from './jobs.module.css';
 
-type FormField = 'kinds' | 'items' | 'summary' | 'greeting' | 'closing';
+type FormField = 'kinds' | 'items' | 'summary' | 'greeting' | 'body' | 'closing';
 
 /**
  * `/empleos/:id/adaptar`: choose which profile items go into this job's documents (pre-selected by the keyword
@@ -62,6 +62,7 @@ export function TailorWorkspace({ locale, jobId }: { locale: Locale; jobId: stri
   const [summary, setSummary] = useState('');
   const [showContact, setShowContact] = useState(false);
   const [greeting, setGreeting] = useState('');
+  const [letterBody, setLetterBody] = useState('');
   const [closing, setClosing] = useState('');
   const [problems, setProblems] = useState<TailorProblem[]>([]);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -105,6 +106,8 @@ export function TailorWorkspace({ locale, jobId }: { locale: Locale; jobId: stri
   const otherLocale: ContentLocale = docLocale === 'en' ? 'es-MX' : 'en';
   const existingLanguages = languagesOf(artifacts);
   const chosenKinds = TAILOR_KINDS.filter((k) => kinds.includes(k));
+  // The summary the documents print when this job's own is empty: the profile's, in the documents' language.
+  const profileSummary = profile ? localizeHeader({ headline: profile.headline, summary: profile.summary }, profile.translations, profileLocale, docLocale).header.summary : '';
 
   const formProblem = (field: FormField): string | null => {
     const p = problems.find((x) => x.scope === 'form' && x.field === field);
@@ -113,7 +116,7 @@ export function TailorWorkspace({ locale, jobId }: { locale: Locale; jobId: stri
     if (field === 'items') return p.code === 'tooMany' ? fmt(t.tailor.problems.itemsTooMany, { max: LIMITS.items }) : t.tailor.problems.itemsRequired;
     return fmt(t.tailor.problems.tooLong, { max: LIMITS[field] });
   };
-  /** A problem in a folded field (summary, greeting, closing) opens «Más opciones» so the error is seen. */
+  /** A problem in the folded field (the summary) opens «Más opciones» so the error is seen. */
   const moreProblem = formProblem('summary') !== null;
   const itemProblems: ItemProblems = {};
   for (const p of problems) {
@@ -126,14 +129,15 @@ export function TailorWorkspace({ locale, jobId }: { locale: Locale; jobId: stri
 
   const toggleKind = (kind: ArtifactKind, on: boolean) => setKinds((all) => (on ? [...new Set([...all, kind])] : all.filter((k) => k !== kind)));
 
-  /** W7 (B4): overrides, summary, greeting and closing are per language; the selection and its order are shared. */
+  /** W7 (B4): overrides, summary and the letter's texts are per language; the selection and its order are shared. */
   function changeLanguage(to: ContentLocale) {
     if (to === docLocale) return;
-    setStashed((all) => ({ ...all, [docLocale]: stashLanguage(selection, { summary, greeting, closing }) }));
+    setStashed((all) => ({ ...all, [docLocale]: stashLanguage(selection, { summary, greeting, body: letterBody, closing }) }));
     const back = restoreLanguage(selection, stashed[to]);
     setSelection(back.selection);
     setSummary(back.summary);
     setGreeting(back.greeting);
+    setLetterBody(back.body ?? '');
     setClosing(back.closing);
     setContentLocale(to);
   }
@@ -161,6 +165,7 @@ export function TailorWorkspace({ locale, jobId }: { locale: Locale; jobId: stri
       summary,
       showContact,
       greeting,
+      body: letterBody,
       closing,
       kindLabels: a.kinds,
       languageTag,
@@ -275,6 +280,16 @@ export function TailorWorkspace({ locale, jobId }: { locale: Locale; jobId: stri
               error={formProblem('greeting')}
             />
             <TextAreaField
+              id="tailor-body"
+              label={t.tailor.letterBody}
+              hint={fmt(t.tailor.letterBodyHint, { max: LIMITS.body })}
+              rows={12}
+              value={letterBody}
+              placeholder={summary.trim() || profileSummary}
+              onChange={(e) => setLetterBody(e.target.value)}
+              error={formProblem('body')}
+            />
+            <TextAreaField
               id="tailor-closing"
               label={t.tailor.closing}
               rows={2}
@@ -305,10 +320,10 @@ export function TailorWorkspace({ locale, jobId }: { locale: Locale; jobId: stri
             <TextAreaField
               id="tailor-summary"
               label={t.tailor.summary}
-              hint={t.tailor.summaryHint}
+              hint={!kinds.includes('cover_letter') ? t.tailor.summaryHint : letterBody.trim() ? t.tailor.summaryHintLetterBody : t.tailor.summaryHintWithLetter}
               rows={4}
               value={summary}
-              placeholder={profile ? localizeHeader({ headline: profile.headline, summary: profile.summary }, profile.translations, profileLocale, docLocale).header.summary : ''}
+              placeholder={profileSummary}
               onChange={(e) => setSummary(e.target.value)}
               error={formProblem('summary')}
             />

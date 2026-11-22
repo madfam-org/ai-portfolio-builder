@@ -17,12 +17,15 @@ export const MATRIX_SELECTION = {
   closing: 'Saludos,',
 };
 
+/** A cover letter's own body (2026-11-21): the letter cases are rendered once more with it (`…/body`). */
+export const MATRIX_LETTER_BODY = 'Me interesa el puesto de datos en Acme.\n\nEn mi trabajo actual llevo los tableros\ndel área comercial.';
+
 export const MATRIX_KINDS = ['cv', 'portfolio', 'presentation', 'cover_letter'] as const;
 export const MATRIX_LOCALES = ['es-MX', 'en'] as const;
 
 type Render = (d: ReturnType<typeof data>) => string;
 
-/** `kind/template/locale/contact|nocontact` → sha256 of the markup. */
+/** `kind/template/locale/contact|nocontact` (and `…/body` for a cover letter with its own body) → sha256 of the markup. */
 export function renderMatrix(render: Render, templatesFor: (kind: (typeof MATRIX_KINDS)[number]) => string[]): Record<string, string> {
   const out: Record<string, string> = {};
   for (const kind of MATRIX_KINDS) {
@@ -32,6 +35,9 @@ export function renderMatrix(render: Render, templatesFor: (kind: (typeof MATRIX
           const content = { ...MATRIX_SELECTION, showContact: withContact };
           const html = render(data(kind, content, { locale, template, ...(withContact ? { contact: CONTACT } : {}) }));
           out[`${kind}/${template}/${locale}/${withContact ? 'contact' : 'nocontact'}`] = createHash('sha256').update(html).digest('hex');
+          if (kind !== 'cover_letter') continue;
+          const withBody = render(data(kind, { ...content, body: MATRIX_LETTER_BODY }, { locale, template, ...(withContact ? { contact: CONTACT } : {}) }));
+          out[`${kind}/${template}/${locale}/${withContact ? 'contact' : 'nocontact'}/body`] = createHash('sha256').update(withBody).digest('hex');
         }
       }
     }

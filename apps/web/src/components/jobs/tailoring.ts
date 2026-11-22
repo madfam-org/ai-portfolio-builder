@@ -29,6 +29,8 @@ export const LIMITS = {
   artifactTitle: 200,
   summary: 5_000,
   greeting: 200,
+  /** A cover letter's own body (`LETTER_BODY_MAX` in validation.ts). */
+  body: 5_000,
   closing: 500,
   overrideTitle: 300,
   overrideSummary: 3_000,
@@ -138,7 +140,7 @@ export function cleanOverride(draft: OverrideDraft): { title?: string; summary?:
 }
 
 export type TailorProblem =
-  | { scope: 'form'; field: 'kinds' | 'items' | 'summary' | 'greeting' | 'closing'; code: 'required' | 'tooLong' | 'tooMany' }
+  | { scope: 'form'; field: 'kinds' | 'items' | 'summary' | 'greeting' | 'body' | 'closing'; code: 'required' | 'tooLong' | 'tooMany' }
   | { scope: 'item'; itemId: string; field: 'title' | 'summary' | 'highlights'; code: 'tooLong' | 'tooMany' };
 
 export interface TailorInput {
@@ -156,6 +158,8 @@ export interface TailorInput {
   showContact: boolean;
   /** Cover letter only. */
   greeting: string;
+  /** Cover letter only: its own body; empty keeps the summary as the letter's opening. */
+  body?: string;
   closing: string;
   kindLabels: Readonly<Record<ArtifactKind, string>>;
   /** W7 (B3): «(English)» when the documents' language is not the profile's, so both versions read apart. */
@@ -171,6 +175,14 @@ export function letterDefaults(company: string, locale: ContentLocale): { greeti
   const name = company.trim();
   if (locale === 'en') return { greeting: name ? `Dear ${name} hiring team,` : 'Dear hiring team,', closing: 'Sincerely,' };
   return { greeting: name ? `Estimado equipo de ${name}:` : 'Estimado equipo de selección:', closing: 'Atentamente,' };
+}
+
+/**
+ * A cover letter's body as it is stored: trimmed, line endings as `\n` (so the length the person sees is the length
+ * checked). Paragraphs stay as typed, separated by a blank line; empty means «no body of its own».
+ */
+export function letterBodyText(text: string): string {
+  return text.replace(/\r\n?/g, '\n').trim();
 }
 
 /** «CV · Desarrolladora backend · Empresa» (+ « (English)» for a version in another language), capped at the limit. */
@@ -195,6 +207,7 @@ function checkInput(input: TailorInput): TailorProblem[] {
   if (input.summary.trim().length > LIMITS.summary) problems.push({ scope: 'form', field: 'summary', code: 'tooLong' });
   if (input.kinds.includes('cover_letter')) {
     if (input.greeting.trim().length > LIMITS.greeting) problems.push({ scope: 'form', field: 'greeting', code: 'tooLong' });
+    if (letterBodyText(input.body ?? '').length > LIMITS.body) problems.push({ scope: 'form', field: 'body', code: 'tooLong' });
     if (input.closing.trim().length > LIMITS.closing) problems.push({ scope: 'form', field: 'closing', code: 'tooLong' });
   }
   for (const e of input.selection) {
@@ -229,7 +242,8 @@ export function buildArtifactSet(input: TailorInput): { ok: true; body: Artifact
       const fallback = letterDefaults(input.company, input.locale);
       const greeting = input.greeting.trim() || fallback.greeting;
       const closing = input.closing.trim() || fallback.closing;
-      content = { ...base, ...(greeting ? { greeting } : {}), ...(closing ? { closing } : {}) };
+      const body = letterBodyText(input.body ?? '');
+      content = { ...base, ...(greeting ? { greeting } : {}), ...(body ? { body } : {}), ...(closing ? { closing } : {}) };
     }
     const template = input.templates?.[kind];
     return { kind, title: artifactTitle(input.kindLabels[kind], input.jobTitle, input.company, input.languageTag), content, ...(template ? { template } : {}) };
@@ -295,13 +309,15 @@ export function versionsByKind<A extends { kind: ArtifactKind; createdAt: string
 /**
  * Per-job overrides belong to ONE language: the language of the documents being created (each document has one).
  * Switching the workspace's language keeps the selection and its order, puts this language's per-job texts away
- * (overrides, summary, cover-letter greeting and closing) and brings back the ones typed earlier for the other language
+ * (overrides, summary, cover-letter greeting, body and closing) and brings back the ones typed earlier for the other language
  * (empty the first time). Nothing is translated or copied across languages.
  */
 export interface LanguageTexts {
   overrides: Record<string, OverrideDraft>;
   summary: string;
   greeting: string;
+  /** The cover letter's own body (absent in texts stashed before it existed). */
+  body?: string;
   closing: string;
 }
 
@@ -314,6 +330,7 @@ export function restoreLanguage(selection: readonly SelectionEntry[], saved: Lan
     selection: selection.map((e) => ({ itemId: e.itemId, override: { ...(saved?.overrides[e.itemId] ?? EMPTY_OVERRIDE) } })),
     summary: saved?.summary ?? '',
     greeting: saved?.greeting ?? '',
+    body: saved?.body ?? '',
     closing: saved?.closing ?? '',
   };
 }
