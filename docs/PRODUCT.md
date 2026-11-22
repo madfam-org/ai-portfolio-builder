@@ -311,7 +311,8 @@ offer and not a prediction. cv is never the data owner: it holds no figure and c
   records declared amounts. Any other period or currency is shown as not comparable.
 - **Dormant by default**: without `HCM_API_URL`, `HCM_CLIENT_ID` and `HCM_CLIENT_SECRET` the route answers 503
   `not_configured` and the panel says the comparison is not available yet. HCM down or slow (3 s budget, circuit
-  breaker after 3 failures for 30 s): 503 `benchmark_unavailable`; the rest of the page is unaffected.
+  breaker for 30 s after 3 consecutive failures of HCM's own, from at least 2 different people, so one person cannot
+  open it alone; `apps/web/src/server/breaker.ts`): 503 `benchmark_unavailable`; the rest of the page is unaffected.
 
 ## Luxury retail beta (W7, B3)
 

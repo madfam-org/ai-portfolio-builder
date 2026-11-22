@@ -84,7 +84,7 @@ export async function ocrPage(owner: string, request: Request, env: Env, deps: O
   if (wait > 0) return json(429, { error: 'rate_limited', retryAfter: wait }, { 'Retry-After': String(wait) });
 
   const started = Date.now();
-  const result = await client.readPage(bytes, actual);
+  const result = await client.readPage(bytes, actual, owner);
   const ms = Date.now() - started;
   if (!result.ok) {
     const f = FAILURES[result.reason];

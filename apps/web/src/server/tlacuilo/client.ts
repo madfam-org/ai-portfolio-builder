@@ -5,9 +5,12 @@
  * - Token: Janua client credentials (client_secret_basic, scope tlacuilo:extract), cached in memory until 60 s before
  *   it expires; one mint in flight at a time; a 401 from tlacuilo drops it and retries once.
  * - Budget: every call is bounded by `timeoutMs`.
- * - Circuit breaker: after FAILURE_THRESHOLD consecutive failures of the SERVICE (network, timeout, 5xx, refused
- *   token) the client answers `unavailable` at once for OPEN_MS, then lets one probe through. A page tlacuilo could
- *   not read (422: blank scan, unreadable image) says nothing about its health and does not count.
+ * - Circuit breaker (server/breaker.ts): only the SERVICE's failures count (a connection error, cv's own time budget
+ *   running out, a 5xx without one of tlacuilo's page codes, at the token endpoint or the extraction), and only a run of
+ *   them from different people opens it; one person's pages never open it alone. Open, the client answers
+ *   `unavailable` at once for OPEN_MS. What a page itself can cause never counts: a page tlacuilo could not read (422
+ *   blank scan, unreadable image), its page codes (`ocr_busy`, `ocr_timeout`), any other 4xx, a refused token, an
+ *   answer outside the contract (a page can make tlacuilo send one).
  * - No cache: every page is someone's own document. Nothing is kept here, and tlacuilo keeps nothing either.
  * - Validation: the answer is parsed with zod and bounded; an unexpected shape is `invalid`, never shown.
  *
@@ -15,10 +18,10 @@
  * Logs status and error codes only, never content.
  */
 import { z } from 'zod';
+import { createBreaker } from '../breaker.ts';
 import { TLACUILO_DOCUMENT_TYPE, TLACUILO_SCOPE, TLACUILO_SENSITIVITY, type TlacuiloConfig } from './config.ts';
 
-export const FAILURE_THRESHOLD = 3;
-export const OPEN_MS = 30_000;
+export { FAILURE_THRESHOLD, MIN_OWNERS, OPEN_MS } from '../breaker.ts';
 const TOKEN_SKEW_MS = 60_000;
 /** Bounds on what one page may bring back (a dense page is about 6 000 characters). */
 export const PAGE_MAX_LINES = 600;
@@ -67,14 +70,18 @@ export type OcrResult = { ok: true; page: OcrPage } | { ok: false; reason: OcrFa
 export type OcrMediaType = 'image/jpeg' | 'image/png';
 
 export interface TlacuiloOcrPort {
-  readPage(bytes: Uint8Array, mediaType: OcrMediaType): Promise<OcrResult>;
+  /** `owner`: the Janua `sub` of the person whose page this is; the breaker counts people, never sends it. */
+  readPage(bytes: Uint8Array, mediaType: OcrMediaType, owner: string): Promise<OcrResult>;
 }
 
 class CallFailure extends Error {
-  readonly kind: OcrFailure | 'unauthorized';
-  constructor(kind: OcrFailure | 'unauthorized', detail: string) {
+  readonly kind: OcrFailure;
+  /** The service's own failure (counts toward the breaker); false for anything the request could have caused. */
+  readonly service: boolean;
+  constructor(kind: OcrFailure, detail: string, service = false) {
     super(detail);
     this.kind = kind;
+    this.service = service;
   }
 }
 
@@ -98,8 +105,7 @@ export function createTlacuiloClient(config: TlacuiloConfig, deps: { fetch?: Fet
   const now = deps.now ?? (() => Date.now());
   let token: { value: string; expiresAt: number } | null = null;
   let inflight: Promise<string> | null = null;
-  let failures = 0;
-  let openUntil = 0;
+  const breaker = createBreaker(now);
 
   async function mintToken(): Promise<string> {
     const basic = Buffer.from(`${encodeURIComponent(config.clientId)}:${encodeURIComponent(config.clientSecret)}`).toString('base64');
@@ -114,9 +120,9 @@ export function createTlacuiloClient(config: TlacuiloConfig, deps: { fetch?: Fet
         cache: 'no-store',
       });
     } catch {
-      throw new CallFailure('unavailable', 'token request failed');
+      throw new CallFailure('unavailable', 'token request failed', true);
     }
-    if (!res.ok) throw new CallFailure(res.status >= 500 ? 'unavailable' : 'refused', `token ${res.status}`);
+    if (!res.ok) throw res.status >= 500 ? new CallFailure('unavailable', `token ${res.status}`, true) : new CallFailure('refused', `token ${res.status}`);
     const body = z.object({ access_token: z.string().min(20).max(8192), expires_in: z.number().int().positive().max(86_400) }).safeParse(await res.json().catch(() => null));
     if (!body.success) throw new CallFailure('invalid', 'token response shape');
     token = { value: body.data.access_token, expiresAt: now() + body.data.expires_in * 1000 };
@@ -149,7 +155,8 @@ export function createTlacuiloClient(config: TlacuiloConfig, deps: { fetch?: Fet
       });
     } catch (err) {
       if (err instanceof CallFailure) throw err;
-      throw new CallFailure(err instanceof Error && err.name === 'TimeoutError' ? 'timeout' : 'unavailable', 'extraction request failed');
+      // No answer within cv's budget, or no connection: the service's.
+      throw new CallFailure(err instanceof Error && err.name === 'TimeoutError' ? 'timeout' : 'unavailable', 'extraction request failed', true);
     }
     if (res.status === 401 && retry) {
       token = null;
@@ -164,7 +171,8 @@ export function createTlacuiloClient(config: TlacuiloConfig, deps: { fetch?: Fet
       // A known code keeps its meaning whatever its status (`ocr_busy` is a 503: one job at a time, not an outage).
       if (mapped) throw new CallFailure(mapped, `extraction ${res.status} ${errorCode}`);
       if (res.status === 400 || res.status === 422) throw new CallFailure('invalid', `extraction ${res.status}`);
-      throw new CallFailure('unavailable', `extraction ${res.status}`);
+      // A 5xx without a page code is the service's; any other 4xx (413, 429 …) is about this request or this caller.
+      throw new CallFailure('unavailable', `extraction ${res.status}`, res.status >= 500);
     }
     const parsed = resultSchema.safeParse(json);
     if (!parsed.success) throw new CallFailure('invalid', 'extraction response shape');
@@ -194,26 +202,19 @@ export function createTlacuiloClient(config: TlacuiloConfig, deps: { fetch?: Fet
   }
 
   return {
-    async readPage(bytes, mediaType) {
-      if (openUntil > now()) return { ok: false, reason: 'unavailable' };
+    async readPage(bytes, mediaType, owner) {
+      if (breaker.isOpen()) return { ok: false, reason: 'unavailable' };
       try {
         const page = await call(bytes, mediaType, true);
-        failures = 0;
+        breaker.succeed();
         return { ok: true, page };
       } catch (err) {
         const failure = err instanceof CallFailure ? err : new CallFailure('unavailable', 'unexpected');
-        const service = failure.kind === 'unavailable' || failure.kind === 'refused' || failure.kind === 'unauthorized' || (failure.kind === 'invalid' && failure.message === 'extraction response shape');
-        if (service) {
-          failures += 1;
-          if (failures >= FAILURE_THRESHOLD) {
-            openUntil = now() + OPEN_MS;
-            failures = 0;
-          }
-        } else if (failure.kind === 'unreadable' || failure.kind === 'too_large') {
-          failures = 0;
-        }
+        if (failure.service) breaker.fail(owner);
+        // tlacuilo answered about this page: it is up.
+        else if (failure.kind === 'unreadable' || failure.kind === 'too_large') breaker.succeed();
         console.error(`cv-api: tlacuilo ocr ${failure.kind} (${failure.message})`);
-        return { ok: false, reason: failure.kind === 'unauthorized' ? 'refused' : failure.kind };
+        return { ok: false, reason: failure.kind };
       }
     },
   };

@@ -4,8 +4,11 @@
  * - Token: Janua client credentials (client_secret_basic, scope hcm-benchmarks:read), cached in memory until 60 s
  *   before it expires; one request in flight at a time; a 401 from HCM drops it and retries once.
  * - Budget: every call is bounded by `timeoutMs` (AbortSignal.timeout).
- * - Circuit breaker: after FAILURE_THRESHOLD consecutive failures (network, timeout, 5xx, refused token) the client
- *   answers `unavailable` at once for OPEN_MS, then lets one probe through.
+ * - Circuit breaker (server/breaker.ts): only HCM's own failures count (a connection error, the time budget running
+ *   out, a 5xx, at the token endpoint or the benchmark), and only a run of them from different people opens it; one
+ *   person's jobs never open it alone (a title is the person's text, and HCM may fail on one). Open, the client answers
+ *   `unavailable` at once for OPEN_MS. A 4xx (400 for this query, 404, 429 …), a refused token and an answer outside
+ *   the schema never count. A cached answer never reaches HCM, so it neither counts nor resets.
  * - Cache: answers are cached per (title or SINCO, state, segment) for CACHE_TTL_MS (the data changes once a
  *   quarter), at most CACHE_MAX entries. Never per person: the query carries no identity.
  * - Validation: HCM's answer is parsed with zod; an unexpected shape is `unavailable`, never shown.
@@ -14,10 +17,10 @@
  * segment view, an allowlisted segment id. Logs status codes only, never the query.
  */
 import { z } from 'zod';
+import { createBreaker } from '../breaker.ts';
 import { HCM_BENCHMARK_SCOPE, type HcmConfig } from './config.ts';
 
-export const FAILURE_THRESHOLD = 3;
-export const OPEN_MS = 30_000;
+export { FAILURE_THRESHOLD, MIN_OWNERS, OPEN_MS } from '../breaker.ts';
 export const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 export const CACHE_MAX = 500;
 const TOKEN_SKEW_MS = 60_000;
@@ -105,14 +108,18 @@ export interface BenchmarkQuery {
 export type BenchmarkResult = { ok: true; benchmark: HcmBenchmark; cached: boolean } | { ok: false; reason: 'unavailable' | 'refused' | 'invalid' };
 
 export interface HcmBenchmarkPort {
-  benchmark(query: BenchmarkQuery): Promise<BenchmarkResult>;
+  /** `owner`: the Janua `sub` of the person asking; the breaker counts people, it is never sent or cached. */
+  benchmark(query: BenchmarkQuery, owner: string): Promise<BenchmarkResult>;
 }
 
 class CallFailure extends Error {
-  readonly kind: 'unavailable' | 'refused' | 'invalid' | 'unauthorized';
-  constructor(kind: 'unavailable' | 'refused' | 'invalid' | 'unauthorized', detail: string) {
+  readonly kind: 'unavailable' | 'refused' | 'invalid';
+  /** HCM's own failure (counts toward the breaker); false for anything the request could have caused. */
+  readonly service: boolean;
+  constructor(kind: 'unavailable' | 'refused' | 'invalid', detail: string, service = false) {
     super(detail);
     this.kind = kind;
+    this.service = service;
   }
 }
 
@@ -121,8 +128,7 @@ export function createHcmClient(config: HcmConfig, deps: { fetch?: Fetch; now?: 
   const now = deps.now ?? (() => Date.now());
   let token: { value: string; expiresAt: number } | null = null;
   let inflight: Promise<string> | null = null;
-  let failures = 0;
-  let openUntil = 0;
+  const breaker = createBreaker(now);
   const cache = new Map<string, { at: number; benchmark: HcmBenchmark }>();
 
   async function mintToken(): Promise<string> {
@@ -138,9 +144,9 @@ export function createHcmClient(config: HcmConfig, deps: { fetch?: Fetch; now?: 
         cache: 'no-store',
       });
     } catch {
-      throw new CallFailure('unavailable', 'token request failed');
+      throw new CallFailure('unavailable', 'token request failed', true);
     }
-    if (!res.ok) throw new CallFailure(res.status >= 500 ? 'unavailable' : 'refused', `token ${res.status}`);
+    if (!res.ok) throw res.status >= 500 ? new CallFailure('unavailable', `token ${res.status}`, true) : new CallFailure('refused', `token ${res.status}`);
     const body = z.object({ access_token: z.string().min(20).max(8192), expires_in: z.number().int().positive().max(86_400) }).safeParse(await res.json().catch(() => null));
     if (!body.success) throw new CallFailure('invalid', 'token response shape');
     token = { value: body.data.access_token, expiresAt: now() + body.data.expires_in * 1000 };
@@ -169,7 +175,8 @@ export function createHcmClient(config: HcmConfig, deps: { fetch?: Fetch; now?: 
       });
     } catch (err) {
       if (err instanceof CallFailure) throw err;
-      throw new CallFailure('unavailable', 'benchmark request failed');
+      // No answer within the budget, or no connection: HCM's.
+      throw new CallFailure('unavailable', 'benchmark request failed', true);
     }
     if (res.status === 401 && retry) {
       token = null;
@@ -177,36 +184,30 @@ export function createHcmClient(config: HcmConfig, deps: { fetch?: Fetch; now?: 
     }
     if (res.status === 401 || res.status === 403) throw new CallFailure('refused', `benchmark ${res.status}`);
     if (res.status === 400) throw new CallFailure('invalid', 'benchmark 400');
-    if (!res.ok) throw new CallFailure('unavailable', `benchmark ${res.status}`);
+    // A 5xx is HCM's; any other 4xx (404, 429 …) is about this query or this caller.
+    if (!res.ok) throw new CallFailure('unavailable', `benchmark ${res.status}`, res.status >= 500);
     const parsed = benchmarkSchema.safeParse(await res.json().catch(() => null));
     if (!parsed.success) throw new CallFailure('invalid', 'benchmark response shape');
     return parsed.data;
   }
 
   return {
-    async benchmark(query) {
+    async benchmark(query, owner) {
       const key = [query.sinco ? `#${query.sinco}` : query.title.toLowerCase(), query.state ?? '', query.segment ?? ''].join('\u0000');
       const hit = cache.get(key);
       if (hit && now() - hit.at < CACHE_TTL_MS) return { ok: true, benchmark: hit.benchmark, cached: true };
-      if (openUntil > now()) return { ok: false, reason: 'unavailable' };
+      if (breaker.isOpen()) return { ok: false, reason: 'unavailable' };
       try {
         const benchmark = await call(query, true);
-        failures = 0;
+        breaker.succeed();
         if (cache.size >= CACHE_MAX) cache.delete(cache.keys().next().value as string);
         cache.set(key, { at: now(), benchmark });
         return { ok: true, benchmark, cached: false };
       } catch (err) {
         const failure = err instanceof CallFailure ? err : new CallFailure('unavailable', 'unexpected');
-        // An answer HCM refused for this query (400) says nothing about HCM's health.
-        if (failure.kind !== 'invalid' || failure.message !== 'benchmark 400') {
-          failures += 1;
-          if (failures >= FAILURE_THRESHOLD) {
-            openUntil = now() + OPEN_MS;
-            failures = 0;
-          }
-        }
+        if (failure.service) breaker.fail(owner);
         console.error(`cv-api: hcm benchmark ${failure.kind} (${failure.message})`);
-        return { ok: false, reason: failure.kind === 'unauthorized' ? 'refused' : failure.kind };
+        return { ok: false, reason: failure.kind };
       }
     },
   };
