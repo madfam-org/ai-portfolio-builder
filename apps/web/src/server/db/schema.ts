@@ -167,6 +167,7 @@ export const artifacts = pgTable(
     content: jsonb('content').notNull(),
     /** Search indexing of a public page is the owner's explicit choice (default off; only for visibility 'public'). */
     indexable: boolean('indexable').notNull().default(false),
+    /** The last publication; kept when the artifact is withdrawn, so the daily publish limit counts it (repository.ts). */
     publishedAt: timestamp('published_at', { withTimezone: true }),
     /**
      * Moderation takedown short of deletion: a suspended artifact is never served publicly and its owner cannot

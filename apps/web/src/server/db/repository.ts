@@ -7,7 +7,7 @@
  * `getPublicArtifactBySlug` (visibility 'public') and `getLinkArtifactByToken` (visibility 'link').
  */
 import { randomBytes } from 'node:crypto';
-import { and, asc, desc, eq, gt, inArray, isNull, ne, sql, type SQL } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, inArray, isNull, sql, type SQL } from 'drizzle-orm';
 import type { Db } from './client.ts';
 import { artifacts, jobs, profileItems, profiles } from './schema.ts';
 import { referencedItemIds, type ArtifactContent } from '../api/validation.ts';
@@ -36,9 +36,20 @@ export class ForeignItemsError extends Error {
 export class SlugTakenError extends Error {}
 export class SuspendedError extends Error {}
 export class JobHasArtifactsError extends Error {}
-export class PublishLimitError extends Error {}
+export class PublishLimitError extends Error {
+  /** Whole seconds until the oldest publication in the window leaves it (at least 1): the 429's `Retry-After`. */
+  readonly retryAfter: number;
+  constructor(retryAfter: number) {
+    super('publish limit reached');
+    this.retryAfter = Math.max(1, Math.ceil(retryAfter));
+  }
+}
 
-/** At most this many artifacts published (or re-published) per owner in any 24 hours (lane X §4.8, anti-spam). */
+/**
+ * At most this many DIFFERENT documents published per owner within any 24 hours (lane X §4.8), whatever their state
+ * now: withdrawing one does not free its place, and publishing again one already counted adds nothing. Counted from
+ * `published_at`, which is the time of the document's LAST publication and is kept when it is withdrawn.
+ */
 export const PUBLISH_DAILY_LIMIT = 20;
 /** At most this many artifacts created in one `createArtifactSet` call (one per kind). */
 export const ARTIFACT_SET_MAX = 4;
@@ -288,7 +299,8 @@ export function createRepository(db: Db) {
       return db.transaction(async (tx) => {
         if (patch.content) await assertOwnItems(tx, ownerSub, patch.content);
         // Moving a published artifact back to draft/ready also withdraws it (the CHECK constraints require it).
-        const withdraw = patch.status ? { visibility: 'private', shareToken: null, slug: null, indexable: false, publishedAt: null } : {};
+        // `publishedAt` stays: it is the last publication, which the daily limit counts (PUBLISH_DAILY_LIMIT).
+        const withdraw = patch.status ? { visibility: 'private', shareToken: null, slug: null, indexable: false } : {};
         const [row] = await tx
           .update(artifacts)
           .set({ ...patch, ...withdraw, updatedAt: now })
@@ -317,22 +329,32 @@ export function createRepository(db: Db) {
           ? { visibility: 'link', shareToken: newShareToken(), slug: null, indexable: false }
           : { visibility: 'public', slug: target.slug, shareToken: null, indexable: target.indexable };
       try {
-        const [existing] = await db.select({ suspendedAt: artifacts.suspendedAt }).from(artifacts).where(and(eq(artifacts.ownerSub, ownerSub), eq(artifacts.id, id)));
-        if (!existing) return null;
-        if (existing.suspendedAt) throw new SuspendedError('artifact suspended');
-        // Rate limit (a count, no new table): the owner's OTHER artifacts published within the last 24 hours.
-        const [recent] = await db
-          .select({ n: sql<number>`count(*)::int` })
-          .from(artifacts)
-          .where(and(eq(artifacts.ownerSub, ownerSub), ne(artifacts.id, id), gt(artifacts.publishedAt, sql`now() - interval '1 day'`)));
-        if ((recent?.n ?? 0) >= PUBLISH_DAILY_LIMIT) throw new PublishLimitError('publish limit reached');
-        const [row] = await db
-          .update(artifacts)
-          .set({ ...set, status: 'published', publishedAt: now, updatedAt: now })
-          .where(and(eq(artifacts.ownerSub, ownerSub), eq(artifacts.id, id), isNull(artifacts.suspendedAt)))
-          .returning();
-        if (!row) throw new SuspendedError('artifact suspended');
-        return row;
+        return await db.transaction(async (tx) => {
+          // One owner's publishes run one at a time (a transaction-scoped advisory lock on the owner), so the count
+          // below and the update after it cannot interleave with another publish of the same person.
+          await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${ownerSub}, 0))`);
+          const [existing] = await tx.select({ suspendedAt: artifacts.suspendedAt }).from(artifacts).where(and(eq(artifacts.ownerSub, ownerSub), eq(artifacts.id, id)));
+          if (!existing) return null;
+          if (existing.suspendedAt) throw new SuspendedError('artifact suspended');
+          // Rate limit (a count, no new table): the owner's documents whose last publication is within 24 hours,
+          // published now or not. This one, when already among them, takes no new place.
+          const [recent] = await tx
+            .select({
+              others: sql<number>`count(*) filter (where ${artifacts.id} <> ${id})::int`,
+              self: sql<boolean>`coalesce(bool_or(${artifacts.id} = ${id}), false)`,
+              wait: sql<number | null>`extract(epoch from (min(${artifacts.publishedAt}) filter (where ${artifacts.id} <> ${id}) + interval '1 day' - now()))::float8`,
+            })
+            .from(artifacts)
+            .where(and(eq(artifacts.ownerSub, ownerSub), gt(artifacts.publishedAt, sql`now() - interval '1 day'`)));
+          if (!recent?.self && (recent?.others ?? 0) >= PUBLISH_DAILY_LIMIT) throw new PublishLimitError(Number(recent?.wait ?? 1));
+          const [row] = await tx
+            .update(artifacts)
+            .set({ ...set, status: 'published', publishedAt: now, updatedAt: now })
+            .where(and(eq(artifacts.ownerSub, ownerSub), eq(artifacts.id, id), isNull(artifacts.suspendedAt)))
+            .returning();
+          if (!row) throw new SuspendedError('artifact suspended');
+          return row;
+        });
       } catch (err) {
         const { code, constraint } = pgCode(err);
         if (code === '23505' && constraint === 'artifacts_slug_unique') throw new SlugTakenError('slug taken');
@@ -340,11 +362,14 @@ export function createRepository(db: Db) {
       }
     },
 
-    /** Back to private 'ready': the token and the slug stop working at once. */
+    /**
+     * Back to private 'ready': the token and the slug stop working at once. `publishedAt` stays (the last
+     * publication, which the daily limit counts).
+     */
     async unpublishArtifact(ownerSub: string, id: string): Promise<Artifact | null> {
       const [row] = await db
         .update(artifacts)
-        .set({ status: 'ready', visibility: 'private', shareToken: null, slug: null, indexable: false, publishedAt: null, updatedAt: now })
+        .set({ status: 'ready', visibility: 'private', shareToken: null, slug: null, indexable: false, updatedAt: now })
         .where(and(eq(artifacts.ownerSub, ownerSub), eq(artifacts.id, id)))
         .returning();
       return row ?? null;

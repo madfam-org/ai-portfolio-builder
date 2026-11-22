@@ -158,7 +158,7 @@ whatever its base** (a PR stacked on another PR's branch is checked too; since 2
 `permissions: contents: read`; every action pinned to a full commit SHA; no `secrets: inherit`; no
 `|| true` masks. `ci.yml`: `agent-docs` (required files and markers), `web` (frozen install, lint,
 typecheck, unit tests, build, standalone smoke), `pg` (the real-Postgres suite on a `postgres:16-alpine`
-service container, as the `cv_app` role; fails on fewer than 40 passing tests), `e2e` (Playwright on GitHub-hosted runners:
+service container, as the `cv_app` role; fails on fewer than 44 passing tests), `e2e` (Playwright on GitHub-hosted runners:
 `npx playwright install --with-deps chromium`, the built server, its own Postgres service; fails on fewer than 105
 passing specs or any failed, flaky or skipped; raise the floor when a PR adds specs; a failed run uploads the
 Playwright traces as `e2e-traces`, kept 7 days), `guards` (file size, forbidden-domain grep),
@@ -397,6 +397,10 @@ posting. Rules that now hold ([`docs/PRODUCT.md`](docs/PRODUCT.md) has the produ
 - **Render baseline**: markup changes rewrite `test/fixtures/bilingual/render-baseline.json` with
   `CV_WRITE_RENDER_BASELINE=1` (say which cases changed in the commit); CSS-only changes leave it alone. The cover
   letter's golden text is `e2e/fixtures/bilingual/cover-letter-es-formal.txt`.
+- **Publish limit** (2026-11-21): at most 20 different documents per owner whose last publication is within 24 hours,
+  withdrawn ones included. `published_at` is the last publication and is kept on unpublish and on a status change; the
+  count and the update run in one transaction under `pg_advisory_xact_lock(hashtextextended(owner_sub, 0))`; the 429's
+  `Retry-After` is the time until the oldest of those publications is 24 hours old (`test-pg/publish-limit.pg.test.ts`).
 - **Stacked PRs**: after the parent is squash-merged, `git rebase --onto origin/main <parent-branch> <child>` and push
   with `--force-with-lease` (own branches only).
 - **LinkedIn**: import only what the person downloads themselves (the data-export ZIP, «Save to PDF»); no LinkedIn API
