@@ -135,6 +135,53 @@ test('editing the content in place: remove, add, adjust the text, an emptied clo
   expect(violations).toEqual([]);
 });
 
+test('a profile item deleted after the document was made: the editor says it will be removed, saves, and the document stays editable', async ({ page }) => {
+  const violations = cspViolations(page);
+  const throwaway = async (name: string) => {
+    const res = await apiAs(OWNER_A, 'POST', '/api/v1/profile/items', { kind: 'skill', content: { name } });
+    expect(res.status).toBe(201);
+    return res.json?.item.id as string;
+  };
+  const [gone, later] = [await throwaway(`Borrada ${RUN}`), await throwaway(`Borrada en otra pestaña ${RUN}`)];
+  const mine = (await apiAs(OWNER_A, 'GET', '/api/v1/profile/items')).json!.items as { id: string; kind: string; content: Record<string, unknown> }[];
+  const skill = mine.find((i) => i.kind === 'skill' && i.content.name === 'Python')!.id;
+  const created = await apiAs(OWNER_A, 'POST', '/api/v1/artifacts', {
+    jobId,
+    kind: 'presentation',
+    title: `Presentación con borrada ${RUN}`,
+    content: { items: [{ itemId: skill }, { itemId: gone }, { itemId: later }], slides: [{ title: 'Herramientas', itemIds: [gone, skill] }] },
+  });
+  expect(created.status).toBe(201);
+  const id = created.json!.artifact.id as string;
+  expect((await apiAs(OWNER_A, 'DELETE', `/api/v1/profile/items/${gone}`)).status).toBe(204);
+
+  await signedIn(page);
+  await page.goto(url('app', `/documentos/${id}`));
+  const editor = page.getByTestId('doc-content-editor');
+  await expect(editor.getByRole('heading', { name: 'En este documento (2)' })).toBeVisible();
+  await expect(editor.getByTestId('doc-content-missing')).toHaveText('1 elemento de este documento ya no está en tu perfil; se quitará al guardar.');
+  await expect(editor.getByTestId('doc-content-state')).toHaveText('Tienes cambios sin guardar.');
+  await editor.getByLabel('Resumen de este documento (opcional)').fill('Resumen nuevo.');
+  await editor.getByRole('button', { name: 'Guardar contenido' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Contenido guardado.' })).toBeVisible();
+  await expect(editor.getByTestId('doc-content-missing')).toHaveCount(0);
+  const saved = (await apiAs(OWNER_A, 'GET', `/api/v1/artifacts/${id}`)).json!.artifact.content as { items: { itemId: string }[]; slides: { itemIds: string[] }[]; summary: string };
+  expect(saved.items).toEqual([{ itemId: skill }, { itemId: later }]);
+  expect(saved.slides).toEqual([{ title: 'Herramientas', itemIds: [skill] }]);
+  expect(saved.summary).toBe('Resumen nuevo.');
+
+  // Deleted in another tab while this page is open: the refusal says what happened and what to do.
+  await page.reload();
+  await expect(editor.getByTestId('doc-content-state')).toHaveText('Sin cambios pendientes.');
+  expect((await apiAs(OWNER_A, 'DELETE', `/api/v1/profile/items/${later}`)).status).toBe(204);
+  await editor.getByLabel('Resumen de este documento (opcional)').fill('Otro resumen.');
+  await editor.getByRole('button', { name: 'Guardar contenido' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Algunos elementos de este documento ya no existen en tu perfil' })).toBeVisible();
+  await page.reload();
+  await expect(editor.getByTestId('doc-content-missing')).toHaveText('1 elemento de este documento ya no está en tu perfil; se quitará al guardar.');
+  expect(violations).toEqual([]);
+});
+
 const EXPECTED: Record<keyof typeof ids, string[]> = {
   cv: ['Ana Prueba', 'Perfil profesional', 'Experiencia', 'Líder de backend', 'Educación', 'Ingeniería', 'Habilidades', 'Por qué Acme'],
   portfolio: ['Ana Prueba', 'Experiencia', 'Líder de backend', 'Educación', 'Ingeniería', 'Habilidades'],

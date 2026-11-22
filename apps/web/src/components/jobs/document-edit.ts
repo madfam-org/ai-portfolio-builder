@@ -11,6 +11,10 @@
  * - A cover letter's empty greeting or closing gets the text shown as the field's placeholder (`letterDefaults`), the
  *   same rule as when it was created.
  * - Nothing here writes a profile item: per-document text lives only in the document.
+ * - An entry (or a slide's item reference) whose profile item no longer exists cannot be shown, so it cannot be kept:
+ *   given the ids of the person's current items (`known`), the draft leaves it out, the editor says so before saving
+ *   (`missingItemIds`), the removal counts as an unsaved change, and the saved content no longer names it (the server
+ *   refuses content that names an item that does not exist: 422 `unknown_item_ids`).
  * No React and no server import, so the unit tests run it directly.
  */
 import type { ArtifactKind } from '../../lib/copy/app.ts';
@@ -32,12 +36,29 @@ export type DocumentEditProblem =
 const rec = (v: unknown): Record<string, unknown> => (v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : {});
 const str = (v: unknown): string => (typeof v === 'string' ? v : '');
 
-/** The stored content → the editor's draft (overrides as text, one highlight per line). */
-export function draftFromContent(raw: unknown): DocumentDraft {
+/** The ids of the person's current profile items: what a document may still name. */
+export type KnownItems = ReadonlySet<string>;
+
+const storedItemIds = (c: Record<string, unknown>): string[] =>
+  (Array.isArray(c.items) ? c.items : []).map(rec).flatMap((i) => (typeof i.itemId === 'string' ? [i.itemId] : []));
+const slideItemIds = (c: Record<string, unknown>): string[] =>
+  (Array.isArray(c.slides) ? c.slides : []).map(rec).flatMap((sl) => (Array.isArray(sl.itemIds) ? sl.itemIds.filter((id): id is string => typeof id === 'string') : []));
+
+/** The item ids the stored content names (its entries and a presentation's slides) that are no longer in the profile, once each. */
+export function missingItemIds(raw: unknown, known: KnownItems): string[] {
+  const c = rec(raw);
+  return [...new Set([...storedItemIds(c), ...slideItemIds(c)])].filter((id) => !known.has(id));
+}
+
+/**
+ * The stored content → the editor's draft (overrides as text, one highlight per line). With `known`, entries whose
+ * item no longer exists are left out.
+ */
+export function draftFromContent(raw: unknown, known?: KnownItems): DocumentDraft {
   const c = rec(raw);
   const selection = (Array.isArray(c.items) ? c.items : [])
     .map(rec)
-    .filter((i) => typeof i.itemId === 'string')
+    .filter((i) => typeof i.itemId === 'string' && (!known || known.has(i.itemId)))
     .map((i) => {
       const o = rec(i.override);
       const highlights = Array.isArray(o.highlights) ? o.highlights.filter((h): h is string => typeof h === 'string') : [];
@@ -46,21 +67,27 @@ export function draftFromContent(raw: unknown): DocumentDraft {
   return { selection, summary: str(c.summary), greeting: str(c.greeting), closing: str(c.closing) };
 }
 
-/** Whether the draft differs from what is stored (the save button and the «unsaved» note read it). */
-export function draftChanged(raw: unknown, draft: DocumentDraft): boolean {
+/**
+ * Whether saving would change what is stored (the save button and the «unsaved» note read it): the draft differs, or
+ * (with `known`) the stored content names an item that no longer exists, which saving removes.
+ */
+export function draftChanged(raw: unknown, draft: DocumentDraft, known?: KnownItems): boolean {
+  if (known && missingItemIds(raw, known).length > 0) return true;
   return JSON.stringify(draftFromContent(raw)) !== JSON.stringify(draft);
 }
 
 /**
  * The draft → the content to send, or the problems (in the order of the form). `company` and `locale` give a cover
- * letter's defaults.
+ * letter's defaults. With `known`, entries and slide references to items that no longer exist are not sent.
  */
 export function contentFromDraft(
   kind: ArtifactKind,
   raw: unknown,
-  draft: DocumentDraft,
+  input: DocumentDraft,
   letter: { company: string; locale: ContentLocale },
+  known?: KnownItems,
 ): { ok: true; content: Record<string, unknown> } | { ok: false; problems: DocumentEditProblem[] } {
+  const draft = known ? { ...input, selection: input.selection.filter((e) => known.has(e.itemId)) } : input;
   const problems: DocumentEditProblem[] = [];
   if (draft.selection.length > LIMITS.items) problems.push({ scope: 'form', field: 'items', code: 'tooMany' });
   if (draft.summary.trim().length > LIMITS.summary) problems.push({ scope: 'form', field: 'summary', code: 'tooLong' });
@@ -91,6 +118,13 @@ export function contentFromDraft(
     blocks: Array.isArray(kept.blocks) ? kept.blocks : [],
     showContact: kept.showContact === true,
   };
+  // A presentation's own slides are kept as they are, except references to items that no longer exist.
+  if (known && Array.isArray(kept.slides)) {
+    content.slides = kept.slides.map((raw) => {
+      const sl = rec(raw);
+      return Array.isArray(sl.itemIds) ? { ...sl, itemIds: sl.itemIds.filter((id) => typeof id === 'string' && known.has(id)) } : raw;
+    });
+  }
   if (kind === 'cover_letter') {
     const fallback = letterDefaults(letter.company, letter.locale);
     content.greeting = draft.greeting.trim() || fallback.greeting;

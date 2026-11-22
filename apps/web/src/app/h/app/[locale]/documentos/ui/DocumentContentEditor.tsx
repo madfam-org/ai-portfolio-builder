@@ -3,11 +3,11 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, type FormEvent } from 'react';
 import { SelectionEditor, type ItemProblems } from '@/components/jobs/SelectionEditor';
-import { contentFromDraft, draftChanged, draftFromContent, type DocumentDraft, type DocumentEditProblem } from '@/components/jobs/document-edit';
+import { contentFromDraft, draftChanged, draftFromContent, missingItemIds, type DocumentDraft, type DocumentEditProblem, type KnownItems } from '@/components/jobs/document-edit';
 import { LIMITS, letterDefaults } from '@/components/jobs/tailoring';
 import { Button } from '@/components/ui/Button';
 import { TextAreaField, TextField } from '@/components/ui/Field';
-import { ErrorState } from '@/components/ui/States';
+import { ErrorState, Notice } from '@/components/ui/States';
 import { useToast } from '@/components/ui/Toast';
 import { useUnsavedGuard } from '@/components/ui/useUnsavedGuard';
 import { api, apiErrorMessage } from '@/lib/client/api';
@@ -20,6 +20,8 @@ import type { Locale } from '@/lib/routing';
 
 interface Loaded {
   items: ItemDto[];
+  /** The ids of the person's current items: entries naming any other id are dropped on save. */
+  known: KnownItems;
   primary: ContentLocale;
   scores: Map<string, number>;
   profileSummary: string;
@@ -29,7 +31,8 @@ interface Loaded {
  * «Contenido» of one document, editable in place (critique #7): which profile items, in which order, with which text
  * for this document only; its summary; a cover letter's greeting and closing. The same editor as «Adaptar al empleo»
  * (SelectionEditor), with the job's keyword match when the document belongs to a job. Saves ONE `PATCH` of the content
- * (components/jobs/document-edit.ts keeps every part it does not show); the profile is never written.
+ * (components/jobs/document-edit.ts keeps every part it does not show); the profile is never written. Entries whose
+ * profile item was deleted since are announced and removed on that save, so the document stays editable.
  */
 export function DocumentContentEditor({ locale, artifact, job }: { locale: Locale; artifact: ArtifactDto; job: { id: string; title: string; company: string } | null }) {
   const a = APP_COPY[locale];
@@ -55,8 +58,12 @@ export function DocumentContentEditor({ locale, artifact, job }: { locale: Local
       }
       const p = profile.data.profile;
       const primary: ContentLocale = p?.locale ?? (locale === 'en' ? 'en' : 'es-MX');
+      const known: KnownItems = new Set(profile.data.items.map((i) => i.id));
+      // An entry whose item no longer exists cannot be shown, so it leaves the draft (and the save removes it).
+      setDraft((x) => ({ ...x, selection: x.selection.filter((e) => known.has(e.itemId)) }));
       setLoaded({
         items: profile.data.items,
+        known,
         primary,
         scores: new Map(match && match.ok ? match.data.items.map((m) => [m.itemId, m.score]) : []),
         profileSummary: p ? localizeHeader({ headline: p.headline, summary: p.summary }, p.translations, primary, artifact.locale).header.summary : '',
@@ -67,7 +74,8 @@ export function DocumentContentEditor({ locale, artifact, job }: { locale: Local
     };
   }, [jobId, locale, artifact.locale, a.states]);
 
-  const changed = draftChanged(artifact.content, draft);
+  const missing = loaded ? missingItemIds(artifact.content, loaded.known) : [];
+  const changed = draftChanged(artifact.content, draft, loaded?.known);
   useUnsavedGuard(changed && !busy);
   const letter = artifact.kind === 'cover_letter';
   const defaults = letterDefaults(job?.company ?? '', artifact.locale);
@@ -89,7 +97,7 @@ export function DocumentContentEditor({ locale, artifact, job }: { locale: Local
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const built = contentFromDraft(artifact.kind, artifact.content, draft, { company: job?.company ?? '', locale: artifact.locale });
+    const built = contentFromDraft(artifact.kind, artifact.content, draft, { company: job?.company ?? '', locale: artifact.locale }, loaded?.known);
     if (!built.ok) {
       setProblems(built.problems);
       const first = built.problems[0]!;
@@ -102,7 +110,8 @@ export function DocumentContentEditor({ locale, artifact, job }: { locale: Local
     const res = await api.updateArtifact(artifact.id, { content: built.content });
     setBusy(false);
     if (!res.ok) {
-      toast(apiErrorMessage(res.error, a.states), 'danger');
+      // An item deleted meanwhile (another tab): say so, rather than a generic error.
+      toast(res.error.code === 'unknown_item_ids' ? d.contentItemsGone : apiErrorMessage(res.error, a.states), 'danger');
       return;
     }
     setDraft(draftFromContent(res.data.artifact.content));
@@ -129,6 +138,11 @@ export function DocumentContentEditor({ locale, artifact, job }: { locale: Local
         </p>
       ) : (
         <form className="stack" onSubmit={save} noValidate>
+          {missing.length > 0 ? (
+            <div data-testid="doc-content-missing">
+              <Notice>{d.contentMissingItems(missing.length)}</Notice>
+            </div>
+          ) : null}
           <SelectionEditor
             locale={locale}
             primary={loaded.primary}
@@ -187,7 +201,7 @@ export function DocumentContentEditor({ locale, artifact, job }: { locale: Local
               variant="ghost"
               disabled={busy || !changed}
               onClick={() => {
-                setDraft(draftFromContent(artifact.content));
+                setDraft(draftFromContent(artifact.content, loaded.known));
                 setProblems([]);
               }}
             >

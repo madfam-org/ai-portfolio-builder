@@ -144,6 +144,10 @@ export interface DocumentsCopy {
   contentSaving: string;
   contentDiscard: string;
   contentSaved: string;
+  /** Entries (or slide references) whose profile item was deleted: removed on the next save. */
+  contentMissingItems: (n: number) => string;
+  /** The save was refused because an item was deleted meanwhile (422 `unknown_item_ids`, e.g. in another tab). */
+  contentItemsGone: string;
   suspendedTitle: string;
   suspendedBody: string;
   suspendedReason: string;
@@ -257,6 +261,9 @@ export const DOCUMENTS_COPY: Record<Locale, DocumentsCopy> = {
     contentSaving: 'Guardando…',
     contentDiscard: 'Descartar cambios',
     contentSaved: 'Contenido guardado.',
+    contentMissingItems: (n) =>
+      n === 1 ? '1 elemento de este documento ya no está en tu perfil; se quitará al guardar.' : `${n} elementos de este documento ya no están en tu perfil; se quitarán al guardar.`,
+    contentItemsGone: 'Algunos elementos de este documento ya no existen en tu perfil (quizá los borraste en otra pestaña). Vuelve a cargar la página y guarda de nuevo.',
     suspendedTitle: 'Documento suspendido',
     suspendedBody: 'Este documento se retiró por una revisión de contenido y no se puede compartir ni publicar. Si crees que es un error, escribe a legal@madfam.io.',
     suspendedReason: 'Motivo',
@@ -365,6 +372,9 @@ export const DOCUMENTS_COPY: Record<Locale, DocumentsCopy> = {
     contentSaving: 'Saving…',
     contentDiscard: 'Discard changes',
     contentSaved: 'Content saved.',
+    contentMissingItems: (n) =>
+      n === 1 ? '1 item in this document is no longer in your profile; it will be removed when you save.' : `${n} items in this document are no longer in your profile; they will be removed when you save.`,
+    contentItemsGone: 'Some items in this document no longer exist in your profile (perhaps you deleted them in another tab). Reload the page and save again.',
     suspendedTitle: 'Document suspended',
     suspendedBody: 'This document was withdrawn after a content review and cannot be shared or published. If you think this is a mistake, write to legal@madfam.io.',
     suspendedReason: 'Reason',
