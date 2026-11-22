@@ -180,7 +180,7 @@ edited. **Nothing is stored before «Guardar vacante»** (`POST /api/v1/jobs`, t
   signed-in owner, through an SSRF guard (`apps/web/src/server/ingest/fetcher.ts`: https and port 443 only, no userinfo,
   DNS resolved and EVERY answer checked public, the socket pinned to the vetted address, every redirect re-checked,
   at most 3; no cookie or credential sent; 2 MB after decompression; 8 s for the whole chain; HTML or JSON only;
-  User-Agent `MADFAM-CV-Intake/1.0 (+https://cv.madfam.io/lector; …)`, explained on that page; logs carry the host and outcome, never the URL).
+  User-Agent `MADFAM-CV-Intake/1.0 (+https://cv.madfam.io/lector; …)`, explained on that page; logs carry the outcome and timing, never the site or the URL).
   Order: a board that forbids server reads → `capture_only` (LinkedIn, Indeed, Google, Glassdoor, Talent.com,
   Computrabajo; `ingest/boards.ts`); a known ATS → its public, key-free API (Greenhouse, Lever, SmartRecruiters, Ashby,
   Workable, Recruitee, Pinpoint; `ingest/ats.ts` cites the provider docs); otherwise robots.txt for the token
