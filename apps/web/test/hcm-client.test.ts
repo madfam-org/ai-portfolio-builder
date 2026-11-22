@@ -1,7 +1,10 @@
-/** The HCM client against the SYNTHETIC fake HCM (test-support/hcm-fake.ts) and against injected failures. */
+/**
+ * The HCM client against the SYNTHETIC fake HCM (test-support/hcm-fake.ts) and against injected failures. The breaker
+ * (server/breaker.ts) counts only HCM's own failures, and only a run from different people opens it.
+ */
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
-import { CACHE_TTL_MS, FAILURE_THRESHOLD, OPEN_MS, createHcmClient } from '../src/server/hcm/client.ts';
+import { CACHE_TTL_MS, FAILURE_THRESHOLD, MIN_OWNERS, OPEN_MS, createHcmClient } from '../src/server/hcm/client.ts';
 import { hcmConfig, type HcmConfig } from '../src/server/hcm/config.ts';
 import { startFakeHcm, type FakeHcm } from '../test-support/hcm-fake.ts';
 
@@ -14,13 +17,17 @@ before(async () => {
 });
 after(() => fake.close());
 
+/** Two people (Janua `sub`s): the breaker counts how many different people a run of failures came from. */
+const ME = 'janua|persona-a';
+const OTHER = 'janua|persona-b';
+
 test('ok answer: one token for many calls, title and state only, the scope requested', async () => {
   const client = createHcmClient(config);
-  const first = await client.benchmark({ title: 'Desarrolladora backend', state: 'MX-CMX' });
+  const first = await client.benchmark({ title: 'Desarrolladora backend', state: 'MX-CMX' }, ME);
   assert.ok(first.ok);
   assert.equal(first.benchmark.status, 'ok');
   assert.equal(first.benchmark.income?.percentiles.p50, 14_950);
-  await client.benchmark({ title: 'Contador', state: null });
+  await client.benchmark({ title: 'Contador', state: null }, ME);
   assert.equal(fake.tokensIssued(), 1, 'the token is cached');
   const tokenCall = fake.requests.find((r) => r.path === '/api/v1/oauth/token')!;
   assert.equal(new URLSearchParams(tokenCall.body).get('scope'), 'hcm-benchmarks:read');
@@ -38,31 +45,79 @@ test('answers are cached per (title, state) and expire', async () => {
   let clock = 1_000_000;
   const client = createHcmClient(config, { now: () => clock });
   const before = fake.requests.length;
-  assert.equal((await client.benchmark({ title: 'Desarrollador', state: null })).ok, true);
-  const again = await client.benchmark({ title: 'desarrollador', state: null });
+  assert.equal((await client.benchmark({ title: 'Desarrollador', state: null }, ME)).ok, true);
+  const again = await client.benchmark({ title: 'desarrollador', state: null }, ME);
   assert.ok(again.ok && again.cached);
   clock += CACHE_TTL_MS + 1;
-  const fresh = await client.benchmark({ title: 'Desarrollador', state: null });
+  const fresh = await client.benchmark({ title: 'Desarrollador', state: null }, ME);
   assert.ok(fresh.ok && !fresh.cached);
   assert.ok(fake.requests.length > before);
 });
 
-test('HCM 503 is unavailable; after the threshold the breaker answers at once, then probes again', async () => {
+test('HCM 503 is unavailable; a run of them from different people opens the breaker, which answers at once, then lets requests through', async () => {
   let clock = 5_000_000;
   const client = createHcmClient(config, { now: () => clock });
   for (let i = 0; i < FAILURE_THRESHOLD; i++) {
-    assert.deepEqual(await client.benchmark({ title: `falla ${i}`, state: null }), { ok: false, reason: 'unavailable' });
+    assert.deepEqual(await client.benchmark({ title: `falla ${i}`, state: null }, i % 2 ? OTHER : ME), { ok: false, reason: 'unavailable' });
   }
   const count = fake.requests.length;
-  assert.deepEqual(await client.benchmark({ title: 'Desarrollador', state: null }), { ok: false, reason: 'unavailable' });
+  assert.deepEqual(await client.benchmark({ title: 'Desarrollador', state: null }, 'janua|persona-c'), { ok: false, reason: 'unavailable' });
   assert.equal(fake.requests.length, count, 'open breaker: no request sent');
   clock += OPEN_MS + 1;
-  assert.equal((await client.benchmark({ title: 'Desarrollador', state: 'MX-JAL' })).ok, true, 'half-open probe succeeds');
+  assert.equal((await client.benchmark({ title: 'Desarrollador', state: 'MX-JAL' }, ME)).ok, true, 'requests reach HCM again after the pause');
+});
+
+test('one person alone never opens the breaker: their titles failing at HCM leave everyone else served', async () => {
+  const client = createHcmClient(config);
+  for (let i = 0; i < FAILURE_THRESHOLD * 4; i++) {
+    assert.deepEqual(await client.benchmark({ title: `falla ${i}`, state: null }, ME), { ok: false, reason: 'unavailable' });
+  }
+  const count = fake.requests.length;
+  assert.equal((await client.benchmark({ title: 'Contador público', state: 'MX-MOR' }, OTHER)).ok, true);
+  assert.ok(fake.requests.length > count, 'HCM was asked');
+  assert.equal(MIN_OWNERS, 2);
+});
+
+test('only HCM\'s own failures count: 4xx, a refused token and an answer outside the schema never open it; a timeout does', async () => {
+  let answer: () => Promise<Response> = async () => new Response('{}', { status: 404 });
+  const tokenOk = async () => new Response(JSON.stringify({ access_token: 't'.repeat(40), expires_in: 600 }), { status: 200 });
+  let calls = 0;
+  const client = createHcmClient(config, {
+    fetch: async (input) => {
+      if (String(input).includes('oauth/token')) return tokenOk();
+      calls += 1;
+      return answer();
+    },
+  });
+  const cases: [number, unknown, string][] = [
+    [404, {}, 'unavailable'],
+    [429, {}, 'unavailable'],
+    [422, {}, 'unavailable'],
+    [400, { status: 'invalid_query' }, 'invalid'],
+    [200, { status: 'ok', income: { p50: 'mucho' } }, 'invalid'],
+  ];
+  let n = 0;
+  for (const [status, body, reason] of cases) {
+    answer = async () => new Response(JSON.stringify(body), { status });
+    for (let i = 0; i < FAILURE_THRESHOLD + 1; i++) assert.deepEqual(await client.benchmark({ title: `t${n++}`, state: null }, i % 2 ? OTHER : ME), { ok: false, reason }, `${status}`);
+  }
+  const refused = createHcmClient({ ...config, clientSecret: 'wrong' });
+  for (let i = 0; i < FAILURE_THRESHOLD + 1; i++) assert.deepEqual(await refused.benchmark({ title: `r${i}`, state: null }, i % 2 ? OTHER : ME), { ok: false, reason: 'refused' });
+  // Still closed: the next request reaches HCM.
+  answer = () => Promise.reject(Object.assign(new Error('timed out'), { name: 'TimeoutError' }));
+  const before = calls;
+  assert.deepEqual(await client.benchmark({ title: 'lento 1', state: null }, ME), { ok: false, reason: 'unavailable' });
+  assert.equal(calls, before + 1, 'the breaker stayed closed through every 4xx and odd answer');
+  // A timeout is HCM's: with two more from another person the run reaches the threshold and opens it.
+  for (let i = 0; i < FAILURE_THRESHOLD - 1; i++) await client.benchmark({ title: `lento ${i + 2}`, state: null }, OTHER);
+  const settled = calls;
+  assert.deepEqual(await client.benchmark({ title: 'Desarrollador', state: null }, ME), { ok: false, reason: 'unavailable' });
+  assert.equal(calls, settled, 'open: no request sent');
 });
 
 test('a wrong secret is refused, never retried into an answer', async () => {
   const client = createHcmClient({ ...config, clientSecret: 'wrong' });
-  assert.deepEqual(await client.benchmark({ title: 'Desarrollador', state: null }), { ok: false, reason: 'refused' });
+  assert.deepEqual(await client.benchmark({ title: 'Desarrollador', state: null }, ME), { ok: false, reason: 'refused' });
 });
 
 test('a 401 from HCM drops the token and retries once', async () => {
@@ -77,19 +132,19 @@ test('a 401 from HCM drops the token and retries once', async () => {
     return fetch(input, init);
   };
   const client = createHcmClient(config, { fetch: fetchImpl });
-  const res = await client.benchmark({ title: 'Desarrollador', state: null });
+  const res = await client.benchmark({ title: 'Desarrollador', state: null }, ME);
   assert.equal(res.ok, true);
   assert.equal(seen.filter((u) => u.includes('oauth/token')).length, 2, 'a second token after the 401');
 });
 
 test('timeout and network errors are unavailable; an unexpected shape is invalid, never shown', async () => {
   const slow = createHcmClient({ ...config, timeoutMs: 200 }, { fetch: (_i, init) => new Promise((_, reject) => init?.signal?.addEventListener('abort', () => reject(new Error('aborted')))) });
-  assert.deepEqual(await slow.benchmark({ title: 'x y', state: null }), { ok: false, reason: 'unavailable' });
+  assert.deepEqual(await slow.benchmark({ title: 'x y', state: null }, ME), { ok: false, reason: 'unavailable' });
   const odd = createHcmClient(config, {
     fetch: async (input, init) =>
       String(input).includes('market-benchmarks') ? new Response(JSON.stringify({ status: 'ok', income: { p50: 'mucho' } }), { status: 200 }) : fetch(input, init),
   });
-  assert.deepEqual(await odd.benchmark({ title: 'Desarrollador', state: null }), { ok: false, reason: 'invalid' });
+  assert.deepEqual(await odd.benchmark({ title: 'Desarrollador', state: null }, ME), { ok: false, reason: 'invalid' });
 });
 
 test('a source that is not INEGI is rejected by the schema', async () => {
@@ -102,28 +157,28 @@ test('a source that is not INEGI is rejected by the schema', async () => {
       return new Response(JSON.stringify(body), { status: 200 });
     },
   });
-  assert.deepEqual(await forged.benchmark({ title: 'Desarrollador', state: null }), { ok: false, reason: 'invalid' });
+  assert.deepEqual(await forged.benchmark({ title: 'Desarrollador', state: null }, ME), { ok: false, reason: 'invalid' });
 });
 
 test('segment query: the SINCO replaces the title; only sinco, state and the segment id leave cv; cached apart', async () => {
   const client = createHcmClient(config);
   const before = fake.requests.length;
-  const general = await client.benchmark({ title: 'Client Advisor', state: 'MX-CMX' });
-  const segment = await client.benchmark({ title: 'Client Advisor', state: 'MX-CMX', sinco: '4211', segment: 'retail_apparel_personal' });
+  const general = await client.benchmark({ title: 'Client Advisor', state: 'MX-CMX' }, ME);
+  const segment = await client.benchmark({ title: 'Client Advisor', state: 'MX-CMX', sinco: '4211', segment: 'retail_apparel_personal' }, ME);
   assert.ok(general.ok && segment.ok);
   assert.equal(general.benchmark.segment, null);
   assert.equal(segment.benchmark.segment?.available, true);
   assert.equal(segment.benchmark.income?.n, 30);
   const sent = fake.requests.slice(before).filter((r) => r.path === '/api/v1/market-benchmarks/');
   assert.deepEqual(sent.at(-1)!.query, { sinco: '4211', state: 'MX-CMX', segment: 'retail_apparel_personal' });
-  const again = await client.benchmark({ title: 'Client Advisor', state: 'MX-CMX', sinco: '4211', segment: 'retail_apparel_personal' });
+  const again = await client.benchmark({ title: 'Client Advisor', state: 'MX-CMX', sinco: '4211', segment: 'retail_apparel_personal' }, ME);
   assert.ok(again.ok && again.cached && again.benchmark.income?.n === 30, 'the segment answer has its own cache entry');
 });
 
 test('a segment id HCM does not allowlist is a 400: invalid, and it does not trip the breaker', async () => {
   const client = createHcmClient(config);
   for (let i = 0; i < FAILURE_THRESHOLD + 1; i++) {
-    assert.deepEqual(await client.benchmark({ title: 'x', state: null, sinco: '4211', segment: 'lujo' }), { ok: false, reason: 'invalid' });
+    assert.deepEqual(await client.benchmark({ title: 'x', state: null, sinco: '4211', segment: 'lujo' }, ME), { ok: false, reason: 'invalid' });
   }
-  assert.equal((await client.benchmark({ title: 'Client Advisor', state: null })).ok, true);
+  assert.equal((await client.benchmark({ title: 'Client Advisor', state: null }, ME)).ok, true);
 });

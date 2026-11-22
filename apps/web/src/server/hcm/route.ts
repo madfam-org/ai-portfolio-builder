@@ -86,7 +86,7 @@ export async function jobBenchmark(repo: Repository, sub: string, jobId: string,
 
   const facts = jobFacts(job);
   if (facts.title.length < 2) return json(422, { error: 'title_too_short' });
-  const result = await client.benchmark({ title: facts.title, state: facts.state });
+  const result = await client.benchmark({ title: facts.title, state: facts.state }, sub);
   if (!result.ok) return json(503, { error: 'benchmark_unavailable' }, { 'Retry-After': '60' });
 
   const b = result.benchmark;
@@ -96,7 +96,7 @@ export async function jobBenchmark(repo: Repository, sub: string, jobId: string,
   let segment: SegmentView | null = null;
   const sinco = b.occupation?.sinco;
   if (sinco && RETAIL_SALES_SINCO.has(sinco) && (b.status === 'ok' || b.status === 'insufficient_data')) {
-    segment = await segmentView(client, { title: facts.title, state: facts.state, sinco, segment: RETAIL_SEGMENT }, placeSalary);
+    segment = await segmentView(client, { title: facts.title, state: facts.state, sinco, segment: RETAIL_SEGMENT }, sub, placeSalary);
   }
   const view: BenchmarkView = {
     jobId: job.id,
@@ -119,9 +119,10 @@ export async function jobBenchmark(repo: Repository, sub: string, jobId: string,
 async function segmentView(
   client: HcmBenchmarkPort,
   query: Parameters<HcmBenchmarkPort['benchmark']>[0],
+  owner: string,
   placeSalary: (income: HcmBenchmark['income']) => SalaryPosition | null,
 ): Promise<SegmentView> {
-  const result = await client.benchmark(query);
+  const result = await client.benchmark(query, owner);
   if (!result.ok) return { state: 'unavailable' };
   const s = result.benchmark;
   const meta = s.segment;

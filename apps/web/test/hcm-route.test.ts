@@ -142,7 +142,7 @@ test('segment call failing (HCM 503): the general answer still shows; segment un
 });
 
 test('an HCM without segments (400 to the new parameter) leaves the general answer intact', async () => {
-  const general = await port.benchmark({ title: 'Asesora de ventas', state: null });
+  const general = await port.benchmark({ title: 'Asesora de ventas', state: null }, 'janua|persona-a');
   assert.ok(general.ok);
   const oldHcm: HcmBenchmarkPort = { benchmark: async (q) => (q.segment ? { ok: false, reason: 'invalid' } : general) };
   const { status, body } = await read(await jobBenchmark(repo(job({ title: 'Asesora de ventas', location: '' })), 'janua|a', ID, {}, oldHcm));
