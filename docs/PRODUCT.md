@@ -78,15 +78,22 @@ and portfolios in our own infra and ecosystem»): `/<slug>` and `/l/<token>`, li
   template is offered **«Usar Compacta»** when the same content would print shorter. The e2e holds the estimate equal
   to Chromium's PDF for every CV template on Carta and A4.
 - **Editing in place** (`/documentos/:id`, «Contenido»): which profile items, in which order, with which text for
-  this document only; the document's summary (a letter's body); a letter's greeting and closing. Same editor as the
+  this document only; the document's summary; a letter's greeting, its own body and its closing. Same editor as the
   tailoring workspace; one PATCH that replaces only what it shows (text blocks, a presentation's own slides,
   `showContact` and a portfolio's intro are kept). The profile never changes. Leaving with unsaved changes asks first.
   A published document's page changes when its content is saved, as the editor says.
-- **Cover letter content**: the greeting, the opening (the summary), the text blocks, at most **three** roles or
-  projects as «Experiencia relevante» (title, organisation, dates; the CV carries the details), the closing and the
-  name. An empty greeting or closing becomes the text shown as the field's placeholder before creation («Estimado
-  equipo de {empresa}:» / «Atentamente,»; English: «Dear {company} hiring team,» / «Sincerely,»); no date or recipient
-  is added.
+- **Cover letter content**: the greeting, the letter's body, the text blocks, at most **three** roles or projects as
+  «Experiencia relevante» (title, organisation, dates; the CV carries the details), the closing and the name. An empty
+  greeting or closing becomes the text shown as the field's placeholder before creation («Estimado equipo de
+  {empresa}:» / «Atentamente,»; English: «Dear {company} hiring team,» / «Sincerely,»); no date or recipient is added.
+- **A letter body of its own** (2026-11-21): «Cuerpo de la carta» / «Letter body», between the greeting and the
+  closing in the tailoring workspace and in the document editor. Plain text, paragraphs separated by a blank line, at
+  most 5,000 characters, stored in the letter only (`content.body`). Written, it is what the letter prints between
+  the greeting and the closing, in place of the summary. Left empty, the letter opens with the summary as it always
+  did (this job's summary, else the profile's), and the field shows that text in grey; nothing is written for the
+  person and no AI is involved. It belongs to the letter's language like every per-document text (switching the
+  workspace's language puts it away with the other per-job texts; it is never translated). A shared letter's page and
+  the public JSON carry the body, and then neither summary; no other kind carries a body.
 - **Recommendations** print as the recommender's name, their role and organisation, the relationship and their words
   in quotation marks, verbatim (never translated, never adjusted per job).
 - **Publish** from `/documentos/:id`: private, by link (`/l/<token>` on the pages host; never indexed; «Cambiar enlace»

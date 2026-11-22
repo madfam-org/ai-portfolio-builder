@@ -120,9 +120,34 @@ test('cover_letter/base: at most three roles or projects in «Experiencia releva
   assert.doesNotMatch(html, /Python|Inglés|UNAM/);
 });
 
+test('cover_letter: its own body prints between the greeting and the closing, paragraph by paragraph, in place of the summary', () => {
+  const body = 'Primer párrafo de la carta.\r\nSigue en otra línea.\r\n  \r\n\n\nSegundo párrafo.  ';
+  for (const template of templatesFor('cover_letter')) {
+    const html = render(data('cover_letter', { summary: 'Resumen del documento', body, greeting: 'Estimado equipo de Acme:', closing: 'Saludos cordiales,', items: [{ itemId: 'e1' }], blocks: [{ body: 'Bloque propio' }] }, { template }));
+    const text = /<div data-part="letter-text">(.*?)<\/div>/.exec(html)?.[1] ?? '';
+    assert.equal(text, '<p><span>Primer párrafo de la carta.</span><span><br/>Sigue en otra línea.</span></p><p><span>Segundo párrafo.</span></p>', `${template}: two paragraphs, the single line break kept`);
+    const order = ['Estimado equipo de Acme:', 'Primer párrafo de la carta.', 'Segundo párrafo.', 'Bloque propio', 'Experiencia relevante', 'Saludos cordiales,', 'class="signature">Ana Prueba'].map((x) => html.indexOf(x));
+    assert.ok(order.every((i) => i >= 0) && order.every((i, k) => k === 0 || i > order[k - 1]!), `${template}: order ${order}`);
+    assert.doesNotMatch(html, /Resumen del documento|Resumen del perfil/, `${template}: neither summary is printed under a body`);
+    assertSafe(html);
+  }
+});
+
+test('cover_letter: without a body (absent, blank) it renders exactly the markup of a letter that never had one; other kinds ignore a body', () => {
+  const content = { summary: 'Me interesa el puesto.', greeting: 'Hola:', closing: 'Saludos,', items: [{ itemId: 'e1' }] };
+  for (const template of templatesFor('cover_letter')) {
+    const before = render(data('cover_letter', content, { template }));
+    assert.match(before, /Me interesa el puesto\./);
+    assert.doesNotMatch(before, /letter-text/);
+    for (const blank of ['', '   ', '\n\n']) assert.equal(render(data('cover_letter', { ...content, body: blank }, { template })), before, `${template}: blank body ${JSON.stringify(blank)}`);
+  }
+  assert.match(render(data('cover_letter', { items: [] })), /Resumen del perfil/, 'no summary of its own and no body: the profile summary, as before');
+  for (const kind of ['cv', 'portfolio', 'presentation']) assert.equal(render(data(kind, { ...content, body: 'Solo de cartas' })), render(data(kind, content)), kind);
+});
+
 test('user text is inert in every kind and every field; an empty document prints nothing invented', () => {
   for (const kind of ['cv', 'portfolio', 'presentation', 'cover_letter']) {
-    const d = data(kind, { summary: XSS, items: [{ itemId: 'e1', override: { title: XSS, summary: XSS, highlights: [XSS] } }], blocks: [{ heading: XSS, body: XSS }], greeting: XSS, closing: XSS, intro: XSS, slides: [{ title: XSS, body: XSS, itemIds: ['e1'] }] });
+    const d = data(kind, { summary: XSS, items: [{ itemId: 'e1', override: { title: XSS, summary: XSS, highlights: [XSS] } }], blocks: [{ heading: XSS, body: XSS }], greeting: XSS, body: XSS, closing: XSS, intro: XSS, slides: [{ title: XSS, body: XSS, itemIds: ['e1'] }] });
     d.profile = { displayName: XSS, headline: XSS, summary: XSS };
     const html = render(d);
     assert.ok(html.includes('&lt;img src=x onerror=&quot;alert(1)&quot;&gt;'), kind);

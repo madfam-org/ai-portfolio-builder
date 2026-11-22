@@ -135,6 +135,8 @@ export interface DocumentsCopy {
   contentSelected: string;
   contentSummaryLabel: string;
   contentSummaryHint: string;
+  /** The summary's hint in a cover letter, whose own body replaces it when written. */
+  contentSummaryHintLetter: string;
   contentLetterHint: string;
   contentPublishedNote: string;
   contentSlidesNote: string;
@@ -251,7 +253,8 @@ export const DOCUMENTS_COPY: Record<Locale, DocumentsCopy> = {
     contentSelectionIntro: 'Quita, agrega u ordena. «Ajustar el texto» cambia cómo se lee un elemento solo en este documento.',
     contentSelected: 'En este documento ({n})',
     contentSummaryLabel: 'Resumen de este documento (opcional)',
-    contentSummaryHint: 'Encabeza el documento; en una carta es su cuerpo. Si lo dejas vacío, se usa el resumen de tu perfil.',
+    contentSummaryHint: 'Encabeza el documento. Si lo dejas vacío, se usa el resumen de tu perfil.',
+    contentSummaryHintLetter: 'En una carta se imprime solo si su cuerpo está vacío. Si lo dejas vacío, se usa el resumen de tu perfil.',
     contentLetterHint: 'Si dejas el saludo o la despedida vacíos, usamos el texto que ves en gris.',
     contentPublishedNote: 'Este documento está publicado: al guardar, quien tenga el enlace verá los cambios.',
     contentSlidesNote: 'Las diapositivas que armaste a mano no cambian aquí; esta lista es la que se usa cuando la presentación no tiene diapositivas propias.',
@@ -362,7 +365,8 @@ export const DOCUMENTS_COPY: Record<Locale, DocumentsCopy> = {
     contentSelectionIntro: 'Remove, add or reorder. «Adjust the text» changes how an item reads in this document only.',
     contentSelected: 'In this document ({n})',
     contentSummaryLabel: 'Summary of this document (optional)',
-    contentSummaryHint: 'It heads the document; in a letter it is the body. Left empty, your profile summary is used.',
+    contentSummaryHint: 'It heads the document. Left empty, your profile summary is used.',
+    contentSummaryHintLetter: 'In a letter it prints only while the letter body is empty. Left empty, your profile summary is used.',
     contentLetterHint: 'If you leave the greeting or the closing empty, we use the grey text you see.',
     contentPublishedNote: 'This document is published: once you save, anyone with the link sees the changes.',
     contentSlidesNote: 'Slides you built by hand do not change here; this list is used when the presentation has no slides of its own.',

@@ -108,6 +108,12 @@ test('the whole journey, screen by screen', async ({ page, context }, info) => {
   await see('jobs-list', url('app', '/empleos'));
   await see('job-detail', url('app', `/empleos/${job.id}`));
   await see('job-tailor', url('app', `/empleos/${job.id}/adaptar`));
+  // The cover letter's fields (greeting, its own body, closing) once the letter is chosen; the body left empty shows,
+  // in grey, the summary the letter would open with.
+  await see('job-tailor-letter', url('app', `/empleos/${job.id}/adaptar`), async (p) => {
+    await p.getByRole('checkbox', { name: 'Carta de presentación' }).check();
+    await p.getByTestId('tailor-letter').waitFor();
+  });
 
   // The four documents for that job.
   const items = [{ itemId: exp1 }, { itemId: exp2 }, { itemId: edu }, { itemId: sk1 }, { itemId: sk2 }, { itemId: lang }, { itemId: cert }];
@@ -117,7 +123,7 @@ test('the whole journey, screen by screen', async ({ page, context }, info) => {
       { kind: 'cv', title: 'CV · Boutique Ejemplo', content: { items, showContact: true } },
       { kind: 'portfolio', title: 'Portafolio · Boutique Ejemplo', content: { items, intro: 'Soy Valeria. Acompaño a cada cliente antes, durante y después de su compra.' } },
       { kind: 'presentation', title: 'Presentación · Boutique Ejemplo', content: { items, slides: [{ title: 'Quién soy', body: 'Ocho años en tiendas de lujo.', itemIds: [] }, { title: 'Experiencia', itemIds: [exp1, exp2] }, { title: 'Lo que aporto', itemIds: [sk1, sk2, lang] }] } },
-      { kind: 'cover_letter', title: 'Carta · Boutique Ejemplo', content: { items: [{ itemId: exp1 }], greeting: 'Estimado equipo de Boutique Ejemplo:', summary: 'Me interesa el puesto de asesora de ventas senior porque combina la atención personal al cliente con la formación de equipo, que es lo que hago hoy.', closing: 'Quedo atenta. Saludos cordiales,' } },
+      { kind: 'cover_letter', title: 'Carta · Boutique Ejemplo', content: { items: [{ itemId: exp1 }], greeting: 'Estimado equipo de Boutique Ejemplo:', summary: 'Me interesa el puesto de asesora de ventas senior porque combina la atención personal al cliente con la formación de equipo, que es lo que hago hoy.', body: 'Me interesa el puesto de asesora de ventas senior porque combina la atención personal al cliente con la formación de equipo, que es lo que hago hoy.\n\nEn mi tienda actual llevo una cartera propia de clientes y acompaño a cada uno antes, durante y después de su compra; además formo a las asesoras nuevas en producto y servicio.\n\nMe gustaría conversar sobre cómo puedo aportar a Boutique Ejemplo.', closing: 'Quedo atenta. Saludos cordiales,' } },
     ],
   })) as { artifacts: { id: string; kind: string }[] };
   const id = Object.fromEntries(set.artifacts.map((a) => [a.kind, a.id])) as Record<string, string>;
