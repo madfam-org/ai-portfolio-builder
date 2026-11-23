@@ -262,7 +262,7 @@ jobs:
       # sha256 of gitleaks_8.30.1_linux_x64.tar.gz, from the release's checksums file. The step checks the
       # tarball against this pin AND against the checksums file it downloads.
       GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
-      # The legacy tree ends at this commit (tag legacy-2025-09). Its 480-commit history was scanned in full by
+      # The legacy tree ends at this commit (the last commit before the 2026-10-22 rebuild; its tag was removed 2026-11-23 with Vercel retired). Its 480-commit history was scanned in full by
       # the 2026-10-22 audit (no real secret; placeholders only) and is frozen; this job scans every commit
       # after it, plus the checked-out tree.
       LEGACY_BASE: 7959f35656e91c0b2400a1735e1aea343809f4a8

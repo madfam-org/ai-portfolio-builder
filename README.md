@@ -46,7 +46,7 @@ owner ruling (2026-11-22), so npm versions move by hand in pull requests (`.gith
 
 ## The old code
 
-The previous implementation is preserved at the git tag `legacy-2025-09`. It is not deployed and
+The previous implementation remains in the history up to commit `7959f356` (no longer tagged). It is not deployed and
 is not maintained.
 
 ## Develop
