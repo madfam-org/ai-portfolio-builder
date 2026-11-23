@@ -1,6 +1,6 @@
 # ai-portfolio-builder (MADFAM CV) — agent operating guide
 
-> Last Updated: 2026-11-21
+> Last Updated: 2026-11-23
 
 <!-- MADFAM-AGENTS-CANONICAL v1 -->
 
@@ -128,10 +128,12 @@ Kubernetes Service publishes 80; every `enclii.yaml` domain pins `port: 80`. Fla
 | `apps/web/src/components/paper/print-pages.ts`, `src/app/h/app/[locale]/documentos/ui/PrintView.tsx`, `src/components/render/template-classes.ts` | the print view's «Aprox. N páginas» (print rules re-scoped onto a hidden copy, paginated like print) and its «Usar Compacta» offer; `test/print-pages.test.ts`, `e2e/templates.spec.ts` (estimate = PDF pages) |
 | `apps/web/src/components/ui/useUnsavedGuard.ts` | asks before leaving a page with unsaved changes (profile header, document content) |
 | `apps/web/src/lib/shared-page.ts` | `sharedRenderData`: the public projection of a shared document (only what the page prints; a cover letter's own body without the summaries it replaces); `test/shared-page.test.ts` |
-| `apps/web/src/lib/profile-text-swap.ts` | the primary-language swap of the profile's texts (used by `repository.putProfile`); `test/profile-text-swap.test.ts`, `test-pg/primary-language.pg.test.ts` |
-| `apps/web/src/server/db/ping-cache.ts` | one database ping serves every `/ready` answer for 2 s, so public readiness traffic never queues on the pool |
+| `apps/web/src/lib/profile-text-swap.ts` | the primary-language swap of the profile's texts (used by `repository.putProfile`); `test/profile-text-swap.test.ts`, `test-pg/primary-language.pg.test.ts`, `e2e/profile-language.spec.ts` |
+| `apps/web/src/server/db/ping-cache.ts` | one database ping serves every `/ready` answer for 2 s, so public readiness traffic never queues on the pool; `test/ping-cache.test.ts` |
 | `apps/web/src/components/render/CoverLetterView.tsx`, `src/components/jobs/{tailoring,document-edit}.ts` | the cover letter and its own body (`content.body`, «Cuerpo de la carta»); `e2e/documents-letter-body.spec.ts`, `test-pg/letter-body.pg.test.ts` |
-| `apps/web/e2e/documents-pdf.ts` | the e2e helper that reads the text and pages of Chromium's PDF (used by the print specs) |
+| `apps/web/e2e/documents-pdf.ts` | the e2e helper that reads the text and pages of Chromium's PDF (used by the print specs); `test/e2e-pdf-reader.test.ts` |
+| `apps/web/src/server/ingest/{robots,html,fetcher}.ts` | job-link intake on hostile input (linear robots.txt matching, shallow HTML reader, DNS inside the deadline); `test/ingest-hardening.test.ts` |
+| `apps/web/test-pg/r2-gaps.pg.test.ts` | the 2026-11-21 audit gaps over real Postgres: owner document delete, withdrawing a published document, the OCR route's job ceiling |
 | `apps/web/src/server/api/match.ts` | the AI-free job match, `keyword-overlap-v3`; `test/match.test.ts` |
 
 ## Commands
@@ -180,6 +182,8 @@ hosts. `build-deploy.yml` is **dispatch-only** (Enclii's reusable build-publish 
 
 Platform code AGPL-3.0-only; documentation MIT; licence holder Innovaciones MADFAM S.A.S. de C.V.
 (R72). AGPL was the recorded recommendation (audit decision D4); **the owner ruled it on 2026-10-22.**
+Texts: [`LICENSE`](LICENSE), [`NOTICE`](NOTICE), [`CONTRIBUTING.md`](CONTRIBUTING.md), [`SECURITY.md`](SECURITY.md); the
+LLM-reader indexes [`llms.txt`](llms.txt) and [`llms-full.txt`](llms-full.txt) summarise this file (this file wins).
 
 ## Pending rulings
 

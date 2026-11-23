@@ -75,6 +75,7 @@ Agents: read [AGENTS.md](AGENTS.md) first (`CLAUDE.md` only points there).
 | [docs/REPO_BOUNDARY.md](docs/REPO_BOUNDARY.md) | what never goes into this public repository |
 | [ECOSYSTEM.md](ECOSYSTEM.md) | the MADFAM services cv consumes (Janua, Dhanam, Selva, Enclii, HCM, Pliego, tlacuilo) |
 | [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md) | contributing; reporting a vulnerability |
+| [llms.txt](llms.txt), [llms-full.txt](llms-full.txt) | the compact and the longer index for LLM readers (AGENTS.md stays canonical) |
 
 ## Licence
 
