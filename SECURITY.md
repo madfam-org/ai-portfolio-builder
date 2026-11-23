@@ -36,4 +36,4 @@ highest-severity findings are:
 
 ## Not in scope
 
-The code preserved at the tag `legacy-2025-09` is not deployed anywhere by this repository.
+The code in the history up to commit `7959f356` is not deployed anywhere by this repository.

@@ -5,7 +5,7 @@
  *
  * Ownership (W3 parallel PRs): THIS file belongs to W3-1 and changes only by appending. Each follow-on PR owns its
  * own file: copy/profile.ts (W3-2), copy/jobs.ts (W3-3), copy/render.ts (W3-4). The public pages host: copy/pages.ts.
- * Kind labels were reviewed against the legacy editor's es strings (tag legacy-2025-09) and rewritten in es-MX
+ * Kind labels were reviewed against the legacy editor's es strings (commit 7959f356) and rewritten in es-MX
  * sentence case; nothing else was ported.
  */
 import type { AppRouteName } from '../app-routes.ts';

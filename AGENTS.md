@@ -27,7 +27,7 @@ product name is **not ruled**: the working label `MADFAM CV` renders from one co
 
 The tree was **rebuilt from scratch on 2026-10-22** (wave 1, "fresh baseline"). The previous code
 (Supabase, Prisma, Vercel, Railway, its own next-auth sign-in, Stripe, HuggingFace, in-repo `@madfam/*` packages) is
-preserved at the git tag **`legacy-2025-09`** (`7959f356`) for reference only. **Do not port from it**
+in the history up to commit `7959f356` (its tag was removed on 2026-11-23: Vercel is a retired vendor) and is reference only. **Do not port from it**
 unless the piece is rebuilt to this tree's standard (owner-scoped data, tests first, ecosystem seams). This tree uses
 Auth.js (`next-auth@5` beta) only as the Janua OIDC client on cv-app.
 

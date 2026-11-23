@@ -83,7 +83,7 @@ self-hosted Plausible (analytics, later), Angelia (messaging, later), PhyndCRM (
 - Mailboxes: hola@, privacy@, legal@, security@, support@madfam.io only. madfam.io is the only MADFAM
   domain; the .com of the same name belongs to a third party.
 - Licence: code AGPL-3.0-only (owner ruling, 2026-10-22), docs MIT.
-- The old implementation (git tag legacy-2025-09) is reference only; nothing is ported without being
+- The old implementation (history up to commit 7959f356) is reference only; nothing is ported without being
   rebuilt to this tree's standard.
 - W6-A (2026-10-22): the pages host is cv-p.madfam.io (owner-approved, live), behind a per-client rate limit on
   unauthenticated reads (apps/web/src/server/read-limit.ts; CF-Connecting-IP only). Sign-in sessions expire after

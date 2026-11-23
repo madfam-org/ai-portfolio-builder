@@ -5,7 +5,7 @@
 > serves four hosts routed by Host: cv.madfam.io (landing, es-MX and en; noindex until the brand is ruled),
 > cv-app.madfam.io (the app; Janua sign-in, invite-only accounts gated in Janua), cv-api.madfam.io (/api/v1/meta and
 > the owner-scoped API on Postgres) and cv-p.madfam.io (the pages people choose to publish). /health and /ready
-> answer on any Host. The old code is preserved at the git tag legacy-2025-09. No open sign-up, AI or prices yet.
+> answer on any Host. The old code remains in the history up to commit 7959f356. No open sign-up, AI or prices yet.
 
 Boundary: public repository. Operational detail lives in MADFAM's private ops repository under the
 repo-boundary contract (docs/REPO_BOUNDARY.md).
