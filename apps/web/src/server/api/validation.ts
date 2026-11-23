@@ -8,7 +8,7 @@ import { isAllowedSlug } from '../../lib/api-routes.ts';
 import { ARTIFACT_KINDS, ARTIFACT_STATUSES, JOB_STATUSES, LOCALES, PROFILE_ITEM_KINDS, SOURCE_TEXT_MAX } from '../db/schema.ts';
 import { isTemplateFor } from '../../lib/templates.ts';
 import { LANGUAGE_CODES } from '../../lib/languages.ts';
-import { HEADER_TEXT_FIELDS, ITEM_TEXT_FIELDS } from '../../lib/profile-text.ts';
+import { ITEM_TEXT_FIELDS } from '../../lib/profile-text.ts';
 import {
   COUNTRY_CODE_PATTERN,
   CURRENCY_PATTERN,
@@ -390,6 +390,3 @@ export const ITEM_TRANSLATIONS = Object.fromEntries(
     return [kind, z.partialRecord(z.enum(LOCALES), z.object(fields).strict()).nullable()];
   }),
 ) as unknown as Record<(typeof PROFILE_ITEM_KINDS)[number], z.ZodType<Partial<Record<(typeof LOCALES)[number], Record<string, string | string[]>>> | null>>;
-
-/** The header fields a translation may carry (in step with `profileTranslations`). */
-export const PROFILE_TEXT_FIELDS: readonly string[] = HEADER_TEXT_FIELDS;

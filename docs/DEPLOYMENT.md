@@ -264,7 +264,7 @@ Run each apply only after reading its own dry run; never paste a dry run and its
    then `--apply --reason …`).
 6. **Tunnels apply** (dry run, read the plan, then `--apply --expect-plan <hash>`).
 7. **Scale to 2 replicas** once (Enclii's Argo Application ignores Deployment replicas).
-8. **Probe through the edge**: `/health` and `/ready` 200 on all three hosts; `cv.madfam.io/` and
+8. **Probe through the edge**: `/health` and `/ready` 200 on the three hosts of wave 1; `cv.madfam.io/` and
    `/en` 200 with `X-Robots-Tag: noindex` and a nonce CSP; `/robots.txt` per host; `cv-api.madfam.io/api/v1/meta`
    200 with the built `revision`; `cv-api.madfam.io/` JSON 404; an unknown path on the landing 404.
    A fresh host may be cached negative by the local resolver: probe with `curl --resolve`.

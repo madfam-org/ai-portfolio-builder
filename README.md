@@ -36,10 +36,13 @@ images through tlacuilo (built, dormant). No analytics, no ads, no data sold ([p
 
 ## What comes next
 
-Beta readiness: a first-run checklist, a cover-letter body of its own, the remaining design critique (public pages,
+Beta readiness: a first-run checklist on «Inicio» (the cover-letter body is done), the remaining design critique (public pages,
 landing voice, the long profile on phones), a feedback channel once the owner picks one, then the first invitations.
 After that: AI assistance through Selva, plans through Dhanam, and the remaining MADFAM seams
 ([ECOSYSTEM.md](ECOSYSTEM.md)). Open rulings live in [AGENTS.md](AGENTS.md) «Pending rulings».
+
+Dependency updates: Dependabot covers the Dockerfile base image and the pinned GitHub Actions (weekly); npm updates are off by
+owner ruling (2026-11-22), so npm versions move by hand in pull requests (`.github/dependabot.yml`).
 
 ## The old code
 

@@ -141,8 +141,3 @@ export function templateIds(kind: string): string[] {
 export function isTemplateFor(kind: string, id: string): boolean {
   return templateIds(kind).includes(id);
 }
-
-/** The registry entry, or null for an id the kind does not offer (a stored row from before the allowlist). */
-export function templateInfo(kind: string, id: string): TemplateInfo | null {
-  return (TEMPLATE_REGISTRY[kind as ArtifactKind] ?? []).find((t) => t.id === id) ?? null;
-}
