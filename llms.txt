@@ -39,6 +39,10 @@ repo-boundary contract (docs/REPO_BOUNDARY.md).
 - [README.md](https://github.com/madfam-org/ai-portfolio-builder/blob/main/README.md): what is live today and what comes next
 - [docs/PRODUCT.md](https://github.com/madfam-org/ai-portfolio-builder/blob/main/docs/PRODUCT.md): the owner requirement, the profile / jobs / artifacts model, the API
 - [docs/DEPLOYMENT.md](https://github.com/madfam-org/ai-portfolio-builder/blob/main/docs/DEPLOYMENT.md): runtime contract, hosts, configuration, first-deploy steps
+- [docs/DESIGN.md](https://github.com/madfam-org/ai-portfolio-builder/blob/main/docs/DESIGN.md): the design system («The Tailor's Atelier»): tokens, type, components
+- [docs/REPO_BOUNDARY.md](https://github.com/madfam-org/ai-portfolio-builder/blob/main/docs/REPO_BOUNDARY.md): what never goes into this public repository
+- [CONTRIBUTING.md](https://github.com/madfam-org/ai-portfolio-builder/blob/main/CONTRIBUTING.md): how to contribute
+- [LICENSE](https://github.com/madfam-org/ai-portfolio-builder/blob/main/LICENSE) and [NOTICE](https://github.com/madfam-org/ai-portfolio-builder/blob/main/NOTICE): code AGPL-3.0-only; documentation MIT
 - [ECOSYSTEM.md](https://github.com/madfam-org/ai-portfolio-builder/blob/main/ECOSYSTEM.md): which MADFAM platform owns which capability
 - [SECURITY.md](https://github.com/madfam-org/ai-portfolio-builder/blob/main/SECURITY.md): reporting and scope
 - [llms-full.txt](https://github.com/madfam-org/ai-portfolio-builder/blob/main/llms-full.txt): the longer version of this file
