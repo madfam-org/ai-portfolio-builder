@@ -81,10 +81,6 @@ export function paperStock(id: PaperStockId): PaperStockView {
   return view(id);
 }
 
-export function isPaperStockId(v: unknown): v is PaperStockId {
-  return typeof v === 'string' && Object.hasOwn(CARDS, v);
-}
-
 /**
  * A letter fold on a portrait page. Pliego folds along the sheet's long side; cv reads its first panel (the cover,
  * folded last) as the TOP of the page and its last, shorter panel (the tuck, folded first) as the BOTTOM, the usual

@@ -192,12 +192,6 @@ export function isoDate(value: unknown): string | null {
   return `${parts[0]}-${parts[1]}-${parts[2]}`;
 }
 
-/** Epoch milliseconds (Lever `createdAt`) → YYYY-MM-DD. */
-export function dateFromEpochMs(value: unknown): string | null {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return null;
-  return isoDate(new Date(value).toISOString());
-}
-
 /** One line, trimmed, at most `max` characters (titles and company names). */
 export function clean(value: unknown, max = 200): string | null {
   if (typeof value !== 'string') return null;

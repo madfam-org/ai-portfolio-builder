@@ -127,6 +127,11 @@ Kubernetes Service publishes 80; every `enclii.yaml` domain pins `port: 80`. Fla
 | `apps/web/src/components/jobs/document-edit.ts`, `src/app/h/app/[locale]/documentos/ui/DocumentContentEditor.tsx` | editing a document's content in place (same `SelectionEditor`; one PATCH that keeps what it does not show); `test/jobs-document-edit.test.ts`, `e2e/documents.spec.ts` |
 | `apps/web/src/components/paper/print-pages.ts`, `src/app/h/app/[locale]/documentos/ui/PrintView.tsx`, `src/components/render/template-classes.ts` | the print view's «Aprox. N páginas» (print rules re-scoped onto a hidden copy, paginated like print) and its «Usar Compacta» offer; `test/print-pages.test.ts`, `e2e/templates.spec.ts` (estimate = PDF pages) |
 | `apps/web/src/components/ui/useUnsavedGuard.ts` | asks before leaving a page with unsaved changes (profile header, document content) |
+| `apps/web/src/lib/shared-page.ts` | `sharedRenderData`: the public projection of a shared document (only what the page prints; a cover letter's own body without the summaries it replaces); `test/shared-page.test.ts` |
+| `apps/web/src/lib/profile-text-swap.ts` | the primary-language swap of the profile's texts (used by `repository.putProfile`); `test/profile-text-swap.test.ts`, `test-pg/primary-language.pg.test.ts` |
+| `apps/web/src/server/db/ping-cache.ts` | one database ping serves every `/ready` answer for 2 s, so public readiness traffic never queues on the pool |
+| `apps/web/src/components/render/CoverLetterView.tsx`, `src/components/jobs/{tailoring,document-edit}.ts` | the cover letter and its own body (`content.body`, «Cuerpo de la carta»); `e2e/documents-letter-body.spec.ts`, `test-pg/letter-body.pg.test.ts` |
+| `apps/web/e2e/documents-pdf.ts` | the e2e helper that reads the text and pages of Chromium's PDF (used by the print specs) |
 | `apps/web/src/server/api/match.ts` | the AI-free job match, `keyword-overlap-v3`; `test/match.test.ts` |
 
 ## Commands
@@ -165,7 +170,8 @@ service container, as the `cv_app` role; fails on fewer than 55 passing tests), 
 passing specs or any failed, flaky or skipped; raise the floor when a PR adds specs; a failed run uploads the
 Playwright traces as `e2e-traces`, kept 7 days), `guards` (file size, forbidden-domain grep, the Node pin and `--ignore-scripts`),
 `secrets` (gitleaks over every commit after the legacy base `7959f356`, plus the checked-out tree;
-the legacy history was scanned in full by the 2026-10-22 audit). `image.yml` builds the Dockerfile on
+the legacy history was scanned in full by the 2026-10-22 audit). Dependabot (`.github/dependabot.yml`): docker and github-actions weekly; **npm is off by owner ruling (2026-11-22)**, so npm
+versions move by hand in pull requests. `image.yml` builds the Dockerfile on
 pull requests that touch its inputs (no push) and smoke-tests it read-only as uid 1001 across all
 hosts. `build-deploy.yml` is **dispatch-only** (Enclii's reusable build-publish pinned by SHA,
 `build_runner: ubuntu-24.04`); a merge never deploys by itself.
@@ -185,6 +191,8 @@ Platform code AGPL-3.0-only; documentation MIT; licence holder Innovaciones MADF
 - **Beta feedback channel** (2026-11-16): where «Enviar comentario» sends (email, the CRM, a form); nothing built until
   ruled.
 - **Profile photo and pronouns**: not stored (a privacy and discrimination question in Mexican CVs).
+- **«Experiencia relevante» after a cover letter's own body** (owner question, 2026-11-22): whether the up-to-three roles still
+  print once the letter has its own body; today they do.
 - **Assisted writing through Selva**: scope, where inference runs and the copy of «Sugerencias con IA (próximamente)».
 
 Settled (kept here so nobody re-asks): the licence, AGPL-3.0-only (owner, 2026-10-22); the pages host, `cv-p.madfam.io`
@@ -217,8 +225,8 @@ directory. The API the three need already exists: profile and items (plus `POST 
 
 ## What comes next
 
-W2–W7 are live behind the beta invite gate (history in the sections below). Next, in order: a first-run checklist on
-«Inicio», ~~a cover-letter body of its own~~ (done 2026-11-21: «A cover letter» below), the remaining design critique (public pages typography, landing voice, the
+W2–W7 are live behind the beta invite gate (history in the sections below). Done: the cover-letter body (2026-11-21: «A cover letter» below). Next, in order: a first-run checklist on
+«Inicio» (not built: «Primeros pasos» only guides an empty profile), the remaining design critique (public pages typography, landing voice, the
 long profile on phones), the feedback channel once ruled, the first invitations; then Selva (AI), Dhanam (plans) and
 tlacuilo's activation. Symbiosis HCM classifies English job titles poorly («Engineering Director» → no occupation):
 the fix belongs in that repository, not here.

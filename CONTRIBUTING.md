@@ -10,6 +10,8 @@
    "próximamente" / "coming soon".
 4. **No secrets, no prices, no client names.** Hosts come from the host table only.
 5. **One concern per pull request,** with a clear English title and a body that says why.
+6. **Dependencies.** Dependabot updates the Dockerfile base image and the pinned GitHub Actions; npm updates are off by
+   owner ruling (2026-11-22), so bump npm packages by hand in a pull request (`.github/dependabot.yml`).
 
 **Licence.** Contributions are accepted under the project licence (AGPL-3.0-only for code, MIT for
 docs): inbound equals outbound.
