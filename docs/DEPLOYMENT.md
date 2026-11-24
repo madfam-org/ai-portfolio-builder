@@ -1,6 +1,6 @@
 # Deployment contract
 
-> Last Updated: 2026-11-21 (status: onboarded and live on four hosts; secret sources point at the ExternalSecret manifests)
+> Last Updated: 2026-11-24 (status: onboarded and live on four hosts; secret sources point at the ExternalSecret manifests)
 >
 > Boundary: Enclii-first. This file names services, ports, hosts and secret **names**. Operator
 > gates and adapter-gap records live in MADFAM's private ops repository; the first-deploy section
@@ -161,10 +161,14 @@ Activation (done; kept as the order for a re-activation. Coordinator; deploy the
 without the limiter; each apply only after reading its own dry run):
 
 1. Merge, dispatch Build & Deploy, wait for the digest-pin commit and the rollout (pods log `pages=cv-p.madfam.io`).
-2. `enclii ops domains reconcile cv --project cv --ref <pin sha> --domain cv-p.madfam.io` (dry run), then the same
-   with `--apply --reason …`. This writes the DNS record ONLY.
+2. Take the digest-pin commit from step 1 (the last commit on `main` that touched the kustomization):
+   `git fetch origin main`, then
+   `PIN_SHA="$(git log -1 --format=%H origin/main -- infra/k8s/production/kustomization.yaml)"`.
+   Dry run: `enclii ops domains reconcile cv --project cv --ref "$PIN_SHA" --domain cv-p.madfam.io`; then the same
+   with `--apply --reason "route the cv-p.madfam.io pages host"`. This writes the DNS record ONLY.
 3. `enclii providers cloudflare tunnels-apply --project cv` (dry run: exactly one new route, `cv-p.madfam.io` to the
-   `cv` Service on 80, and no change to the other three), then `--apply --expect-plan <fingerprint> --reason …`.
+   `cv` Service on 80, and no change to the other three), then the same with `--apply`, `--expect-plan` set to the
+   plan fingerprint that dry run printed, and `--reason "route cv-p.madfam.io to the cv Service"`.
 4. Probe through the edge (`curl --resolve`): `/health` 200; `/robots.txt` allows; an unknown slug is the HTML 404 with
    `X-Robots-Tag: noindex, nofollow, noai, noimageai`; a burst of about 130 requests to one unknown slug from one
    address starts answering `429` with `Retry-After` (two pods, 60 each).
