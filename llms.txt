@@ -14,7 +14,8 @@ repo-boundary contract (docs/REPO_BOUNDARY.md).
 
 - One Enclii project and one Service, both `cv`; container port 3000, Service port 80, every domain `port: 80`.
 - The host table is data (apps/web/src/lib/config.ts); exact Host matches; unknown Host is a 404.
-- Identity is Janua, money is Dhanam, LLMs only through Selva, deploy is Enclii, analytics self-hosted Plausible only.
+- Identity is Janua, money is Dhanam, LLMs only through Selva, deploy is Enclii, analytics self-hosted, first-party and cookieless only
+  (R41, amended 2026-11-12: Umami if its staging check passes, otherwise Plausible; none deployed as of 2026-11-26).
 - No invented proof, no prices, no secrets in the tree; madfam.io is the only MADFAM domain.
 - Every data row is owned by a Janua `sub`; repository functions take ownerSub first; other owners' ids are 404.
 - Sign-in and data are configured in production; wherever their settings are missing they answer 503 not_configured
@@ -32,6 +33,12 @@ repo-boundary contract (docs/REPO_BOUNDARY.md).
 - W6-A: the pages host is cv-p.madfam.io (owner-approved; CV_HOST_PAGES set in production; live). Unauthenticated reads (pages host, cv-api /api/v1/public/*) are rate limited per client
   (CF-Connecting-IP only, token bucket 60 + 60/min per pod, 429 with Retry-After). Sign-in sessions expire after 7 days
   without use. cv.madfam.io/lector (es-MX) and /en/lector explain the job-link reader; its User-Agent links there.
+
+## Commercial pipeline state (2026-11-26)
+
+Unpriced and not in Dhanam's catalogue; access is the Janua `cv` entitlement; the landing is noindex and runs no
+analytics; the call to action is a waitlist and nothing reaches PhyndCRM yet. Detail: AGENTS.md «Commercial pipeline
+state (2026-11-26)».
 
 ## Docs
 

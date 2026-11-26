@@ -1,6 +1,6 @@
 # MADFAM CV (working label) — ai-portfolio-builder, full context
 
-> Last Updated: 2026-11-21. Canonical instructions: AGENTS.md. This file summarises it for LLM readers.
+> Last Updated: 2026-11-26. Canonical instructions: AGENTS.md. This file summarises it for LLM readers.
 
 ## Product
 
@@ -74,7 +74,7 @@ cv-app with callback https://cv-app.madfam.io/api/auth/callback/janua; cv-api ac
 cv-app; the beta's invite gate is the `cv` entitlement), Enclii (deploy, domains, secrets intake), Symbiosis HCM
 (the job page's market income range, INEGI ENOE; live), Pliego (paper data, vendored and pinned), tlacuilo
 (reading images; built, dormant until its activation PR), Dhanam (money, later), Selva (LLM gateway, later),
-self-hosted Plausible (analytics, later), Angelia (messaging, later), PhyndCRM (consent/attribution, later).
+self-hosted, cookieless analytics (R41 as amended 2026-11-12: Umami or Plausible; none deployed as of 2026-11-26), Angelia (messaging, later), PhyndCRM (consent/attribution, later).
 
 ## Rules
 

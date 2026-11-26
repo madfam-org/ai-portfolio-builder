@@ -1,6 +1,6 @@
 # ai-portfolio-builder (MADFAM CV) — agent operating guide
 
-> Last Updated: 2026-11-23
+> Last Updated: 2026-11-26
 
 <!-- MADFAM-AGENTS-CANONICAL v1 -->
 
@@ -51,6 +51,10 @@ link to `legal@madfam.io` on every page. Its reads and cv-api's public reads are
 lookup (`apps/web/src/server/read-limit.ts`; `CF-Connecting-IP` only, never `X-Forwarded-For`). Sign-in sessions expire after 7 days without use (`SESSION_OPTIONS`, `lib/auth-env.ts`). The landing
 also serves `/lector` and `/en/lector` (`LANDING_PAGES` in `lib/routing.ts`), the page the job reader's User-Agent links to.
 
+Discovery state on 2026-11-26: `cv.madfam.io` answers with `noindex, nofollow` (header and meta tag), as
+`CV_INDEXABLE` intends until the brand is ruled, and no visitor analytics runs on any host (see
+«Commercial pipeline state (2026-11-26)» below).
+
 `/health` (liveness) and `/ready` (readiness) answer 200 JSON on **any** Host, before host routing
 (kubelet probes use the pod IP). Unknown hosts get a plain 404. The container listens on 3000; the
 Kubernetes Service publishes 80; every `enclii.yaml` domain pins `port: 80`. Flat labels only (never
@@ -76,7 +80,9 @@ Kubernetes Service publishes 80; every `enclii.yaml` domain pins `port: 80`. Fla
   to the ruling point and list it.
 - **Consume the ecosystem seams, never rebuild them** ([`ECOSYSTEM.md`](ECOSYSTEM.md)): identity is
   Janua, money is Dhanam, LLMs go through Selva, deploy/DNS/secrets/status are Enclii, analytics is
-  self-hosted Plausible only (R41), messaging goes through Angelia. No Supabase, Prisma, Vercel,
+  self-hosted, first-party and cookieless only (R41; amended 2026-11-12: the engine is Umami if its
+  staging check passes, otherwise Plausible; none is deployed as of 2026-11-26), messaging goes
+  through Angelia. No Supabase, Prisma, Vercel,
   Railway, Stripe key or LLM provider key in this repo, ever (a test enforces the obvious ones).
 - **Sequencing trap:** never expose sign-in before owner-scoped queries and their cross-tenant tests
   exist (they exist since W2: `apps/web/test-pg/`; keep them green before any new table is reachable).
@@ -184,6 +190,28 @@ Platform code AGPL-3.0-only; documentation MIT; licence holder Innovaciones MADF
 (R72). AGPL was the recorded recommendation (audit decision D4); **the owner ruled it on 2026-10-22.**
 Texts: [`LICENSE`](LICENSE), [`NOTICE`](NOTICE), [`CONTRIBUTING.md`](CONTRIBUTING.md), [`SECURITY.md`](SECURITY.md); the
 LLM-reader indexes [`llms.txt`](llms.txt) and [`llms-full.txt`](llms-full.txt) summarise this file (this file wins).
+
+## Commercial pipeline state (2026-11-26)
+
+What is true for cv at each stage of the business pipeline, read on `main` and with read-only public requests
+on 2026-11-26. The cross-repo source is the business pipeline audit of that date in MADFAM's private ops
+repository:
+[`internal-devops` `audits/2026-11-26-business-pipeline/README.md`](https://github.com/madfam-org/internal-devops/blob/main/audits/2026-11-26-business-pipeline/README.md)
+(private).
+
+- **Discovery.** The landing is `noindex` by design until the brand is ruled («Topology» above), and no analytics
+  runs: none is deployed and the app carries no analytics code ([`ECOSYSTEM.md`](ECOSYSTEM.md), Analytics row).
+- **Prospecting.** The landing's call to action is a waitlist (R29, «Required operating doctrine» above). Nothing
+  sends cv contacts to PhyndCRM yet ([`ECOSYSTEM.md`](ECOSYSTEM.md), «Consent and attribution», later).
+- **Conversion.** cv is unpriced and not for sale: it has no entry in Dhanam's catalogue and the landing says there
+  are no prices yet (`apps/web/src/lib/copy/landing.ts`).
+- **Fulfillment.** Access is the `cv` product entitlement in Janua; without it Janua refuses sign-in to the cv
+  client («B1: beta access» below; [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) «Beta access»).
+- **Customer success.** Support is the `support@madfam.io` mailbox (R61). There is no ticketing and no service
+  level, and the beta feedback channel is an open ruling with nothing built («Pending rulings» below).
+- **Virality.** Published pages carry one «Hecho con» link back to the landing
+  (`apps/web/src/components/render/PagesFooter.tsx`); it carries no attribution tag, so visits from it cannot be
+  told apart.
 
 ## Pending rulings
 
