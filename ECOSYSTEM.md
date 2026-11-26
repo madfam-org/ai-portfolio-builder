@@ -1,6 +1,6 @@
 # Ecosystem roles
 
-> Last Updated: 2026-11-16
+> Last Updated: 2026-11-26
 >
 > Boundary checkpoint (2026-10-22): roles only. MADFAM's private ops repository owns topology,
 > operator procedures and secret handling; see [docs/REPO_BOUNDARY.md](docs/REPO_BOUNDARY.md).
@@ -19,7 +19,7 @@ journey, the portfolio data model and the public portfolio pages (invite-only pr
 | Catalog, checkout, entitlements | Dhanam | plans and checkout, entitlements read from the Janua claim; no payment key in this app | later |
 | CFDI | Karafiel, via Dhanam | none in this app | later |
 | Product email | the platform sender, through Janua (auth mail) and Angelia Courier | never direct | later |
-| Analytics | self-hosted Plausible | cookieless; off until configured | later |
+| Analytics | self-hosted, first-party and cookieless only (R41, amended 2026-11-12: Umami if its staging check passes, otherwise Plausible) | none deployed as of 2026-11-26; no analytics code in this app | later |
 | Market income range per job (INEGI ENOE) | Symbiosis HCM (`GET /api/v1/market-benchmarks/`) | client credentials; only the job title (or occupation code) and the state leave cv, never the person ([docs/PRODUCT.md](docs/PRODUCT.md) «Market income range») | now |
 | Reading images (OCR) of job postings | tlacuilo (`text_document` lane) | client credentials, one page image per call, nothing stored ([AGENTS.md](AGENTS.md) «Reading images through tlacuilo») | built, dormant |
 | Consent and attribution | PhyndCRM | never rebuilt in-app | later |
